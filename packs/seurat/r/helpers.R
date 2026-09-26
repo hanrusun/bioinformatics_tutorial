@@ -171,6 +171,32 @@ local({
       obj
     }
 
+    # "a data.frame with 2,700 rows and 5 columns", "a numeric vector of length 3", ...
+    curelab_describe <- function(x) {
+      d <- dim(x)
+      cls <- class(x)[1]
+      what <- paste(if (grepl("^[aeiouAEIOU]", cls)) "an" else "a", cls)
+      if (length(d) == 2) {
+        sprintf("%s with %s rows and %s columns", what, .fmt(d[1]), .fmt(d[2]))
+      } else {
+        sprintf("%s of length %s", what, .fmt(length(x)))
+      }
+    }
+
+    # TRUE if two matrices (dense or sparse) have the same shape and values.
+    # Never use all.equal() on sparse matrices here: unless Matrix is attached
+    # (Seurat does not attach it), base all.equal() falls back to comparing S4
+    # attributes, and with check.attributes = FALSE it ignores the values.
+    same_matrix <- function(a, b, tolerance = 1e-8) {
+      da <- dim(a)
+      db <- dim(b)
+      if (length(da) != 2 || length(db) != 2 || any(as.numeric(da) != as.numeric(db))) return(FALSE)
+      diff <- tryCatch(a - b, error = function(e) NULL)
+      if (is.null(diff)) return(FALSE)
+      vals <- if (isS4(diff) && methods::.hasSlot(diff, "x")) diff@x else as.vector(as.matrix(diff))
+      !length(vals) || isTRUE(max(abs(vals)) <= tolerance)
+    }
+
     expect_columns <- function(df, columns, what) {
       missing <- setdiff(columns, colnames(df))
       if (length(missing)) {

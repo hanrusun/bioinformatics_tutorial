@@ -35,7 +35,15 @@ check: |
     sd <- LayerData(obj, layer = "scale.data")
     expect_true(nrow(sd) == nrow(obj),
       sprintf("Only %d of %d genes were scaled. Pass features = all.genes (all.genes <- rownames(pbmc)).", nrow(sd), nrow(obj)))
-    expect_true(max(abs(rowMeans(sd[1:50, ]))) < 1e-6,
+    expect_param(obj, "ScaleData", "do.center", TRUE,
+      "Keep the default do.center = TRUE so every gene is centered")
+    # ScaleData clips z-scores at scale.max (10 by default), which shifts the
+    # mean of genes with outlier cells; only unclipped genes must average 0
+    smax <- command_param(obj, "ScaleData", "scale.max")
+    if (is.null(smax)) smax <- 10
+    rows <- sd[seq_len(min(nrow(sd), 2000)), , drop = FALSE]
+    unclipped <- rows[rowSums(abs(rows) >= smax - 1e-6) == 0, , drop = FALSE]
+    expect_true(nrow(unclipped) > 0 && max(abs(rowMeans(unclipped))) < 1e-6,
       "Scaled genes should have mean 0 across cells (keep the default do.center = TRUE).")
   })
 hints:

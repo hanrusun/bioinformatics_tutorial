@@ -58,9 +58,11 @@ check: |
     f <- curelab_obj("num_features")
     expect_true(is.numeric(f) && length(f) == 1 && f == nrow(obj), "`num_features` should be the number of features: nrow(pbmc).")
     m <- curelab_obj("mtx")
-    expect_true(inherits(m, "dgCMatrix") && identical(dim(m), dim(obj)),
-      "`mtx` should be the sparse raw counts matrix: pbmc[[\"RNA\"]]$counts.")
-    expect_true(isTRUE(all.equal(m, LayerData(obj, assay = "RNA", layer = "counts"))),
+    counts <- LayerData(obj, assay = "RNA", layer = "counts")
+    expect_true(length(dim(m)) == 2 && all(dim(m) == dim(counts)),
+      sprintf("`mtx` should be the raw counts matrix pbmc[[\"RNA\"]]$counts, with %s genes and %s cells; yours is %s.",
+        format(nrow(counts), big.mark = ","), format(ncol(counts), big.mark = ","), curelab_describe(m)))
+    expect_true(same_matrix(m, counts),
       "`mtx` isn't the counts layer. Use pbmc[[\"RNA\"]]$counts (or LayerData(pbmc, assay = 'RNA', layer = 'counts')).")
     expect_true(identical(as.character(Idents(obj)), as.character(obj$seurat_annotations)),
       "The identities should come from the seurat_annotations column: Idents(object = pbmc) <- 'seurat_annotations'.")

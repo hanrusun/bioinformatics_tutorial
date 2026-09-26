@@ -70,5 +70,21 @@ o <- out_of(curelab_check({ expect_param(obj, "RunUMAP", "dims", 1:10, "Run UMAP
 ok(grepl('"message":"Run UMAP first"', o), "expect_param when command missing")
 o <- out_of(curelab_check({ expect_columns(data.frame(a = 1, b = 2), c("a", "c", "d"), "`df`") }))
 ok(grepl("is missing the column\\(s\\) 'c', 'd'", o), "expect_columns")
+obj@commands[["ScaleData.RNA"]]@params$do.center <- TRUE
+o <- out_of(curelab_check({ expect_param(obj, "ScaleData", "do.center", TRUE, "center") }))
+ok(grepl('"pass":true', o), "expect_param logical")
+o <- out_of(curelab_check({ expect_param(obj, "ScaleData", "do.center", FALSE, "Do not center") }))
+ok(grepl("Do not center \\(you used TRUE\\)", o), "expect_param logical mismatch")
+
+# --- same_matrix / curelab_describe (dense here; webR has no Matrix)
+a <- matrix(c(1, 0, 2, 3), 2)
+ok(same_matrix(a, a + 1e-12), "same_matrix: equal values")
+ok(!same_matrix(a, log1p(a)), "same_matrix: different values")
+ok(!same_matrix(a, cbind(a, 0)), "same_matrix: different shapes")
+ok(!same_matrix(a, 1:4), "same_matrix: not a matrix")
+ok(!same_matrix(data.frame(x = 1:2, y = 3:4), a), "same_matrix: data.frame vs matrix")
+ok(identical(curelab_describe(data.frame(x = 1:2700)), "a data.frame with 2,700 rows and 1 columns"), "describe a data.frame")
+ok(identical(curelab_describe(1:3), "an integer of length 3"), "describe a vector")
+
 ok("curelab" %in% search() && !exists("curelab_check", envir = globalenv(), inherits = FALSE), "helpers attached, not in globalenv")
 cat(paste(results, collapse = "\n"), "\n")

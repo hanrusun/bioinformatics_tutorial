@@ -57,7 +57,7 @@ check: |
     expect_command(obj, "NormalizeData", "Normalize the split object with NormalizeData().")
     d <- LayerData(obj, layer = "data.CTRL")[, 1:20]
     raw <- LayerData(obj, layer = "counts.CTRL")[, 1:20]
-    expect_true(!isTRUE(all.equal(d, raw, check.attributes = FALSE)),
+    expect_true(!same_matrix(d, raw),
       "The data layers still hold raw counts. Run NormalizeData() after splitting.")
     expect_command(obj, "FindVariableFeatures", "Find variable features with FindVariableFeatures().")
     expect_true("scale.data" %in% layers, "Scale the data with ScaleData().")
