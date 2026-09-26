@@ -26,20 +26,29 @@ for (const s of snippets) {
 }
 console.log(`parsed ${snippets.length} R snippets`);
 
-// 2. helper unit tests
+// 2. helper unit tests, then 3. the reference builder end to end on a mock pack
 await webR.FS.writeFile('/helpers.R', readFileSync(path.join(root, 'packs/seurat/r/helpers.R')));
 await webR.FS.writeFile('/helpers_test.R', readFileSync(path.join(here, 'helpers_test.R')));
+await webR.FS.mkdir('/src');
+await webR.FS.writeFile('/src/helpers.R', readFileSync(path.join(root, 'packs/seurat/r/helpers.R')));
+await webR.FS.writeFile('/src/build_reference.R', readFileSync(path.join(root, 'packs/seurat/reference/build_reference.R')));
+await webR.FS.writeFile('/builder_test.R', readFileSync(path.join(here, 'builder_test.R')));
 const shelter = await new webR.Shelter();
-const res = await shelter.captureR('source("/helpers_test.R")');
-const lines = res.output.map((o) => o.data).join('\n');
-if (!/^PASS /m.test(lines)) {
-  failures++;
-  console.log('helper tests did not run');
-}
-for (const line of res.output.map((o) => o.data).join('\n').split('\n')) {
-  if (!line.trim()) continue;
-  console.log(line);
-  if (line.startsWith('FAIL') || line.startsWith('Error')) failures++;
+for (const [name, script] of [
+  ['helper', '/helpers_test.R'],
+  ['builder', '/builder_test.R'],
+]) {
+  const res = await shelter.captureR(`source("${script}")`);
+  const lines = res.output.map((o) => o.data).join('\n');
+  if (!/^PASS /m.test(lines)) {
+    failures++;
+    console.log(`${name} tests did not run`);
+  }
+  for (const line of lines.split('\n')) {
+    if (!line.trim()) continue;
+    console.log(line);
+    if (line.startsWith('FAIL') || line.startsWith('Error')) failures++;
+  }
 }
 await webR.close();
 console.log(failures ? `${failures} problem(s)` : 'R checks passed');

@@ -143,7 +143,7 @@ For UI work, run `cd web && npm run dev`. It serves on :5173 and proxies
 | Engine unit + API tests (real Jupyter kernel) | `pytest engine/tests` |
 | Balance targets | `python tools/simulate_balance.py --assert` |
 | Vignette grounding (+ regenerates docs/SOURCES.md) | `python tools/verify_sources.py` |
-| R code parses; checker helpers unit-tested (webR, no R install needed) | `cd tools/rcheck && npm install && npm test` |
+| R code parses; checker helpers and the reference builder tested on a mock pack (webR, no R install needed) | `cd tools/rcheck && npm install && npm test` |
 | Web typecheck, unit tests, build | `cd web && npm run typecheck && npm test && npm run build` |
 | End-to-end (Playwright, demo pack) | `cd web && npx playwright install chromium && npm run e2e` |
 | Everything R, for real | `docker compose build seurat` (runs every solution and check) |
