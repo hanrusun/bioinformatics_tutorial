@@ -17,7 +17,20 @@ blocks:
       predictions <- TransferData(anchorset = pancreas.anchors, refdata = pancreas.ref$celltype, dims = 1:30)
       pancreas.query <- AddMetaData(pancreas.query, metadata = predictions)
     source: {vignette: integration_mapping.Rmd, section: "Cell type classification using an integrated reference"}
-  - text: Across modalities (scRNA-seq reference, scATAC-seq query) two arguments change.
+  - text: >-
+      Across modalities (scRNA-seq reference, scATAC-seq query), the ATAC cells
+      first get a gene-level assay, so both datasets share features. It is
+      built with `CreateAssayObject()` and made active with `DefaultAssay()`,
+      two calls the NBL scripts use constantly.
+  - code: |
+      # add gene activities as a new assay
+      pbmc.atac[["ACTIVITY"]] <- CreateAssayObject(counts = gene.activities)
+      # normalize gene activities
+      DefaultAssay(pbmc.atac) <- "ACTIVITY"
+      pbmc.atac <- NormalizeData(pbmc.atac)
+      pbmc.atac <- ScaleData(pbmc.atac, features = rownames(pbmc.atac))
+    source: {vignette: seurat5_atacseq_integration_vignette.Rmd, section: "Identifying anchors between scRNA-seq and scATAC-seq datasets"}
+  - text: Then two arguments change in the anchor search and the transfer.
   - code: |
       transfer.anchors <- FindTransferAnchors(
         reference = pbmc.rna,

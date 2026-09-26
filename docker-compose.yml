@@ -1,0 +1,23 @@
+# One service per tool pack. Start the Seurat pack with:
+#   docker compose up --build seurat
+# then open http://localhost:8000
+#
+# The port is bound to 127.0.0.1 on purpose: the game runs the code you type,
+# so it should only be reachable from your own machine.
+services:
+  seurat:
+    build:
+      context: .
+      dockerfile: packs/seurat/Dockerfile
+    image: curelab-seurat:latest
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - curelab-seurat-data:/data   # saves and lab notebooks survive restarts
+    environment:
+      # Set to 1 to open Campaign 2 without winning Campaign 1 first.
+      CURELAB_UNLOCK_ALL: "0"
+    restart: unless-stopped
+
+volumes:
+  curelab-seurat-data:

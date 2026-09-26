@@ -1,0 +1,36 @@
+{
+  "name": "curelab-web",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Cure Lab web UI: patient scene, vitals, lab, notebook.",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "e2e": "playwright test"
+  },
+  "dependencies": {
+    "@codemirror/autocomplete": "^6.20.3",
+    "@codemirror/commands": "^6.11.1",
+    "@codemirror/language": "^6.12.4",
+    "@codemirror/legacy-modes": "^6.5.4",
+    "@codemirror/state": "^6.7.6",
+    "@codemirror/view": "^6.43.13",
+    "@lezer/highlight": "^1.2.4",
+    "dompurify": "^3.4.16",
+    "marked": "^18.0.14",
+    "preact": "^10.29.8"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.56.1",
+    "@preact/preset-vite": "^2.10.6",
+    "@types/node": "^26.6.3",
+    "jsdom": "^30.1.1",
+    "typescript": "^5.9.3",
+    "vite": "^6.4.3",
+    "vitest": "^3.2.7"
+  }
+}

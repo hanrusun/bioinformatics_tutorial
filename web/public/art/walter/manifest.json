@@ -1,0 +1,14 @@
+{
+  "$comment": "Custom art for this patient. Leave a value empty to use the built-in illustration. Paths are relative to this folder. See docs/ART.md.",
+  "scene": {
+    "default": "",
+    "stable": "",
+    "symptomatic": "",
+    "serious": "",
+    "critical": "",
+    "deceased": "",
+    "cured": ""
+  },
+  "overlays": {},
+  "portrait": ""
+}

@@ -182,6 +182,7 @@ def game_snapshot(app: AppState, since: int = 0) -> dict[str, Any]:
         quizzes.append(view)
     return {
         "game": {
+            "started_at": s.started_at,
             "campaign": game.campaign.id,
             "campaign_title": game.campaign.title,
             "illness": game.illness.id,

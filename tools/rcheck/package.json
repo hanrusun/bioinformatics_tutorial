@@ -1,0 +1,12 @@
+{
+  "name": "curelab-rcheck",
+  "private": true,
+  "description": "Check a pack's R code without installing R: parses every snippet and unit-tests the checker helpers in webR (R compiled to WebAssembly).",
+  "type": "module",
+  "scripts": {
+    "test": "python3 ../export_r_snippets.py > snippets.json && node check.mjs snippets.json"
+  },
+  "dependencies": {
+    "webr": "0.6.0"
+  }
+}

@@ -1,0 +1,11 @@
+.git
+.cache
+**/node_modules
+**/__pycache__
+**/*.egg-info
+web/dist
+web/test-results
+web/playwright-report
+tools/rcheck
+packs/*/reference/checkpoints
+packs/*/reference/expected.json

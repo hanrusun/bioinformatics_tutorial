@@ -6,6 +6,8 @@ from __future__ import annotations
 import asyncio
 import os
 import re
+import shutil
+import tempfile
 import time
 from dataclasses import dataclass, field
 from typing import Any, Optional
@@ -62,7 +64,12 @@ class KernelRunner:
         self.km: Optional[AsyncKernelManager] = None
         self.kc = None
         self._lock = asyncio.Lock()
+        self._ipc_dir: Optional[str] = None
         self.busy = False
+
+    def _ipc_path(self) -> str:
+        self._ipc_dir = tempfile.mkdtemp(prefix="curelab-kernel-")
+        return os.path.join(self._ipc_dir, "kernel")
 
     @property
     def started(self) -> bool:
@@ -71,7 +78,8 @@ class KernelRunner:
     async def start(self) -> None:
         if self.started:
             return
-        km = AsyncKernelManager(kernel_name=self.kernel_name)
+        # IPC (Unix sockets) instead of TCP: no kernel ports are opened at all.
+        km = AsyncKernelManager(kernel_name=self.kernel_name, transport="ipc", ip=self._ipc_path())
         env = {**os.environ, **self.env}
         kwargs: dict[str, Any] = {"env": env}
         if self.cwd:
@@ -105,6 +113,9 @@ class KernelRunner:
             except Exception:  # pragma: no cover - best effort
                 pass
         self.km = self.kc = None
+        if self._ipc_dir:
+            shutil.rmtree(self._ipc_dir, ignore_errors=True)
+            self._ipc_dir = None
 
     async def execute(self, code: str, timeout: float = 900.0) -> ExecResult:
         async with self._lock:
