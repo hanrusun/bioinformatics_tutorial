@@ -5,6 +5,7 @@ import random
 import pytest
 
 from curelab.evolution import available_traits, evolve
+from curelab.content import Illness
 from curelab.game import Game, RuleError
 
 
@@ -166,3 +167,60 @@ def test_difficulty_scales_creep(pack, nsclc, balance):
     casual.advance(3600)
     brutal.advance(3600)
     assert brutal.state.health < casual.state.health
+
+
+# --------------------------------------------------------------------------- #
+# Patient events: random, non-symptom things that happen on the ward
+# --------------------------------------------------------------------------- #
+
+
+@pytest.mark.parametrize("illness_name", ["nsclc", "neuroblastoma"])
+def test_events_are_mixed_in_at_random(illness_name, balance, request):
+    illness = request.getfixturevalue(illness_name)
+    draws = [evolve(illness, [], balance, "normal", random.Random(seed)).trait for seed in range(800)]
+    share = sum(t.is_event for t in draws) / len(draws)
+    assert abs(share - balance.event_chance) < 0.05
+    # every event can come up, not just a favourite few
+    assert {t.id for t in draws if t.is_event} == {t.id for t in illness.traits if t.is_event}
+
+
+@pytest.mark.parametrize("illness_name", ["nsclc", "neuroblastoma"])
+def test_fewer_than_a_quarter_of_events_are_neutral(illness_name, request):
+    illness = request.getfixturevalue(illness_name)
+    events = [t for t in illness.traits if t.is_event]
+    neutral = [t for t in events if t.neutral]
+    assert len(events) >= 6
+    assert 1 <= len(neutral) and len(neutral) * 4 < len(events)
+    for t in events:
+        assert not t.requires, "events happen at random, independent of the tree"
+
+
+def test_neutral_event_costs_nothing_but_still_counts(pack, neuroblastoma, balance):
+    for seed in range(2000):
+        game = Game.new(pack.campaign("demo-two"), neuroblastoma, balance, seed=seed)
+        ev = game.wrong_attempt("test")
+        if ev.data.get("neutral"):
+            break
+    else:  # pragma: no cover
+        pytest.fail("no neutral event drawn")
+    assert ev.data["event"] and ev.data["gain"] == 0
+    assert game.state.trait_severity == 0 and game.state.errors == 1
+    assert game.state.timeline[-1].kind == "event"
+    assert game.stats()["events"] == 1 and game.stats()["traits"] == 0
+
+
+def test_harmful_event_raises_lethality(pack, nsclc, balance):
+    for seed in range(2000):
+        game = Game.new(pack.campaign("demo-one"), nsclc, balance, seed=seed)
+        ev = game.wrong_attempt("test")
+        if ev.data.get("event") and not ev.data.get("neutral"):
+            break
+    assert ev.data["gain"] > 0 and game.state.trait_severity > 0
+
+
+def test_only_events_may_be_neutral(nsclc):
+    data = nsclc.model_dump()
+    cough = next(t for t in data["traits"] if t["id"] == "cough")
+    cough["severity"] = (0, 0)
+    with pytest.raises(ValueError, match="only patient events can be neutral"):
+        Illness.model_validate(data)

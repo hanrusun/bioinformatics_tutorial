@@ -57,7 +57,10 @@ same engine and UI without needing the R image.</sub>
   and every wrong quiz answer makes it evolve a real symptom or mutation from
   the illness's trait tree (a persistent cough, then a pleural effusion, then
   T790M resistance…). The patient's picture, vitals and chart change with
-  each one. You lose if the patient's health reaches 0.
+  each one. About one mistake in four instead triggers a random **ward
+  event**: Walter starts smoking again, Mia swallows a crayon. Most events
+  make things worse; a few (under a quarter) are harmless. You lose if the
+  patient's health reaches 0.
 - **Run is free, Submit is graded.** Explore as much as you like. The clock
   pauses while your code runs and while the tab is hidden, so reading the docs
   in another tab never costs the patient anything.

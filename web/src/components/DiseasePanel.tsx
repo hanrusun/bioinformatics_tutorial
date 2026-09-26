@@ -9,7 +9,10 @@ const CATEGORY_LABEL: Record<string, string> = {
 };
 
 export function DiseasePanel({ game, patient }: { game: GameView; patient: PatientInfo }) {
-  const tiers = [1, 2, 3, 4].map((tier) => game.tree.filter((t) => t.tier === tier)).filter((g) => g.length);
+  const disease = game.tree.filter((t) => t.category !== 'event');
+  const events = game.tree.filter((t) => t.category === 'event');
+  const tiers = [1, 2, 3, 4].map((tier) => disease.filter((t) => t.tier === tier)).filter((g) => g.length);
+  const eventsSeen = events.filter((t) => t.acquired).length;
   const bumps = game.traits.filter((t) => !t.id).length;
   return (
     <div class="disease-panel">
@@ -32,7 +35,7 @@ export function DiseasePanel({ game, patient }: { game: GameView; patient: Patie
           <div>
             <dt>Evolved</dt>
             <dd>
-              {game.tree.filter((t) => t.acquired).length}/{game.tree.length}
+              {disease.filter((t) => t.acquired).length}/{disease.length}
               {bumps > 0 && ` +${bumps}`}
             </dd>
           </div>
@@ -40,7 +43,8 @@ export function DiseasePanel({ game, patient }: { game: GameView; patient: Patie
       </header>
       <p class="panel-intro">
         Every wrong submission or quiz answer lets the disease evolve one trait. Traits unlock along the tree; later
-        tiers are more dangerous. The disease also worsens slowly on its own while the clock runs.
+        tiers are more dangerous. Now and then a mistake triggers a random ward event instead; most make things
+        worse, a few are harmless. The disease also worsens slowly on its own while the clock runs.
       </p>
       <div class="tree">
         {tiers.map((group, i) => (
@@ -60,6 +64,35 @@ export function DiseasePanel({ game, patient }: { game: GameView; patient: Patie
             </div>
           </section>
         ))}
+        {events.length > 0 && (
+          <section class="tier tier--events">
+            <h3>
+              Ward events <span class="muted">({eventsSeen}/{events.length} so far)</span>
+            </h3>
+            <div class="tier__traits">
+              {events.map((t) =>
+                t.acquired ? (
+                  <article class="trait trait--on trait--event" data-trait={t.id}>
+                    <header>
+                      <span class="trait__cat">Patient event</span>
+                      <span class="trait__day">day {t.day}</span>
+                    </header>
+                    <h4>{t.name}</h4>
+                    <p>{t.note}</p>
+                  </article>
+                ) : (
+                  <article class="trait trait--event trait--hidden" data-trait={t.id}>
+                    <header>
+                      <span class="trait__cat">Patient event</span>
+                    </header>
+                    <h4>???</h4>
+                    <p class="muted">Something else could still go wrong on the ward.</p>
+                  </article>
+                ),
+              )}
+            </div>
+          </section>
+        )}
       </div>
     </div>
   );

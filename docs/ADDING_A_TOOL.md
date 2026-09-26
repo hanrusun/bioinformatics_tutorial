@@ -96,7 +96,17 @@ traits:
     overlay: wince               # art overlay key (see ART.md)
     note: "{name} has a pounding headache every morning."
     source: https://…            # where the clinical feature comes from
+  - id: lost_glasses             # patient events: category "event", no prerequisites
+    name: Lost his glasses
+    category: event
+    tier: 1
+    severity: [0, 0]             # [0, 0] = neutral; keep neutral events under a quarter
+    note: "{name} has lost his glasses somewhere in the ward, again."
 ```
+
+A wrong attempt draws a random, not-yet-seen patient event with probability
+`event_chance` (in `balance.yaml`, 0.25 by default), and otherwise evolves
+the disease along the tree.
 
 ## Checklist
 

@@ -52,6 +52,7 @@ class Balance(_Model):
     gain_scale: float
     exhausted_gain: tuple[float, float]
     tier_weight_exponent: float
+    event_chance: float = 0.25
     seconds_per_day: float
     max_heartbeat_gap: float
     stages: list[Stage]

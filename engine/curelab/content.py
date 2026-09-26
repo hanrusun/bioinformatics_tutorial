@@ -303,11 +303,25 @@ class Trait(_Model):
     note: str
     source: Optional[str] = None
 
+    @property
+    def is_event(self) -> bool:
+        """A non-symptom "bad patient event" (e.g. the patient starts smoking)."""
+        return self.category == "event"
+
+    @property
+    def neutral(self) -> bool:
+        """Neutral events make a good story but don't change lethality."""
+        return self.severity[1] == 0
+
     @model_validator(mode="after")
     def _check(self) -> "Trait":
         lo, hi = self.severity
-        if not 0 < lo <= hi:
-            raise ValueError(f"trait {self.id}: severity must satisfy 0 < lo <= hi")
+        if not 0 <= lo <= hi:
+            raise ValueError(f"trait {self.id}: severity must satisfy 0 <= lo <= hi")
+        if hi == 0 and not self.is_event:
+            raise ValueError(f"trait {self.id}: only patient events can be neutral (severity [0, 0])")
+        if lo == 0 and hi > 0:
+            raise ValueError(f"trait {self.id}: use [0, 0] for a neutral event, or a range above 0")
         bad = set(self.vitals) - set(VITAL_KEYS)
         if bad:
             raise ValueError(f"trait {self.id}: unknown vitals {sorted(bad)}")

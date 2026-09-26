@@ -48,7 +48,13 @@ export function BottomBar({ game }: { game: GameView }) {
   return (
     <footer class="bottombar">
       <Meter label="CURE RESEARCH" value={game.research} tone="cure" testid="cure" detail="missions and journal club" />
-      <Meter label="LETHALITY" value={game.severity} tone="lethal" testid="lethality" detail={`${game.errors} mistakes · ${game.traits.length} traits evolved`} />
+      <Meter
+        label="LETHALITY"
+        value={game.severity}
+        tone="lethal"
+        testid="lethality"
+        detail={`${game.errors} mistakes · ${game.stats.traits} traits evolved · ${game.stats.events} ward events`}
+      />
       <Meter label="HEALTH" value={game.health} tone="health" testid="health" detail={`falling ${game.decline_per_hour.toFixed(1)}/h`} />
     </footer>
   );

@@ -138,6 +138,7 @@ export interface Stats {
   active_minutes: number;
   errors: number;
   traits: number;
+  events: number;
   missions_completed: number;
   missions_total: number;
   quizzes_correct: number;

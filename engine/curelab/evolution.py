@@ -36,20 +36,31 @@ def evolve(
     difficulty: str,
     rng: random.Random,
 ) -> Evolution:
-    """Pick the next trait and its severity gain.
+    """Pick what happens after a wrong attempt, and its severity gain.
 
-    Candidates are traits whose prerequisites are all met. They are weighted by
-    ``1 / tier ** tier_weight_exponent`` so early mistakes tend to produce mild
-    symptoms and severe complications appear later in the tree. The gain is
-    drawn uniformly from the trait's range, then scaled by ``gain_scale`` and
-    the difficulty's ``gain_mult``.
+    With probability ``event_chance`` a random, not-yet-seen patient event is
+    drawn (the patient starts smoking, swallows a crayon, ...); events have no
+    place in the tree and some are neutral. Otherwise the disease itself
+    evolves: candidates are traits whose prerequisites are all met, weighted
+    by ``1 / tier ** tier_weight_exponent`` so early mistakes tend to produce
+    mild symptoms and severe complications come later. If one pool is empty
+    the other is used; once both are empty the disease simply progresses.
+
+    The gain is drawn uniformly from the trait's range, then scaled by
+    ``gain_scale`` and the difficulty's ``gain_mult`` (neutral events stay 0).
     """
-    mult = balance.gain_scale * balance.difficulty(difficulty).gain_mult
+    diff = balance.difficulty(difficulty)
+    mult = balance.gain_scale * diff.gain_mult
     candidates = available_traits(illness, acquired)
+    events = [t for t in candidates if t.is_event]
+    disease = [t for t in candidates if not t.is_event]
     if not candidates:
         lo, hi = balance.exhausted_gain
-        return Evolution(trait=None, gain=rng.uniform(lo, hi) * balance.difficulty(difficulty).gain_mult)
-    weights = [1.0 / (t.tier ** balance.tier_weight_exponent) for t in candidates]
-    trait = rng.choices(candidates, weights=weights, k=1)[0]
+        return Evolution(trait=None, gain=rng.uniform(lo, hi) * diff.gain_mult)
+    if events and (not disease or rng.random() < balance.event_chance):
+        trait = rng.choice(events)
+    else:
+        weights = [1.0 / (t.tier ** balance.tier_weight_exponent) for t in disease]
+        trait = rng.choices(disease, weights=weights, k=1)[0]
     lo, hi = trait.severity
-    return Evolution(trait=trait, gain=rng.uniform(lo, hi) * mult)
+    return Evolution(trait=trait, gain=0.0 if trait.neutral else rng.uniform(lo, hi) * mult)

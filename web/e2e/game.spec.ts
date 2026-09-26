@@ -47,7 +47,8 @@ test('a full campaign: learn, fail, read, write, hint, pass, export, win', async
   await expect(page.locator('[data-testid="trait-popup"]')).toBeVisible();
   await page.click('.popup--trait .btn');
   await expect(page.locator('[data-testid="lethality"] .meter__detail')).toContainText('1 mistakes');
-  await expect(page.locator('.chart .note--trait')).toHaveCount(1);
+  // a mistake either evolves the disease or (sometimes) triggers a ward event
+  await expect(page.locator('.chart .note--trait, .chart .note--event')).toHaveCount(1);
 
   // no RP yet -> hints are locked
   await expect(page.locator('.btn--hint')).toBeDisabled();

@@ -14,12 +14,16 @@ s0: 0.0
 creep_per_hour: 7.7
 h_max_per_hour: 150.0
 exponent: 2.0
-gain_scale: 0.8
+gain_scale: 0.9
 # Severity added per wrong attempt once every trait has evolved.
 exhausted_gain: [1.0, 1.6]
 # Traits are drawn with weight 1 / tier ** tier_weight_exponent among those
 # whose prerequisites are met, so early errors favour mild symptoms.
 tier_weight_exponent: 1.5
+# Chance that a wrong attempt triggers a random patient event (the patient
+# starts smoking, swallows a crayon, ...) instead of a new disease trait.
+# Events come from the same illness file (category: event); some are neutral.
+event_chance: 0.25
 
 # 1 hospital day per real minute of *active* play.
 seconds_per_day: 60

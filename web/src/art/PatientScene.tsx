@@ -21,6 +21,17 @@ export interface SceneProps {
 const W = 480;
 const H = 360;
 
+// fixed positions so the art is stable between renders
+const SNOW: [number, number, number][] = [
+  [34, 50, 1.6], [52, 70, 1.2], [70, 46, 1.4], [96, 60, 1.8], [118, 44, 1.2], [140, 66, 1.5],
+  [44, 100, 1.3], [66, 118, 1.7], [104, 96, 1.2], [128, 114, 1.6], [84, 128, 1.1], [58, 88, 1],
+];
+const GLITTER: [number, number, string][] = [
+  [214, 244, '#f7c948'], [232, 252, '#f472b6'], [252, 240, '#67e8f9'], [270, 256, '#f7c948'],
+  [290, 244, '#c084fc'], [306, 258, '#f472b6'], [322, 246, '#67e8f9'], [244, 262, '#c084fc'],
+  [198, 256, '#f472b6'], [284, 266, '#f7c948'], [226, 236, '#67e8f9'], [312, 236, '#f7c948'],
+];
+
 function skinFor(look: Look, stage: Stage, overlays: Set<string>) {
   const pale = overlays.has('pale') ? 0.18 : 0;
   const drain =
@@ -127,7 +138,35 @@ export function PatientScene({ art, stage, overlays, rr, hr, flash }: SceneProps
       {ov.has('haze') && (
         <rect x="26" y="36" width="122" height="112" rx="4" fill="#8a7a55" opacity="0.55" class="haze" />
       )}
+      {ov.has('snow') && (
+        <g clip-path="url(#windowClip)">
+          <rect x="26" y="36" width="122" height="112" fill="#dfe8f2" opacity="0.55" />
+          <g class="snow" fill="#ffffff">
+            {SNOW.map(([x, y, r], i) => (
+              <circle key={i} cx={x} cy={y} r={r} />
+            ))}
+          </g>
+          <path d="M26 140 q30 -8 60 0 t62 -2 V148 H26z" fill="#ffffff" />
+        </g>
+      )}
       <path d="M87 36 V148 M26 92 H148" stroke="#56707f" stroke-width="4" />
+      {ov.has('cigarettes') && (
+        <g transform="translate(104 136) rotate(-8)" aria-label="a hidden cigarette pack">
+          <rect width="18" height="13" rx="1.5" fill="#f4f4f4" stroke="#c9c9c9" />
+          <rect width="18" height="5" rx="1.5" fill="#c8373a" />
+          <rect x="4" y="-4" width="3" height="5" fill="#f3e3c3" />
+          <rect x="4" y="-4" width="3" height="1.6" fill="#d9894b" />
+        </g>
+      )}
+      {ov.has('bee') && (
+        <g class="bee" transform="translate(168 118)">
+          <ellipse cx="0" cy="0" rx="6" ry="4.2" fill="#f7c948" />
+          <path d="M-2 -4 v8 M1.5 -4 v8" stroke="#2b211c" stroke-width="1.6" />
+          <ellipse cx="-1" cy="-6" rx="3.5" ry="2.4" fill="#e6f4ff" opacity="0.85" />
+          <ellipse cx="3" cy="-6" rx="3.5" ry="2.4" fill="#e6f4ff" opacity="0.85" />
+          <path d="M-9 4 q-8 4 -14 -2" stroke="#e6edf3" stroke-width="1" stroke-dasharray="2 2" fill="none" />
+        </g>
+      )}
       <path d="M18 28 h26 v128 q-10 4 -26 0z" fill="#7d5e7a" opacity="0.9" />
       <path d="M156 28 h-20 v128 q8 4 20 0z" fill="#7d5e7a" opacity="0.9" />
 
@@ -141,6 +180,18 @@ export function PatientScene({ art, stage, overlays, rr, hr, flash }: SceneProps
           <circle cx="16" cy="13" r="3.5" fill="none" stroke="#3b82c4" stroke-width="2" />
           <circle cx="40" cy="18" r="3" fill="none" stroke="#e05d8f" stroke-width="2" />
           <path d="M4 40 h50" stroke="#58a55c" stroke-width="3" />
+        </g>
+      )}
+
+      {ov.has('isolation') && (
+        <g transform="translate(262 96)">
+          <rect width="62" height="26" rx="3" fill="#f7d23e" stroke="#b8961a" />
+          <text x="31" y="11" text-anchor="middle" font-size="7.5" font-weight="700" fill="#2b2410" font-family="sans-serif">
+            PROTECTIVE
+          </text>
+          <text x="31" y="21" text-anchor="middle" font-size="7.5" font-weight="700" fill="#2b2410" font-family="sans-serif">
+            ISOLATION
+          </text>
         </g>
       )}
 
@@ -193,6 +244,16 @@ export function PatientScene({ art, stage, overlays, rr, hr, flash }: SceneProps
           </g>
         )}
       </g>
+
+      {ov.has('chicken') && (
+        <g transform="translate(26 300)">
+          <path d="M0 0 h30 l-4 32 h-22z" fill="#fbfbfb" />
+          <path d="M4 0 l3 32 M11 0 l1 32 M18 0 l-1 32 M25 0 l-3 32" stroke="#d23b36" stroke-width="3" />
+          <ellipse cx="9" cy="-2" rx="7" ry="5" fill="#c8843a" />
+          <ellipse cx="20" cy="-3" rx="7" ry="5" fill="#b8742e" />
+          <rect x="-2" y="-1" width="34" height="4" rx="1" fill="#d23b36" />
+        </g>
+      )}
 
       {/* IV pole */}
       <g>
@@ -289,6 +350,13 @@ export function PatientScene({ art, stage, overlays, rr, hr, flash }: SceneProps
               fill="#f7f7f7"
               stroke="#d9dde1"
             />
+          )}
+
+          {ov.has('plaster') && (
+            <g transform={`translate(${head.cx + 6} ${head.cy - 16}) rotate(-18)`}>
+              <rect x="-8" y="-3" width="16" height="6" rx="3" fill="#f2c9a0" stroke="#d8a979" stroke-width="0.8" />
+              <rect x="-3" y="-2" width="6" height="4" rx="1" fill="#e8b889" />
+            </g>
           )}
 
           {/* cheeks */}
@@ -411,8 +479,38 @@ export function PatientScene({ art, stage, overlays, rr, hr, flash }: SceneProps
           )}
         </g>
 
-        {/* Clover the rabbit */}
-        {look.prop === 'rabbit' && (
+        {ov.has('sticker') && (
+          <path
+            d="M276 238 l2.2 4.6 5 .6 -3.7 3.4 1 5 -4.5 -2.5 -4.5 2.5 1 -5 -3.7 -3.4 5 -.6z"
+            fill="#f7c948"
+            stroke="#c99a18"
+            stroke-width="0.8"
+          />
+        )}
+        {ov.has('pills') && (
+          <g transform="translate(292 228)">
+            <path d="M0 0 h14 l-2 11 h-10z" fill="#ffffff" stroke="#c9d1d8" />
+            <circle cx="5" cy="-1" r="2" fill="#f0a3c0" />
+            <circle cx="9" cy="-1.5" r="2" fill="#9fd4f0" />
+          </g>
+        )}
+        {ov.has('crayons') && (
+          <g transform="translate(296 250)">
+            <rect x="0" y="0" width="16" height="4" rx="1.5" fill="#8b5cf6" transform="rotate(-12)" />
+            <rect x="10" y="4" width="16" height="4" rx="1.5" fill="#ef4444" transform="rotate(18 18 6)" />
+            <rect x="-6" y="6" width="16" height="4" rx="1.5" fill="#22c55e" transform="rotate(6)" />
+          </g>
+        )}
+        {ov.has('glitter') && (
+          <g class="glitter">
+            {GLITTER.map(([x, y, c], i) => (
+              <path key={i} d={`M${x} ${y - 3} L${x + 1} ${y - 1} L${x + 3} ${y} L${x + 1} ${y + 1} L${x} ${y + 3} L${x - 1} ${y + 1} L${x - 3} ${y} L${x - 1} ${y - 1}Z`} fill={c} />
+            ))}
+          </g>
+        )}
+
+        {/* Clover the rabbit (unless he's been sent to the laundry) */}
+        {look.prop === 'rabbit' && !ov.has('clover_missing') && (
           <g transform={stage === 'cured' ? 'translate(214 196) rotate(-10)' : 'translate(118 214)'}>
             <ellipse cx="14" cy="26" rx="13" ry="11" fill="#e8e6ef" />
             <circle cx="14" cy="12" r="9" fill="#efedf5" />

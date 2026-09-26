@@ -25,6 +25,17 @@ Each patient's scene is an original flat-vector SVG built from layers
   | `headwrap` | head bandage | | `iv` | second IV bag, faster drip |
   | `jaundice` | yellow skin and eyes | | `haze` | smog outside the window |
 
+  and for patient events:
+
+  | key | shows | | key | shows |
+  |---|---|---|---|---|
+  | `cigarettes` | a pack hidden on the windowsill | | `crayons` | crayons on the blanket |
+  | `pills` | an untouched pill cup | | `glitter` | twinkling glitter everywhere |
+  | `plaster` | plaster on the forehead | | `isolation` | "protective isolation" sign |
+  | `chicken` | fried-chicken bucket on the floor | | `sticker` | gold-star sticker on the hand |
+  | `bee` | a bee buzzing by the window | | `snow` | snowstorm outside |
+  | `clover_missing` | Mia's rabbit is gone (in the laundry) | | | |
+
   At the **critical** stage the patient wears an oxygen mask and the monitor
   alarms. At **cured**, the room is sunny with balloons and a get-well card.
   At **deceased**, the scene is quiet: night, a flatline, a flower, and no

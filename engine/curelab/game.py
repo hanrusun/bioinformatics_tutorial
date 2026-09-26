@@ -229,12 +229,14 @@ class Game:
                 "category": evo.trait.category,
                 "overlay": evo.trait.overlay,
                 "tier": evo.trait.tier,
+                "event": evo.trait.is_event,
+                "neutral": evo.trait.neutral,
             }
         data.update({"gain": round(evo.gain, 2), "severity": round(self.severity, 1), "cause": cause})
         self.state.traits.append(
             AcquiredTrait(id=data["trait"], name=name, day=self.day, gain=round(evo.gain, 3), note=note, cause=cause)
         )
-        self._note("trait", note)
+        self._note("event" if data.get("event") else "trait", note)
         return self._event("trait", name, note, data)
 
     # ------------------------------------------------------------------ #
@@ -404,7 +406,8 @@ class Game:
             "days": self.day,
             "active_minutes": round(s.clock / 60, 1),
             "errors": s.errors,
-            "traits": len(s.traits),
+            "traits": sum(1 for t in s.traits if not (t.id and self.illness.trait(t.id).is_event)),
+            "events": sum(1 for t in s.traits if t.id and self.illness.trait(t.id).is_event),
             "missions_completed": sum(1 for p in s.missions.values() if p.completed),
             "missions_total": len(self.campaign.missions),
             "quizzes_correct": sum(1 for p in s.quizzes.values() if p.correct),

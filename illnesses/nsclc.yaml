@@ -77,23 +77,6 @@ traits:
     overlay: wince
     note: Walter winces on every deep breath — a dull ache on the right side of his chest.
     source: https://www.cancer.gov/types/lung/patient/non-small-cell-lung-treatment-pdq
-  - id: resumed_smoking
-    name: Relapsed smoking
-    category: event
-    tier: 1
-    severity: [1.2, 1.8]
-    vitals: {spo2: -1}
-    note: Stressed and scared, Walter admits he has been sneaking cigarettes in the parking lot.
-    source: https://www.cancer.gov/types/lung/patient/non-small-cell-lung-treatment-pdq
-  - id: smog_alert
-    name: Smog alert
-    category: event
-    tier: 1
-    severity: [0.8, 1.2]
-    vitals: {rr: 1, spo2: -1}
-    overlay: haze
-    note: A smog alert settles over the city; Walter's breathing is noticeably worse by evening.
-    source: https://www.cancer.gov/types/lung/patient/non-small-cell-lung-treatment-pdq
   # ---------------------------------------------------------------- tier 2
   - id: dyspnea
     name: Shortness of breath
@@ -247,3 +230,71 @@ traits:
     severity: [2.4, 3.4]
     note: A repeat biopsy shows the tumor has transformed into small-cell lung cancer, an escape route under EGFR-targeted therapy.
     source: https://www.cancer.gov/types/lung/hp/non-small-cell-lung-treatment-pdq
+  # ---------------------------------------------------------------- patient events
+  # Not symptoms: things that happen to Walter on the ward. A wrong attempt
+  # draws one of these at random (balance.yaml: event_chance) instead of a
+  # disease trait. Fewer than a quarter are neutral (severity [0, 0]).
+  - id: resumed_smoking
+    name: Walter started smoking again
+    category: event
+    tier: 1
+    severity: [1.2, 1.8]
+    vitals: {spo2: -1}
+    overlay: cigarettes
+    note: Stressed and scared, Walter admits he has been sneaking cigarettes in the parking lot.
+  - id: smog_alert
+    name: Smog alert
+    category: event
+    tier: 1
+    severity: [0.8, 1.2]
+    vitals: {rr: 1, spo2: -1}
+    overlay: haze
+    note: A smog alert settles over the city; Walter's breathing is noticeably worse by evening.
+  - id: skipped_meds
+    name: Skipped his medication
+    category: event
+    tier: 1
+    severity: [0.6, 1.0]
+    overlay: pills
+    note: Walter decided he "felt fine" and quietly skipped his evening doses. The nurse finds the pill cup untouched.
+  - id: ward_flu
+    name: Caught the ward flu
+    category: event
+    tier: 1
+    severity: [1.0, 1.6]
+    vitals: {temp: 0.9, hr: 6}
+    overlay: flushed
+    note: A flu bug is doing the rounds on the ward, and Walter has caught it.
+  - id: bathroom_fall
+    name: Slipped in the bathroom
+    category: event
+    tier: 1
+    severity: [0.8, 1.3]
+    overlay: plaster
+    note: Walter slipped on a wet bathroom floor and bumped his head. Nothing broken, but he is sore and shaken.
+  - id: fried_chicken
+    name: Midnight fried-chicken run
+    category: event
+    tier: 1
+    severity: [0.4, 0.8]
+    overlay: chicken
+    note: Walter talked his grandson into smuggling in a bucket of fried chicken. Heartburn all night, and he sleeps through a scan.
+  - id: scanner_down
+    name: The CT scanner broke down
+    category: event
+    tier: 1
+    severity: [0.8, 1.4]
+    note: The CT scanner is out of action, so Walter's treatment decision waits another week.
+  - id: bee_sting
+    name: Bee sting
+    category: event
+    tier: 1
+    severity: [0, 0]
+    overlay: bee
+    note: A bee hitched a ride in Ruth's honey basket and stung Walter's thumb. He laughs it off as "an occupational hazard."
+  - id: remote_feud
+    name: The TV remote feud
+    category: event
+    tier: 1
+    severity: [0, 0]
+    note: Walter and the man in the next bed are feuding over the TV remote. The nurses confiscate it. Nobody is hurt, except their pride.
