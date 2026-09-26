@@ -5,7 +5,6 @@ import { PatientScene, type SceneProps } from './PatientScene';
 export interface ArtManifest {
   scene?: Partial<Record<Stage | 'default', string>>;
   overlays?: Record<string, string>;
-  portrait?: string;
 }
 
 const cache = new Map<string, Promise<ArtManifest>>();
