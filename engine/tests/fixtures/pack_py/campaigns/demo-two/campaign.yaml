@@ -1,0 +1,5 @@
+id: demo-two
+title: Demo Campaign Two
+illness: neuroblastoma
+order: 2
+unlock_after: demo-one

@@ -1,0 +1,222 @@
+# Neuroblastoma — illness + patient for Campaign 2.
+#
+# The patient is fictional. Neuroblastoma is a childhood cancer of the
+# developing sympathetic nervous system, so the patient is a toddler; the
+# writing stays clinical and gentle. Traits are drawn from well-established
+# clinical and genetic features; `source` points at the page to check them
+# against. Game flavor, separate from the verified tutorial content.
+id: neuroblastoma
+name: Neuroblastoma
+short: NBL
+blurb: >-
+  A childhood cancer of the developing sympathetic nervous system. Single-cell
+  multiomics (RNA + ATAC) has mapped its adrenergic and mesenchymal cell states
+  and how chemotherapy rewires the tumor microenvironment.
+fictional_notice: Mia Okoye is a fictional patient. Any resemblance to a real person is coincidental.
+sources:
+  - https://www.cancer.gov/types/neuroblastoma/patient/neuroblastoma-treatment-pdq
+  - https://www.cancer.gov/types/neuroblastoma/hp/neuroblastoma-treatment-pdq
+  - https://www.nature.com/articles/s41588-025-02158-6
+  - https://www.nature.com/articles/ng.3899
+
+patient:
+  id: mia
+  name: Mia Okoye
+  first_name: Mia
+  pronouns: {subj: she, obj: her, poss: her}
+  age: "2"
+  sex: female
+  background: >-
+    Loves bubbles, drums and her stuffed rabbit, Clover. Lives with her mom,
+    Grace, and her big brother, Theo, who is six and has promised to teach her
+    to ride his old scooter.
+  presenting: >-
+    Grace noticed Mia's belly looked swollen, and Mia had been cranky and off
+    her food for weeks. Imaging found a mass on her left adrenal gland; a biopsy
+    confirmed high-risk neuroblastoma.
+  companion: her mom, Grace
+  baseline_vitals: {hr: 118, rr: 26, spo2: 98, sbp: 98, dbp: 60, temp: 37.2}
+  art: mia
+
+admit_note: >-
+  Mia Okoye, age 2, admitted to the pediatric oncology ward with a swollen belly
+  and poor appetite. Biopsy confirms high-risk neuroblastoma. The lab's
+  single-cell multiome work is her best hope for a cure.
+stage_notes:
+  symptomatic: Mia spends more time in bed than on the play mat. Grace hasn't left her side.
+  serious: Mia is moved to a room closer to the nurses' station. Clover the rabbit keeps watch.
+  critical: Mia is transferred to the pediatric ICU. The team is doing everything they can — the lab is her best hope.
+progression_note: Mia's neuroblastoma keeps progressing.
+cure_note: >-
+  The cure works. Mia's scans are clear. A few weeks later she rides out of the
+  ward on Theo's old scooter, Clover tucked under one arm, Grace right behind her.
+loss_note: >-
+  Mia died peacefully in Grace's arms, with Theo beside her and Clover tucked
+  under her chin. The lab's work goes on for the next child.
+
+traits:
+  # ---------------------------------------------------------------- tier 1
+  - id: abdominal_mass
+    name: Abdominal mass
+    category: symptom
+    tier: 1
+    severity: [1.0, 1.6]
+    vitals: {rr: 2}
+    overlay: belly
+    note: The mass in Mia's belly has grown; her tummy is firm and swollen.
+    source: https://www.cancer.gov/types/neuroblastoma/patient/neuroblastoma-treatment-pdq
+  - id: irritability
+    name: Irritability and poor appetite
+    category: symptom
+    tier: 1
+    severity: [0.8, 1.2]
+    vitals: {hr: 4}
+    overlay: tired
+    note: Mia is fussy, won't eat, and only settles in Grace's arms.
+    source: https://www.cancer.gov/types/neuroblastoma/patient/neuroblastoma-treatment-pdq
+  - id: fever
+    name: Fever
+    category: symptom
+    tier: 1
+    severity: [0.8, 1.4]
+    vitals: {temp: 1.2, hr: 8}
+    overlay: flushed
+    note: Mia is running a fever, and no infection can be found.
+    source: https://www.cancer.gov/types/neuroblastoma/patient/neuroblastoma-treatment-pdq
+  # ---------------------------------------------------------------- tier 2
+  - id: bone_pain
+    name: Bone pain
+    category: symptom
+    tier: 2
+    requires: [abdominal_mass]
+    severity: [1.4, 2.2]
+    vitals: {hr: 6}
+    overlay: wince
+    note: Mia has started limping and cries when her legs are touched — tumor cells have reached her bones.
+    source: https://www.cancer.gov/types/neuroblastoma/patient/neuroblastoma-treatment-pdq
+  - id: hypertension
+    name: High blood pressure
+    category: symptom
+    tier: 2
+    requires: [abdominal_mass]
+    severity: [1.2, 2.0]
+    vitals: {sbp: 22, dbp: 14}
+    note: Mia's blood pressure is high — the tumor is releasing catecholamines and pressing near a kidney artery.
+    source: https://www.cancer.gov/types/neuroblastoma/hp/neuroblastoma-treatment-pdq
+  - id: horner
+    name: Horner syndrome
+    category: symptom
+    tier: 2
+    severity: [1.0, 1.6]
+    overlay: ptosis
+    note: One of Mia's eyelids droops and that pupil stays small (Horner syndrome).
+    source: https://www.cancer.gov/types/neuroblastoma/patient/neuroblastoma-treatment-pdq
+  - id: diarrhea_vip
+    name: Watery diarrhea (VIP)
+    category: symptom
+    tier: 2
+    requires: [abdominal_mass]
+    severity: [1.0, 1.8]
+    vitals: {hr: 6}
+    overlay: iv
+    note: The tumor is secreting VIP hormone, causing severe watery diarrhea; Mia needs IV fluids.
+    source: https://www.cancer.gov/types/neuroblastoma/hp/neuroblastoma-treatment-pdq
+  - id: mycn
+    name: MYCN amplification
+    category: mutation
+    tier: 2
+    excludes: [loss_11q, tert]
+    severity: [1.6, 2.4]
+    note: Tumor genetics show MYCN amplification — a hallmark of high-risk neuroblastoma.
+    source: https://www.cancer.gov/types/neuroblastoma/hp/neuroblastoma-treatment-pdq
+  - id: alk
+    name: ALK mutation
+    category: mutation
+    tier: 2
+    severity: [1.2, 2.0]
+    note: An activating ALK mutation (F1174L) is found in the tumor.
+    source: https://www.cancer.gov/types/neuroblastoma/hp/neuroblastoma-treatment-pdq
+  - id: loss_11q
+    name: 11q deletion
+    category: mutation
+    tier: 2
+    excludes: [mycn]
+    severity: [1.2, 2.0]
+    note: The tumor has lost part of chromosome arm 11q, a marker of high-risk disease.
+    source: https://www.cancer.gov/types/neuroblastoma/hp/neuroblastoma-treatment-pdq
+  - id: tert
+    name: TERT rearrangement
+    category: mutation
+    tier: 2
+    excludes: [mycn]
+    severity: [1.2, 2.0]
+    note: A TERT rearrangement switches on telomerase, letting tumor cells divide indefinitely.
+    source: https://www.cancer.gov/types/neuroblastoma/hp/neuroblastoma-treatment-pdq
+  # ---------------------------------------------------------------- tier 3
+  - id: raccoon_eyes
+    name: Periorbital bruising ("raccoon eyes")
+    category: complication
+    tier: 3
+    requires: [bone_pain]
+    severity: [1.6, 2.4]
+    overlay: raccoon_eyes
+    note: Dark bruising has appeared around both of Mia's eyes, from tumor in the bones around her eye sockets.
+    source: https://www.cancer.gov/types/neuroblastoma/patient/neuroblastoma-treatment-pdq
+  - id: marrow
+    name: Bone marrow infiltration
+    category: complication
+    tier: 3
+    requires: [bone_pain]
+    severity: [1.8, 2.6]
+    vitals: {hr: 8}
+    overlay: pale
+    note: Tumor cells are crowding out Mia's bone marrow; her blood counts are falling and she looks pale.
+    source: https://www.cancer.gov/types/neuroblastoma/patient/neuroblastoma-treatment-pdq
+  - id: oms
+    name: Opsoclonus-myoclonus syndrome
+    category: complication
+    tier: 3
+    requires: [irritability]
+    severity: [1.6, 2.4]
+    overlay: dancing_eyes
+    note: Mia's eyes dart in quick, chaotic movements and her arms jerk — an autoimmune reaction to the tumor.
+    source: https://www.cancer.gov/types/neuroblastoma/patient/neuroblastoma-treatment-pdq
+  - id: skin_nodules
+    name: '"Blueberry muffin" skin nodules'
+    category: complication
+    tier: 3
+    requires: [abdominal_mass]
+    severity: [1.4, 2.2]
+    overlay: spots
+    note: Small bluish nodules have appeared on Mia's skin — a sign seen most often in babies with neuroblastoma.
+    source: https://www.cancer.gov/types/neuroblastoma/patient/neuroblastoma-treatment-pdq
+  - id: spinal_compression
+    name: Spinal cord compression
+    category: complication
+    tier: 3
+    requires: [bone_pain]
+    severity: [2.0, 3.0]
+    overlay: brace
+    note: The tumor has grown into Mia's spinal canal; she can no longer stand, and the team starts urgent treatment.
+    source: https://www.cancer.gov/types/neuroblastoma/patient/neuroblastoma-treatment-pdq
+  # ---------------------------------------------------------------- tier 4
+  - id: mesenchymal_shift
+    name: Adrenergic→mesenchymal shift
+    category: resistance
+    tier: 4
+    requires: [mycn]
+    severity: [2.4, 3.4]
+    note: >-
+      Under chemotherapy, surviving tumor cells shift from an adrenergic toward a
+      mesenchymal-like state, which is more resistant to treatment.
+    source: https://www.nature.com/articles/ng.3899
+  - id: relapse
+    name: Marrow relapse
+    category: resistance
+    tier: 4
+    requires: [marrow]
+    severity: [2.4, 3.4]
+    vitals: {hr: 6}
+    overlay: pale
+    note: Despite treatment, neuroblastoma cells reappear in Mia's bone marrow.
+    source: https://www.cancer.gov/types/neuroblastoma/hp/neuroblastoma-treatment-pdq

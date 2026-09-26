@@ -1,0 +1,21 @@
+- id: demo-q01
+  after: demo-m01-list
+  question: Which brackets create a list?
+  choices: ["( )", "[ ]", "{ }", "< >"]
+  answer: 1
+  explanation: Lists use square brackets.
+  points: 5
+  source:
+    vignette: introduction.rst
+    section: Lists
+    quote: which can be written as a list of comma-separated values (items) between square brackets
+- id: demo-q02
+  after: demo-m02-sum
+  question: What does sum([3, 1, 4]) return?
+  choices: ["7", "8", "9"]
+  answer: 1
+  explanation: 3 + 1 + 4 = 8.
+  points: 5
+  source:
+    vignette: introduction.rst
+    section: Numbers

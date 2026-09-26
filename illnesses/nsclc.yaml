@@ -1,0 +1,249 @@
+# Non-small cell lung cancer (NSCLC) — illness + patient for Campaign 1.
+#
+# The patient is fictional. Traits are drawn from well-established clinical
+# features of NSCLC; `source` points at the page to check them against.
+# These are game flavor, kept separate from the tutorial content (which is
+# verified verbatim against the Seurat vignettes). Human review welcome.
+id: nsclc
+name: Non-small cell lung cancer
+short: NSCLC
+blurb: >-
+  The most common form of lung cancer. Single-cell RNA-seq of tumors and
+  blood is used to map the tumor microenvironment and immune response.
+fictional_notice: Walter Brandt is a fictional patient. Any resemblance to a real person is coincidental.
+sources:
+  - https://www.cancer.gov/types/lung/patient/non-small-cell-lung-treatment-pdq
+  - https://www.cancer.gov/types/lung/hp/non-small-cell-lung-treatment-pdq
+
+patient:
+  id: walter
+  name: Walter Brandt
+  first_name: Walter
+  pronouns: {subj: he, obj: him, poss: his}
+  age: "64"
+  sex: male
+  background: >-
+    Retired machinist, grandfather of three, keeps bees in the back garden.
+    Smoked for 35 years and quit eight years ago. Lives with his wife, Ruth.
+  presenting: >-
+    A cough that has not gone away for three months, a 4 kg weight loss and
+    getting winded on the stairs. A biopsy confirmed non-small cell lung cancer.
+  companion: his wife, Ruth
+  baseline_vitals: {hr: 86, rr: 18, spo2: 95, sbp: 134, dbp: 82, temp: 37.0}
+  art: walter
+
+admit_note: >-
+  Walter Brandt, 64, admitted with a three-month cough and weight loss. Biopsy
+  confirms non-small cell lung cancer. The lab has been asked to find a cure —
+  his blood immune cells are the first samples in.
+stage_notes:
+  symptomatic: Walter is tiring quickly and spends most of the day in bed. Ruth brings honey from the hives.
+  serious: Walter needs oxygen more often now. The ward team reviews him twice a day.
+  critical: Walter is moved to high-dependency care. Every hour in the lab counts.
+progression_note: Walter's cancer keeps progressing.
+cure_note: >-
+  The cure works. Walter's scans come back clear, his breathing eases, and a
+  week later he walks out of the ward holding Ruth's hand — talking about the bees.
+loss_note: >-
+  Walter died peacefully with Ruth holding his hand. His family thanks the lab
+  for fighting for him. The research goes on for the next patient.
+
+traits:
+  # ---------------------------------------------------------------- tier 1
+  - id: cough
+    name: Persistent cough
+    category: symptom
+    tier: 1
+    severity: [1.0, 1.6]
+    vitals: {rr: 1}
+    overlay: cough
+    note: Walter's dry cough will not let up; he has to stop mid-sentence to catch his breath.
+    source: https://www.cancer.gov/types/lung/patient/non-small-cell-lung-treatment-pdq
+  - id: fatigue
+    name: Fatigue
+    category: symptom
+    tier: 1
+    severity: [0.8, 1.4]
+    vitals: {hr: 2}
+    overlay: tired
+    note: Walter sleeps most of the afternoon and says his legs feel like lead.
+    source: https://www.cancer.gov/types/lung/patient/non-small-cell-lung-treatment-pdq
+  - id: chest_pain
+    name: Chest pain
+    category: symptom
+    tier: 1
+    severity: [1.0, 1.6]
+    vitals: {hr: 4}
+    overlay: wince
+    note: Walter winces on every deep breath — a dull ache on the right side of his chest.
+    source: https://www.cancer.gov/types/lung/patient/non-small-cell-lung-treatment-pdq
+  - id: resumed_smoking
+    name: Relapsed smoking
+    category: event
+    tier: 1
+    severity: [1.2, 1.8]
+    vitals: {spo2: -1}
+    note: Stressed and scared, Walter admits he has been sneaking cigarettes in the parking lot.
+    source: https://www.cancer.gov/types/lung/patient/non-small-cell-lung-treatment-pdq
+  - id: smog_alert
+    name: Smog alert
+    category: event
+    tier: 1
+    severity: [0.8, 1.2]
+    vitals: {rr: 1, spo2: -1}
+    overlay: haze
+    note: A smog alert settles over the city; Walter's breathing is noticeably worse by evening.
+    source: https://www.cancer.gov/types/lung/patient/non-small-cell-lung-treatment-pdq
+  # ---------------------------------------------------------------- tier 2
+  - id: dyspnea
+    name: Shortness of breath
+    category: symptom
+    tier: 2
+    requires: [cough]
+    severity: [1.4, 2.2]
+    vitals: {rr: 4, spo2: -3}
+    overlay: cannula
+    note: Walter is short of breath even at rest. The nurse starts oxygen through a nasal cannula.
+    source: https://www.cancer.gov/types/lung/patient/non-small-cell-lung-treatment-pdq
+  - id: hemoptysis
+    name: Coughing up blood
+    category: symptom
+    tier: 2
+    requires: [cough]
+    severity: [1.4, 2.2]
+    overlay: tissue
+    note: Walter is coughing up blood-streaked sputum (hemoptysis).
+    source: https://www.cancer.gov/types/lung/patient/non-small-cell-lung-treatment-pdq
+  - id: hoarseness
+    name: Hoarseness
+    category: symptom
+    tier: 2
+    requires: [cough]
+    severity: [1.0, 1.6]
+    note: Walter's voice has turned hoarse — the tumor may be pressing on the nerve to his voice box.
+    source: https://www.cancer.gov/types/lung/patient/non-small-cell-lung-treatment-pdq
+  - id: weight_loss
+    name: Weight loss
+    category: symptom
+    tier: 2
+    requires: [fatigue]
+    severity: [1.2, 2.0]
+    overlay: thin
+    note: Walter has lost another 6 kg without trying; his hospital gown hangs loose.
+    source: https://www.cancer.gov/types/lung/patient/non-small-cell-lung-treatment-pdq
+  - id: egfr
+    name: EGFR mutation
+    category: mutation
+    tier: 2
+    excludes: [kras_g12c, alk_fusion]
+    severity: [1.2, 2.0]
+    note: Tumor sequencing finds an activating EGFR mutation (exon 19 deletion) driving growth.
+    source: https://www.cancer.gov/types/lung/hp/non-small-cell-lung-treatment-pdq
+  - id: kras_g12c
+    name: KRAS G12C mutation
+    category: mutation
+    tier: 2
+    excludes: [egfr, alk_fusion]
+    severity: [1.2, 2.0]
+    note: The tumor panel reports a KRAS G12C mutation — common in people who smoked.
+    source: https://www.cancer.gov/types/lung/hp/non-small-cell-lung-treatment-pdq
+  - id: alk_fusion
+    name: EML4-ALK fusion
+    category: mutation
+    tier: 2
+    excludes: [egfr, kras_g12c]
+    severity: [1.2, 2.0]
+    note: The tumor carries an EML4–ALK gene fusion.
+    source: https://www.cancer.gov/types/lung/hp/non-small-cell-lung-treatment-pdq
+  # ---------------------------------------------------------------- tier 3
+  - id: pleural_effusion
+    name: Malignant pleural effusion
+    category: complication
+    tier: 3
+    requires: [dyspnea]
+    severity: [1.8, 2.8]
+    vitals: {rr: 3, spo2: -3}
+    overlay: drain
+    note: Fluid has built up around Walter's right lung. A chest drain is placed to help him breathe.
+    source: https://www.cancer.gov/types/lung/patient/non-small-cell-lung-treatment-pdq
+  - id: svc_syndrome
+    name: Superior vena cava syndrome
+    category: complication
+    tier: 3
+    requires: [dyspnea]
+    severity: [1.8, 2.8]
+    vitals: {hr: 6}
+    overlay: face_swelling
+    note: Walter's face and neck are swollen — the tumor is squeezing the superior vena cava.
+    source: https://www.cancer.gov/types/lung/hp/non-small-cell-lung-treatment-pdq
+  - id: pancoast
+    name: Pancoast tumor / Horner syndrome
+    category: complication
+    tier: 3
+    requires: [chest_pain]
+    severity: [1.6, 2.6]
+    overlay: ptosis
+    note: Pain shoots from Walter's shoulder down his arm; his right eyelid droops and that pupil stays small (Horner syndrome).
+    source: https://www.cancer.gov/types/lung/hp/non-small-cell-lung-treatment-pdq
+  - id: hypercalcemia
+    name: Paraneoplastic hypercalcemia
+    category: complication
+    tier: 3
+    requires: [fatigue]
+    severity: [1.6, 2.6]
+    note: Walter is confused and constantly thirsty; his calcium is high from a hormone the tumor secretes (PTHrP).
+    source: https://www.cancer.gov/types/lung/hp/non-small-cell-lung-treatment-pdq
+  - id: bone_mets
+    name: Bone metastases
+    category: complication
+    tier: 3
+    requires: [weight_loss]
+    severity: [1.8, 2.8]
+    vitals: {hr: 5}
+    overlay: wince
+    note: Scans show metastases in Walter's spine and ribs; he now needs strong pain relief.
+    source: https://www.cancer.gov/types/lung/patient/non-small-cell-lung-treatment-pdq
+  - id: cachexia
+    name: Cancer cachexia
+    category: complication
+    tier: 3
+    requires: [weight_loss]
+    severity: [1.8, 2.6]
+    overlay: cachexia
+    note: Walter's muscles are wasting despite nutrition support (cancer cachexia).
+    source: https://www.cancer.gov/types/lung/hp/non-small-cell-lung-treatment-pdq
+  - id: t790m
+    name: EGFR T790M resistance
+    category: resistance
+    tier: 3
+    requires: [egfr]
+    severity: [2.0, 3.0]
+    note: The tumor evolves an EGFR T790M mutation and stops responding to first-line targeted therapy.
+    source: https://www.cancer.gov/types/lung/hp/non-small-cell-lung-treatment-pdq
+  # ---------------------------------------------------------------- tier 4
+  - id: brain_mets
+    name: Brain metastases
+    category: complication
+    tier: 4
+    requires: [bone_mets]
+    severity: [2.4, 3.4]
+    overlay: headwrap
+    note: Walter has a seizure overnight; an MRI shows metastases in his brain.
+    source: https://www.cancer.gov/types/lung/patient/non-small-cell-lung-treatment-pdq
+  - id: liver_adrenal_mets
+    name: Liver and adrenal metastases
+    category: complication
+    tier: 4
+    requires: [bone_mets]
+    severity: [2.2, 3.2]
+    overlay: jaundice
+    note: The cancer has spread to Walter's liver and adrenal glands; his skin has a yellow tint.
+    source: https://www.cancer.gov/types/lung/patient/non-small-cell-lung-treatment-pdq
+  - id: sclc_transformation
+    name: Small-cell transformation
+    category: resistance
+    tier: 4
+    requires: [t790m]
+    severity: [2.4, 3.4]
+    note: A repeat biopsy shows the tumor has transformed into small-cell lung cancer, an escape route under EGFR-targeted therapy.
+    source: https://www.cancer.gov/types/lung/hp/non-small-cell-lung-treatment-pdq

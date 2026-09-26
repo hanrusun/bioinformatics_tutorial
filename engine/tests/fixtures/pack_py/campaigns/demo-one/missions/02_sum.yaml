@@ -1,0 +1,26 @@
+id: demo-m02-sum
+title: Total the counts
+points: 30
+source:
+  vignette: introduction.rst
+  section: Numbers
+  quote: The interpreter acts as a simple calculator
+briefing: Add up the counts.
+task:
+  - Store the sum of `counts` in `total`.
+setup: |
+  counts = [3, 1, 4]
+solution: |
+  total = sum(counts)
+check: |
+  def _check():
+      if "total" not in globals():
+          curelab_fail("There is no variable called total yet.")
+      if total != 8:
+          curelab_fail("total should be the sum of counts.")
+  curelab_check(_check)
+hints:
+  - Python has a built-in for adding up a list.
+  - Use `sum()`.
+  - "`total = sum(counts)`"
+notebook_pages: [demo-nb01]

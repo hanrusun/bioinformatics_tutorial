@@ -1,0 +1,24 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.pytest_cache/
+build/
+
+# Node / web
+node_modules/
+web/dist/
+web/test-results/
+web/playwright-report/
+
+# Local game data and generated reference artifacts
+.curelab/
+packs/*/reference/checkpoints/
+packs/*/reference/expected.json
+packs/*/data/downloads/
+
+# OS / editors
+.DS_Store
+.idea/
+.vscode/

@@ -1,0 +1,10 @@
+id: demo-nb01
+title: Lists
+rp: 2
+missions: [demo-m01-list, demo-m02-sum]
+blocks:
+  - text: Everything you need for the first two missions.
+  - quote: which can be written as a list of comma-separated values (items) between square brackets
+    source: {vignette: introduction.rst, section: Lists}
+  - code: "squares = [1, 4, 9, 16, 25]"
+    source: {vignette: introduction.rst, section: Lists}

@@ -1,0 +1,46 @@
+# A tiny Python pack used by the engine tests and for previewing the UI
+# without building the R image. It exercises the same code paths as a real
+# pack: kernel start, init code, mission setup, graded checks, debug help.
+id: demo-python
+name: Demo (Python)
+tool: python
+tool_version: "3"
+language: python
+kernel: python3
+editor_mode: python
+source_pin:
+  repo: python/cpython
+  ref: v3.12.0
+  path: Doc/tutorial
+  site: https://docs.python.org/3/tutorial/
+init_code: |
+  import json as _curelab_json
+
+  class _CurelabFail(Exception):
+      pass
+
+  _CURELAB_MISSION = None
+
+  def curelab_set_mission(mission_id):
+      global _CURELAB_MISSION
+      _CURELAB_MISSION = mission_id
+
+  def curelab_fail(message):
+      raise _CurelabFail(message)
+
+  def curelab_check(fn):
+      try:
+          fn()
+          result = {"pass": True, "message": "All checks passed."}
+      except _CurelabFail as exc:
+          result = {"pass": False, "message": str(exc)}
+      except Exception as exc:  # noqa: BLE001
+          result = {"pass": False, "message": f"Check could not run: {exc!r}"}
+      print("@@CURELAB_RESULT@@" + _curelab_json.dumps(result))
+mission_prelude: curelab_set_mission("{mission_id}")
+debug:
+  - pattern: "NameError: name '(\\w+)' is not defined"
+    help: A variable or function is used before it exists. Check the spelling and that you ran the line that creates it.
+  - pattern: SyntaxError
+    help: Python could not parse the code. Look for a missing bracket, quote or colon.
+campaigns: [demo-one, demo-two]

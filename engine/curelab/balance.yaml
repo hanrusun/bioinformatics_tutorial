@@ -1,0 +1,70 @@
+# Cure Lab balance knobs. Everything that affects difficulty lives here so it
+# can be tuned without touching code. `tools/simulate_balance.py --assert`
+# checks the targets below against the real engine and illness files.
+#
+# Model (see engine/curelab/game.py):
+#   severity S(t) = min(100, s0 + creep_per_hour * difficulty.creep_mult * hours
+#                               + sum(trait gains))
+#   health falls at  h_max_per_hour * (S / 100) ** exponent  per hour
+#   the patient dies when health reaches 0.
+# Each wrong attempt evolves one trait; its gain is uniform(lo, hi) from the
+# illness file, times gain_scale, times difficulty.gain_mult.
+
+s0: 0.0
+creep_per_hour: 7.7
+h_max_per_hour: 150.0
+exponent: 2.0
+gain_scale: 0.8
+# Severity added per wrong attempt once every trait has evolved.
+exhausted_gain: [1.0, 1.6]
+# Traits are drawn with weight 1 / tier ** tier_weight_exponent among those
+# whose prerequisites are met, so early errors favour mild symptoms.
+tier_weight_exponent: 1.5
+
+# 1 hospital day per real minute of *active* play.
+seconds_per_day: 60
+# Longest gap between heartbeats that still counts as active time (seconds).
+# Hidden tabs send no heartbeats, so time spent elsewhere never counts.
+max_heartbeat_gap: 3.0
+
+stages:
+  # health thresholds (inclusive lower bound) -> stage name, checked in order
+  - {name: stable, min_health: 80}
+  - {name: symptomatic, min_health: 55}
+  - {name: serious, min_health: 30}
+  - {name: critical, min_health: 0.000001}
+
+difficulties:
+  casual:
+    label: Casual
+    description: For a first read-through. The disease progresses gently.
+    creep_mult: 0.6
+    gain_mult: 0.6
+  normal:
+    label: Normal
+    description: The intended experience. Mistakes clearly hurt, but careful work wins.
+    creep_mult: 1.0
+    gain_mult: 1.0
+  brutal:
+    label: Brutal
+    description: Every error counts. For people who already know Seurat.
+    creep_mult: 1.35
+    gain_mult: 1.6
+
+research_points:
+  start: 0
+  hint_cost: 1           # RP per hint tier
+  note_min_words: 40     # words before a note page earns RP
+  note_rp: 1             # RP per qualifying note page
+  # Qualifying note pages that can earn RP are capped at the number of
+  # missions attempted in this run (so notes track real work).
+  note_cap: missions_attempted
+  min_read_seconds: 4    # a page must be open this long before "Read" counts
+
+targets:
+  # Checked on Normal by tools/simulate_balance.py --assert
+  idle_survival_hours_min: 6.0
+  careful_final_health_min: 80
+  typical_win_rate_min: 0.9
+  typical_median_health: [15, 60]
+  reckless_loss_rate_min: 0.9

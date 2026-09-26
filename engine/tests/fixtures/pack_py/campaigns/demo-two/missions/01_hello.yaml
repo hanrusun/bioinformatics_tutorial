@@ -1,0 +1,10 @@
+id: demo2-m01
+title: Hello
+points: 100
+source: {vignette: introduction.rst, section: Strings}
+briefing: Say hello.
+task: ["Create `greeting` equal to 'hello'."]
+solution: greeting = "hello"
+check: |
+  curelab_check(lambda: None if globals().get("greeting") == "hello" else curelab_fail("greeting should be 'hello'."))
+hints: ["Strings use quotes.", "Assign a string.", "`greeting = \"hello\"`"]
