@@ -1,0 +1,34 @@
+id: c1-nb01-load
+title: Loading 10x data into Seurat
+rp: 1
+missions: [c1-m01-load]
+blocks:
+  - text: Mission 1 comes down to two function calls. Here is what each one does, in the tutorial's own words.
+  - quote: >-
+      The `Read10X()` function reads in the output of the
+      [cellranger](https://www.10xgenomics.com/support/software/cell-ranger/latest/getting-started/cr-what-is-cell-ranger)
+      pipeline from 10X, returning a unique molecular identified (UMI) count
+      matrix. The values in this matrix represent the number of molecules for
+      each feature (i.e. gene; row) that are detected in each cell (column).
+    source: {vignette: pbmc3k_tutorial.Rmd, section: "Set up the Seurat object"}
+  - quote: >-
+      We next use the count matrix to create a `Seurat` object. The object
+      serves as a container that contains both data (like the count matrix)
+      and analysis (like PCA, or clustering results) for a single-cell dataset.
+    source: {vignette: pbmc3k_tutorial.Rmd, section: "Set up the Seurat object"}
+  - code: |
+      # Initialize the Seurat object with the raw (non-normalized data).
+      pbmc <- CreateSeuratObject(counts = pbmc.data, project = "pbmc3k", min.cells = 3, min.features = 200)
+    source: {vignette: pbmc3k_tutorial.Rmd, section: "Set up the Seurat object"}
+  - text: >-
+      `min.cells = 3` drops genes seen in fewer than 3 cells; `min.features = 200`
+      drops cells with fewer than 200 detected genes. The tutorial's data
+      folder is on their server; in this lab the same files are at the path in
+      the starter code.
+  - quote: >-
+      Since most values in an scRNA-seq matrix are 0, Seurat uses a
+      sparse-matrix representation whenever possible. This results in
+      significant memory and speed savings for Drop-seq/inDrop/10x data.
+    source: {vignette: pbmc3k_tutorial.Rmd, section: "What does data in a count matrix look like?"}
+  - quote: For example, in Seurat v5, the count matrix is stored in `pbmc[["RNA"]]$counts`.
+    source: {vignette: pbmc3k_tutorial.Rmd, section: "Set up the Seurat object"}

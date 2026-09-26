@@ -1,0 +1,71 @@
+id: c1-m05-hvg
+title: Find the informative genes
+points: 6
+source:
+  vignette: pbmc3k_tutorial.Rmd
+  section: Identification of highly variable features (feature selection)
+  quote: >-
+    We next calculate a subset of features that exhibit high cell-to-cell
+    variation in the dataset (i.e, they are highly expressed in some cells, and
+    lowly expressed in others).
+briefing: |
+  Most genes barely change from one of {name}'s immune cells to the next.
+  The genes that vary a lot carry the biological signal (which cell is a T
+  cell, which is a monocyte). Focus the analysis on the 2,000 most variable
+  genes, and label the top ten on a plot.
+task:
+  - Find the 2,000 most variable features with the "vst" method.
+  - Save the 10 most highly variable genes in `top10`.
+  - Plot the variable features and label the top 10.
+setup: |
+  curelab_libraries()
+  load_checkpoint("c1-m04-normalize")
+starter_code: |
+  # 1. Find variable features (vst, 2000)
+
+  # 2. The 10 most highly variable genes
+  top10 <-
+
+  # 3. Plot with and without labels
+  plot1 <- VariableFeaturePlot(pbmc)
+  plot2 <- LabelPoints(plot = plot1, points = top10, repel = TRUE)
+  plot1 + plot2
+solution: |
+  pbmc <- FindVariableFeatures(pbmc, selection.method = 'vst', nfeatures = 2000)
+  top10 <- head(VariableFeatures(pbmc), 10)
+  plot1 <- VariableFeaturePlot(pbmc)
+  plot2 <- LabelPoints(plot = plot1, points = top10, repel = TRUE)
+  plot1 + plot2
+check: |
+  curelab_check({
+    obj <- curelab_obj("pbmc", "Seurat")
+    expect_command(obj, "FindVariableFeatures",
+      "Run FindVariableFeatures() on pbmc (and assign the result back to pbmc).")
+    expect_param(obj, "FindVariableFeatures", "selection.method", "vst", "Use selection.method = 'vst'")
+    expect_true(length(VariableFeatures(obj)) == 2000,
+      sprintf("Expected 2,000 variable features; found %d. Set nfeatures = 2000.", length(VariableFeatures(obj))))
+    top <- curelab_obj("top10", hint = "Store the first ten variable features in `top10`.")
+    expect_true(is.character(top) && length(top) == 10,
+      "`top10` should be a character vector of 10 gene names: head(VariableFeatures(pbmc), 10).")
+    expect_equal_ref(top, "top10", "`top10` isn't the 10 most variable genes", show = FALSE)
+  })
+hints:
+  - "FindVariableFeatures() ranks genes by how variable they are; VariableFeatures() returns them in order, most variable first."
+  - "`FindVariableFeatures(pbmc, selection.method = 'vst', nfeatures = 2000)`, then `head(VariableFeatures(pbmc), 10)`."
+  - |
+    ```r
+    pbmc <- FindVariableFeatures(pbmc, selection.method = 'vst', nfeatures = 2000)
+    top10 <- head(VariableFeatures(pbmc), 10)
+    plot1 <- VariableFeaturePlot(pbmc)
+    plot2 <- LabelPoints(plot = plot1, points = top10, repel = TRUE)
+    plot1 + plot2
+    ```
+notebook_pages: [c1-nb04-hvg-scale]
+state: [pbmc]
+expected:
+  top10: head(VariableFeatures(pbmc), 10)
+wrong_solutions:
+  - why: too few variable features
+    code: |
+      pbmc <- FindVariableFeatures(pbmc, selection.method = 'vst', nfeatures = 500)
+      top10 <- head(VariableFeatures(pbmc), 10)

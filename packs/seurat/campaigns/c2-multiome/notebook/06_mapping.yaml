@@ -1,0 +1,47 @@
+id: c2-nb06-mapping
+title: Mapping a query onto a reference
+rp: 2
+missions: [c2-m10-mapping]
+blocks:
+  - quote: >-
+      After finding anchors, we use the `TransferData()` function to classify
+      the query cells based on reference data (a vector of reference cell type
+      labels). `TransferData()` returns a matrix with predicted IDs and
+      prediction scores, which we can add to the query metadata.
+    source: {vignette: integration_mapping.Rmd, section: "Cell type classification using an integrated reference"}
+  - code: |
+      # select two technologies for the query datasets
+      pancreas.query <- subset(panc8, tech %in% c("fluidigmc1", "celseq"))
+      pancreas.query <- NormalizeData(pancreas.query)
+      pancreas.anchors <- FindTransferAnchors(reference = pancreas.ref, query = pancreas.query, dims = 1:30, reference.reduction="pca")
+      predictions <- TransferData(anchorset = pancreas.anchors, refdata = pancreas.ref$celltype, dims = 1:30)
+      pancreas.query <- AddMetaData(pancreas.query, metadata = predictions)
+    source: {vignette: integration_mapping.Rmd, section: "Cell type classification using an integrated reference"}
+  - text: Across modalities (scRNA-seq reference, scATAC-seq query) two arguments change.
+  - code: |
+      transfer.anchors <- FindTransferAnchors(
+        reference = pbmc.rna,
+        query = pbmc.atac,
+        features = VariableFeatures(object = pbmc.rna),
+        reference.assay = 'RNA',
+        query.assay = 'ACTIVITY',
+        reduction = 'cca'
+      )
+    source: {vignette: seurat5_atacseq_integration_vignette.Rmd, section: "Identifying anchors between scRNA-seq and scATAC-seq datasets"}
+  - code: |
+      celltype.predictions <- TransferData(
+        anchorset = transfer.anchors,
+        refdata = pbmc.rna$seurat_annotations,
+        weight.reduction = pbmc.atac[['lsi']],
+        dims = 2:30
+      )
+    source: {vignette: seurat5_atacseq_integration_vignette.Rmd, section: "Annotate scATAC-seq cells via label transfer"}
+  - text: >-
+      The NBL co-embedding script follows this pattern:
+      `FindTransferAnchors(reference = seurat.rna, query = seurat.atac, ...,
+      query.assay = "ACTIVITY", reduction = 'cca')` on gene-activity scores,
+      then `TransferData(..., weight.reduction = seurat.atac[["pca"]])`.
+  - quote: >-
+      In this example, the annotation for an scATAC-seq profile is correctly
+      predicted via scRNA-seq integration ~90% of the time.
+    source: {vignette: seurat5_atacseq_integration_vignette.Rmd, section: "Annotate scATAC-seq cells via label transfer"}

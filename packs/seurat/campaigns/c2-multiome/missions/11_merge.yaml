@@ -1,0 +1,68 @@
+id: c2-m11-merge
+title: Bring it back together
+points: 6
+source:
+  vignette: essential_commands.Rmd
+  section: Merge objects (without integration)
+  quote: >-
+    In Seurat v5, merging creates a single object, but keeps the expression
+    information split into different layers for integration. If not
+    proceeding with integration, rejoin the layers after merging.
+briefing: |
+  The NBL co-embedding step ends with
+  `coembed <- merge(x = seurat.rna, y = seurat.atac)`: two objects become
+  one. Practice the round trip: split `ifnb` into one object per condition,
+  merge them back, and rejoin the layers so the result is ready for a
+  standard, non-integrated analysis.
+
+  This is the last mission. Finish it and the journal club, and {name}'s
+  cure is ready.
+task:
+  - Split `ifnb` into a list of objects by `stim` (`ifnb_list`).
+  - Merge `ifnb_list$CTRL` and `ifnb_list$STIM` into `merged_obj`.
+  - Rejoin the layers of `merged_obj`.
+setup: |
+  curelab_libraries("SeuratData")
+  ifnb <- LoadData('ifnb')
+starter_code: |
+  # creates a list of two objects
+  ifnb_list <-
+  ifnb_list$CTRL
+  ifnb_list$STIM
+
+  # Merge two Seurat objects
+  merged_obj <-
+  Layers(merged_obj)
+
+  merged_obj <-
+  Layers(merged_obj)
+solution: |
+  ifnb_list <- SplitObject(ifnb,split.by = 'stim')
+  ifnb_list$CTRL
+  ifnb_list$STIM
+  merged_obj <- merge(x = ifnb_list$CTRL, y = ifnb_list$STIM)
+  merged_obj <- JoinLayers(merged_obj)
+check: |
+  curelab_check({
+    lst <- curelab_obj("ifnb_list", "list", hint = "Create it with SplitObject(ifnb, split.by = 'stim').")
+    expect_true(setequal(names(lst), c("CTRL", "STIM")), "`ifnb_list` should have one object per condition, named CTRL and STIM.")
+    m <- curelab_obj("merged_obj", "Seurat")
+    expect_true(ncol(m) == ncol(curelab_obj("ifnb")), "`merged_obj` should contain every cell from both conditions.")
+    expect_true("counts" %in% Layers(m) && !any(grepl("^counts\\.", Layers(m))),
+      "The layers are still split. Rejoin them: merged_obj <- JoinLayers(merged_obj).")
+  })
+hints:
+  - "SplitObject() makes a list of objects, merge() combines objects (keeping split layers), and JoinLayers() collapses the layers again."
+  - "`SplitObject(ifnb, split.by = 'stim')`, `merge(x = ifnb_list$CTRL, y = ifnb_list$STIM)`, `JoinLayers(merged_obj)`."
+  - |
+    ```r
+    ifnb_list <- SplitObject(ifnb,split.by = 'stim')
+    merged_obj <- merge(x = ifnb_list$CTRL, y = ifnb_list$STIM)
+    merged_obj <- JoinLayers(merged_obj)
+    ```
+notebook_pages: [c2-nb07-merge-coembed]
+wrong_solutions:
+  - why: forgot to rejoin the layers
+    code: |
+      ifnb_list <- SplitObject(ifnb,split.by = 'stim')
+      merged_obj <- merge(x = ifnb_list$CTRL, y = ifnb_list$STIM)

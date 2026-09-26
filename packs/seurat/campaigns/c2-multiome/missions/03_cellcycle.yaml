@@ -1,0 +1,75 @@
+id: c2-m03-cellcycle
+title: Which cells are dividing?
+points: 7
+source:
+  vignette: cell_cycle_vignette.Rmd
+  section: Assign Cell-Cycle Scores
+  quote: >-
+    We assign scores in the `CellCycleScoring()` function, which stores S and
+    G2/M scores in object meta data, along with the predicted classification of
+    each cell in either G2M, S or G1 phase.
+briefing: |
+  Tumors like {name}'s are full of dividing cells, and the cell cycle can
+  swamp everything else in an analysis. The NBL pipeline scores every cell's
+  cycle phase before integration. Practice on the cell-cycle vignette's
+  murine hematopoietic progenitors (`marrow`, already normalized and scaled).
+
+  Seurat ships the Tirosh et al. marker lists in `cc.genes`.
+task:
+  - Split `cc.genes` into `s.genes` and `g2m.genes`.
+  - Score every cell with `CellCycleScoring()` and set the identities to the predicted phase.
+  - Look at the scores and plot a few cycle markers.
+setup: |
+  curelab_libraries()
+  load_prep("marrow")
+starter_code: |
+  # A list of cell cycle markers, from Tirosh et al, 2015, is loaded with Seurat.
+  s.genes <-
+  g2m.genes <-
+
+  marrow <- CellCycleScoring(marrow, )
+
+  head(marrow[[]])
+  RidgePlot(marrow, features = c("PCNA","TOP2A","MCM6","MKI67"), ncol = 2)
+solution: |
+  s.genes <- cc.genes$s.genes
+  g2m.genes <- cc.genes$g2m.genes
+  marrow <- CellCycleScoring(marrow, s.features = s.genes, g2m.features = g2m.genes, set.ident = TRUE)
+  head(marrow[[]])
+  RidgePlot(marrow, features = c("PCNA","TOP2A","MCM6","MKI67"), ncol = 2)
+check: |
+  curelab_check({
+    expect_true(identical(curelab_obj("s.genes"), cc.genes$s.genes), "`s.genes` should be cc.genes$s.genes.")
+    expect_true(identical(curelab_obj("g2m.genes"), cc.genes$g2m.genes), "`g2m.genes` should be cc.genes$g2m.genes.")
+    obj <- curelab_obj("marrow", "Seurat")
+    expect_columns(obj[[]], c("S.Score", "G2M.Score", "Phase"), "The metadata")
+    expect_true("old.ident" %in% colnames(obj[[]]) && identical(as.character(Idents(obj)), as.character(obj$Phase)),
+      "Set the identities to the predicted phase with set.ident = TRUE.")
+    expect_equal_ref(as.vector(table(factor(obj$Phase, levels = c("G1", "G2M", "S")))), "phase_counts",
+      "The phase calls don't match. Pass the S genes as s.features and the G2/M genes as g2m.features")
+  })
+hints:
+  - "`cc.genes` is a list with two gene sets. CellCycleScoring() needs one for S phase and one for G2/M, and can set the identities to the phase for you."
+  - "`CellCycleScoring(marrow, s.features = s.genes, g2m.features = g2m.genes, set.ident = TRUE)`"
+  - |
+    ```r
+    s.genes <- cc.genes$s.genes
+    g2m.genes <- cc.genes$g2m.genes
+    marrow <- CellCycleScoring(marrow, s.features = s.genes, g2m.features = g2m.genes, set.ident = TRUE)
+    head(marrow[[]])
+    ```
+notebook_pages: [c2-nb03-cellcycle]
+state: [marrow, s.genes, g2m.genes]
+expected:
+  phase_counts: as.vector(table(factor(marrow$Phase, levels = c("G1", "G2M", "S"))))
+wrong_solutions:
+  - why: swapped the S and G2/M gene sets
+    code: |
+      s.genes <- cc.genes$s.genes
+      g2m.genes <- cc.genes$g2m.genes
+      marrow <- CellCycleScoring(marrow, s.features = g2m.genes, g2m.features = s.genes, set.ident = TRUE)
+  - why: forgot set.ident
+    code: |
+      s.genes <- cc.genes$s.genes
+      g2m.genes <- cc.genes$g2m.genes
+      marrow <- CellCycleScoring(marrow, s.features = s.genes, g2m.features = g2m.genes)

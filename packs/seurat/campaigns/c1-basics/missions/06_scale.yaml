@@ -1,0 +1,54 @@
+id: c1-m06-scale
+title: Put every gene on the same scale
+points: 5
+source:
+  vignette: pbmc3k_tutorial.Rmd
+  section: Scaling the data
+  quote: >-
+    Next, we apply a linear transformation ('scaling') that is a standard
+    pre-processing step prior to dimensional reduction techniques like PCA.
+briefing: |
+  Before PCA, each gene should contribute equally, so a few very highly
+  expressed genes in {name}'s cells don't dominate. Scaling centers every
+  gene at mean 0 and gives it variance 1 across cells.
+
+  By default only the variable genes are scaled. Later the lab will draw
+  heatmaps of marker genes that may not be variable genes, so scale **all**
+  genes.
+task:
+  - Store all gene names in `all.genes`.
+  - Scale the data for all genes. The result goes in `pbmc[["RNA"]]$scale.data`.
+setup: |
+  curelab_libraries()
+  load_checkpoint("c1-m05-hvg")
+starter_code: |
+  all.genes <-
+  pbmc <- ScaleData(pbmc, features = )
+solution: |
+  all.genes <- rownames(pbmc)
+  pbmc <- ScaleData(pbmc, features = all.genes)
+check: |
+  curelab_check({
+    obj <- curelab_obj("pbmc", "Seurat")
+    expect_true("scale.data" %in% Layers(obj),
+      "There is no scale.data layer yet. Run ScaleData() and assign the result back to pbmc.")
+    sd <- LayerData(obj, layer = "scale.data")
+    expect_true(nrow(sd) == nrow(obj),
+      sprintf("Only %d of %d genes were scaled. Pass features = all.genes (all.genes <- rownames(pbmc)).", nrow(sd), nrow(obj)))
+    expect_true(max(abs(rowMeans(sd[1:50, ]))) < 1e-6,
+      "Scaled genes should have mean 0 across cells (keep the default do.center = TRUE).")
+  })
+hints:
+  - "rownames() of a Seurat object are its gene names. ScaleData() takes a `features` argument listing which genes to scale."
+  - "`all.genes <- rownames(pbmc)` then `ScaleData(pbmc, features = all.genes)`."
+  - |
+    ```r
+    all.genes <- rownames(pbmc)
+    pbmc <- ScaleData(pbmc, features = all.genes)
+    ```
+notebook_pages: [c1-nb04-hvg-scale]
+state: [pbmc]
+wrong_solutions:
+  - why: default scales only the variable features
+    code: |
+      pbmc <- ScaleData(pbmc)

@@ -1,0 +1,38 @@
+id: c1-nb07-markers
+title: Markers and cell type annotation
+rp: 2
+missions: [c1-m11-markers, c1-m12-visualize, c1-m13-annotate]
+blocks:
+  - quote: >-
+      Seurat can help you find markers that define clusters via differential
+      expression (DE). By default, it identifies positive and negative markers
+      of a single cluster (specified in `ident.1`), compared to all other
+      cells. `FindAllMarkers()` automates this process for all clusters, but
+      you can also test groups of clusters vs. each other, or against all
+      cells.
+    source: {vignette: pbmc3k_tutorial.Rmd, section: "Finding differentially expressed features (cluster biomarkers)"}
+  - code: |
+      # find all markers of cluster 2
+      cluster2.markers <- FindMarkers(pbmc, ident.1 = 2)
+      # find all markers distinguishing cluster 5 from clusters 0 and 3
+      cluster5.markers <- FindMarkers(pbmc, ident.1 = 5, ident.2 = c(0, 3))
+      # find markers for every cluster compared to all remaining cells, report only the positive ones
+      pbmc.markers <- FindAllMarkers(pbmc, only.pos = TRUE)
+    source: {vignette: pbmc3k_tutorial.Rmd, section: "Finding differentially expressed features (cluster biomarkers)"}
+  - code: |
+      pbmc.markers %>%
+          group_by(cluster) %>%
+          dplyr::filter(avg_log2FC > 1) %>%
+          slice_head(n = 10) %>%
+          ungroup() -> top10
+      DoHeatmap(pbmc, features = top10$gene) + NoLegend()
+    source: {vignette: pbmc3k_tutorial.Rmd, section: "Finding differentially expressed features (cluster biomarkers)"}
+  - quote: >-
+      Fortunately in the case of this dataset, we can use canonical markers to
+      easily match the unbiased clustering to known cell types
+    source: {vignette: pbmc3k_tutorial.Rmd, section: "Assigning cell type identity to clusters"}
+  - code: |
+      new.cluster.ids <- c("Naive CD4 T", "CD14+ Mono", "Memory CD4 T", "B", "CD8 T", "FCGR3A+ Mono", "NK", "DC", "Platelet")
+      names(new.cluster.ids) <- levels(pbmc)
+      pbmc <- RenameIdents(pbmc, new.cluster.ids)
+    source: {vignette: pbmc3k_tutorial.Rmd, section: "Assigning cell type identity to clusters"}

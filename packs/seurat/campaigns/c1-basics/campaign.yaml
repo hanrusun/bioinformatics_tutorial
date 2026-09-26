@@ -1,0 +1,13 @@
+id: c1-basics
+title: Seurat Basics
+subtitle: From raw counts to annotated cell types
+illness: nsclc
+order: 1
+summary: >-
+  Walter's blood has been profiled with single-cell RNA-seq. Take 2,700
+  peripheral blood mononuclear cells from raw 10x counts through quality
+  control, normalization, variable genes, PCA, clustering, UMAP and marker
+  genes, all the way to annotated cell types. Follows Seurat's guided
+  clustering tutorial (pbmc3k_tutorial).
+datasets:
+  - 10x Genomics PBMC 3k (filtered gene-barcode matrices)

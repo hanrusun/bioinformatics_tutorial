@@ -1,0 +1,41 @@
+id: c2-nb07-merge-coembed
+title: Merging, and RNA + ATAC co-embedding
+rp: 2
+missions: [c2-m11-merge]
+blocks:
+  - code: |
+      # creates a list of two objects
+      ifnb_list <- SplitObject(ifnb,split.by = 'stim')
+      ifnb_list$CTRL
+      ifnb_list$STIM
+    source: {vignette: essential_commands.Rmd, section: "Split objects"}
+  - quote: >-
+      In Seurat v5, merging creates a single object, but keeps the expression
+      information split into different layers for integration. If not
+      proceeding with integration, rejoin the layers after merging.
+    source: {vignette: essential_commands.Rmd, section: "Merge objects (without integration)"}
+  - code: |
+      # Merge two Seurat objects
+      merged_obj <- merge(x = ifnb_list$CTRL, y = ifnb_list$STIM)
+      merged_obj <- JoinLayers(merged_obj)
+    source: {vignette: essential_commands.Rmd, section: "Merge objects (without integration)"}
+  - quote: >-
+      In order to perform co-embedding, we first 'impute' RNA expression into
+      the scATAC-seq cells based on the previously computed anchors, and then
+      merge the datasets.
+    source: {vignette: seurat5_atacseq_integration_vignette.Rmd, section: "Co-embedding scRNA-seq and scATAC-seq datasets"}
+  - code: |
+      imputation <- TransferData(anchorset = transfer.anchors, refdata = refdata, weight.reduction = pbmc.atac[["lsi"]], dims = 2:30)
+      pbmc.atac[["RNA"]] <- imputation
+      coembed <- merge(x = pbmc.rna, y = pbmc.atac)
+      coembed <- ScaleData(coembed, features = genes.use, do.scale = FALSE)
+      coembed <- RunPCA(coembed, features = genes.use, verbose = FALSE)
+      coembed <- RunUMAP(coembed, dims = 1:30)
+    source: {vignette: seurat5_atacseq_integration_vignette.Rmd, section: "Co-embedding scRNA-seq and scATAC-seq datasets"}
+  - text: >-
+      This is almost exactly the core of the NBL script
+      `coembedding_perSample_metacell_malignant.R`: impute RNA into the ATAC
+      cells with `TransferData()`, `merge()` the two objects, then
+      `ScaleData(..., do.scale = FALSE)`, `RunPCA()`, `RunUMAP()`,
+      `FindNeighbors()` and `FindClusters()`. The script then builds metacells
+      with hdWGCNA, which is outside Seurat and would be a future pack.

@@ -1,0 +1,60 @@
+id: c1-m07-pca
+title: Compress the signal
+points: 7
+source:
+  vignette: pbmc3k_tutorial.Rmd
+  section: Perform linear dimensional reduction
+  quote: >-
+    Next we perform PCA on the scaled data. By default, only the previously
+    determined variable features are used as input, but can be defined using
+    `features` argument if you wish to choose a different subset
+briefing: |
+  Two thousand genes are too many dimensions to reason about. PCA combines
+  correlated genes into principal components (PCs), a compact summary of
+  {name}'s immune cell states. Run PCA on the variable features and look at
+  which genes drive the first components.
+task:
+  - Run PCA on `pbmc` using the variable features.
+  - Print the top genes for PCs 1-5, and plot the loadings and the cells in PC space.
+setup: |
+  curelab_libraries()
+  load_checkpoint("c1-m06-scale")
+starter_code: |
+  pbmc <- RunPCA(pbmc, features = )
+
+  # Examine and visualize PCA results a few different ways
+  print(pbmc[['pca']], dims = 1:5, nfeatures = 5)
+  VizDimLoadings(pbmc, dims = 1:2, reduction = 'pca')
+  DimPlot(pbmc, reduction = 'pca') + NoLegend()
+solution: |
+  pbmc <- RunPCA(pbmc, features = VariableFeatures(object = pbmc))
+  print(pbmc[['pca']], dims = 1:5, nfeatures = 5)
+  VizDimLoadings(pbmc, dims = 1:2, reduction = 'pca')
+  DimPlot(pbmc, reduction = 'pca') + NoLegend()
+check: |
+  curelab_check({
+    obj <- curelab_obj("pbmc", "Seurat")
+    expect_reduction(obj, "pca", "There is no 'pca' reduction yet. Run RunPCA() and assign back to pbmc.")
+    genes <- rownames(Loadings(obj, reduction = "pca"))
+    expect_true(setequal(genes, VariableFeatures(obj)),
+      sprintf("PCA used %d genes; it should use exactly the 2,000 variable features: features = VariableFeatures(object = pbmc).", length(genes)))
+    expect_true(ncol(Embeddings(obj, reduction = "pca")) == 50,
+      "Keep the default of 50 principal components.")
+    expect_true(ran_after(obj, "ScaleData", "RunPCA"), "Run PCA on the scaled data.")
+  })
+hints:
+  - PCA runs on the scaled data. Tell it which genes to use with the `features` argument.
+  - "`RunPCA(pbmc, features = VariableFeatures(object = pbmc))`"
+  - |
+    ```r
+    pbmc <- RunPCA(pbmc, features = VariableFeatures(object = pbmc))
+    print(pbmc[['pca']], dims = 1:5, nfeatures = 5)
+    VizDimLoadings(pbmc, dims = 1:2, reduction = 'pca')
+    DimPlot(pbmc, reduction = 'pca') + NoLegend()
+    ```
+notebook_pages: [c1-nb05-pca]
+state: [pbmc]
+wrong_solutions:
+  - why: PCA on the wrong gene set
+    code: |
+      pbmc <- RunPCA(pbmc, features = rownames(pbmc)[1:500])

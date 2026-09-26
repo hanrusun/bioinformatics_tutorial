@@ -1,0 +1,45 @@
+id: c2-nb05-de
+title: Conserved markers and pseudobulk DE
+rp: 2
+missions: [c2-m08-conserved, c2-m09-pseudobulk]
+blocks:
+  - code: |
+      Idents(ifnb) <- "seurat_annotations"
+      nk.markers <- FindConservedMarkers(ifnb, ident.1 = "NK", grouping.var = "stim", verbose = FALSE)
+      head(nk.markers)
+    source: {vignette: integration_introduction.Rmd, section: "Identify conserved cell type markers"}
+  - quote: >-
+      However, the p-values obtained from this analysis should be interpreted
+      with caution, because these tests treat each cell as an independent
+      replicate and ignore inherent correlations between cells originating
+      from the same sample.
+    source: {vignette: de_vignette.Rmd, section: "Perform DE analysis within the same cell type across conditions"}
+  - quote: >-
+      This results in one gene expression profile per sample and cell type.
+      We can then perform DE analysis using
+      [DESeq2](https://bioconductor.org/packages/release/bioc/html/DESeq2.html)
+      on the sample level. This treats the samples, rather than the individual
+      cells, as independent observations.
+    source: {vignette: de_vignette.Rmd, section: "Perform DE analysis after pseudobulking"}
+  - code: |
+      # pseudobulk the counts based on donor-condition-celltype
+      pseudo_ifnb <- AggregateExpression(ifnb, assays = "RNA", return.seurat = T, group.by = c("stim", "donor_id", "seurat_annotations"))
+      # each 'cell' is a donor-condition-celltype pseudobulk profile
+      tail(Cells(pseudo_ifnb))
+      pseudo_ifnb$celltype.stim <- paste(pseudo_ifnb$seurat_annotations, pseudo_ifnb$stim, sep = "_")
+    source: {vignette: de_vignette.Rmd, section: "Perform DE analysis after pseudobulking"}
+  - code: |
+      Idents(pseudo_ifnb) <- "celltype.stim"
+      bulk.mono.de <- FindMarkers(object = pseudo_ifnb,
+                               ident.1 = "CD14 Mono_STIM",
+                               ident.2 = "CD14 Mono_CTRL",
+                               test.use = "DESeq2")
+      head(bulk.mono.de, n = 15)
+    source: {vignette: de_vignette.Rmd, section: "Perform DE analysis after pseudobulking"}
+  - quote: |
+      * p_val : p-value (unadjusted)
+      * avg_log2FC : log fold-change of the average expression between the two groups. Positive values indicate that the feature is more highly expressed in the first group.
+      * pct.1 : The percentage of cells where the feature is detected in the first group
+      * pct.2 : The percentage of cells where the feature is detected in the second group
+      * p_val_adj : Adjusted p-value, based on Bonferroni correction using all features in the dataset.
+    source: {vignette: de_vignette.Rmd, section: "Perform default differential expression tests"}

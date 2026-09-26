@@ -1,0 +1,36 @@
+id: c1-nb02-qc
+title: Quality control
+rp: 2
+missions: [c1-m02-qc, c1-m03-filter]
+blocks:
+  - text: Three QC metrics decide which cells to keep.
+  - quote: |
+      * The number of unique genes detected in each cell.
+          + Low-quality cells or empty droplets will often have very few genes
+          + Cell doublets or multiplets may exhibit an aberrantly high gene count
+      * Similarly, the total number of molecules detected within a cell (correlates strongly with unique genes)
+      * The percentage of reads that map to the mitochondrial genome
+          + Low-quality / dying cells often exhibit extensive mitochondrial contamination
+    source: {vignette: pbmc3k_tutorial.Rmd, section: "QC and selecting cells for further analysis"}
+  - quote: >-
+      We use the set of all genes starting with `MT-` as a set of mitochondrial genes
+    source: {vignette: pbmc3k_tutorial.Rmd, section: "QC and selecting cells for further analysis"}
+  - code: |
+      # The [[ operator can add columns to object metadata. This is a great place to stash QC stats
+      pbmc[["percent.mt"]] <- PercentageFeatureSet(pbmc, pattern = "^MT-")
+    source: {vignette: pbmc3k_tutorial.Rmd, section: "QC and selecting cells for further analysis"}
+  - quote: >-
+      The number of unique genes and total molecules are automatically
+      calculated during `CreateSeuratObject()`
+    source: {vignette: pbmc3k_tutorial.Rmd, section: "Where are QC metrics stored in Seurat?"}
+  - code: |
+      #Visualize QC metrics as a violin plot
+      VlnPlot(pbmc, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
+    source: {vignette: pbmc3k_tutorial.Rmd, section: "QC and selecting cells for further analysis"}
+  - quote: |
+      * We filter cells that have unique feature counts over 2,500 or less than 200
+      * We filter cells that have >5% mitochondrial counts
+    source: {vignette: pbmc3k_tutorial.Rmd, section: "QC and selecting cells for further analysis"}
+  - code: |
+      pbmc <- subset(pbmc, subset = nFeature_RNA > 200 & nFeature_RNA < 2500 & percent.mt < 5)
+    source: {vignette: pbmc3k_tutorial.Rmd, section: "QC and selecting cells for further analysis"}

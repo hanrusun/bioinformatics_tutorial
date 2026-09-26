@@ -1,0 +1,231 @@
+# Journal-club questions for Campaign 1. Each quote is checked verbatim
+# against pbmc3k_tutorial.Rmd at satijalab/seurat@v5.5.1.
+- id: c1-q01-matrix
+  after: c1-m01-load
+  question: In the UMI count matrix returned by Read10X(), what do rows, columns and values represent?
+  choices:
+    - Rows are cells, columns are genes, values are normalized expression
+    - Rows are genes (features), columns are cells, values are numbers of molecules detected
+    - Rows are genes, columns are samples, values are read counts per sample
+    - Rows are cells, columns are barcodes, values are sequencing quality scores
+  answer: 1
+  explanation: The values are the number of molecules for each feature (gene; row) detected in each cell (column).
+  source:
+    vignette: pbmc3k_tutorial.Rmd
+    section: Set up the Seurat object
+    quote: >-
+      The values in this matrix represent the number of molecules for each
+      feature (i.e. gene; row) that are detected in each cell (column).
+- id: c1-q02-sparse
+  after: c1-m01-load
+  question: Why does Seurat store the count matrix as a sparse matrix?
+  choices:
+    - Sparse matrices are required by the Illumina sequencer output
+    - Most values in an scRNA-seq matrix are 0, so a sparse representation saves memory and time
+    - Sparse matrices automatically remove low-quality cells
+    - It is the only format CreateSeuratObject() can read
+  answer: 1
+  explanation: Most entries are zeros, so storing only the non-zero values gives large memory and speed savings.
+  source:
+    vignette: pbmc3k_tutorial.Rmd
+    section: What does data in a count matrix look like?
+    quote: >-
+      Since most values in an scRNA-seq matrix are 0, Seurat uses a
+      sparse-matrix representation whenever possible.
+- id: c1-q03-mito
+  after: c1-m02-qc
+  question: A cell with a very high percentage of mitochondrial reads most likely is…
+  choices:
+    - A doublet of two cells
+    - A low-quality or dying cell
+    - A highly proliferating cell
+    - A platelet
+  answer: 1
+  explanation: Low-quality or dying cells often show extensive mitochondrial contamination.
+  source:
+    vignette: pbmc3k_tutorial.Rmd
+    section: QC and selecting cells for further analysis
+    quote: Low-quality / dying cells often exhibit extensive mitochondrial contamination
+- id: c1-q04-doublets
+  after: c1-m03-filter
+  question: Why filter out cells with an unusually HIGH number of detected genes?
+  choices:
+    - They are empty droplets
+    - They may be doublets or multiplets
+    - They are dying cells
+    - They always come from the mitochondria
+  answer: 1
+  explanation: Doublets or multiplets (two or more cells captured together) may show an aberrantly high gene count.
+  source:
+    vignette: pbmc3k_tutorial.Rmd
+    section: QC and selecting cells for further analysis
+    quote: Cell doublets or multiplets may exhibit an aberrantly high gene count
+- id: c1-q05-lognormalize
+  after: c1-m04-normalize
+  question: What does the default "LogNormalize" method do?
+  choices:
+    - Divides each gene by its maximum across cells, then takes a square root
+    - Normalizes each cell by its total expression, multiplies by a scale factor (10,000 by default) and log-transforms
+    - Fits a regularized negative binomial model per gene
+    - Z-scores every gene across all cells
+  answer: 1
+  explanation: LogNormalize scales each cell by its total counts, multiplies by 10,000 and log-transforms.
+  source:
+    vignette: pbmc3k_tutorial.Rmd
+    section: Normalizing the data
+    quote: >-
+      normalizes the feature expression measurements for each cell by the
+      total expression, multiplies this by a scale factor (10,000 by default),
+      and log-transforms the result
+- id: c1-q06-assumption
+  after: c1-m04-normalize
+  question: Global-scaling normalization such as LogNormalize relies on which assumption?
+  choices:
+    - Each cell originally contains the same number of RNA molecules
+    - Every gene is expressed in every cell
+    - All cells belong to the same cell type
+    - Mitochondrial genes are absent
+  answer: 0
+  explanation: Global scaling assumes each cell started with the same number of RNA molecules; SCTransform avoids that assumption.
+  source:
+    vignette: pbmc3k_tutorial.Rmd
+    section: Normalizing the data
+    quote: >-
+      global-scaling relies on an assumption that each cell originally contains
+      the same number of RNA molecules
+- id: c1-q07-nfeatures
+  after: c1-m05-hvg
+  question: By default, how many variable features does FindVariableFeatures() return per dataset?
+  choices: ["500", "1,000", "2,000", "5,000"]
+  answer: 2
+  explanation: Seurat returns 2,000 features per dataset by default; these feed into PCA.
+  source:
+    vignette: pbmc3k_tutorial.Rmd
+    section: Identification of highly variable features (feature selection)
+    quote: By default, we return 2,000 features per dataset.
+- id: c1-q08-scaledata
+  after: c1-m06-scale
+  question: After ScaleData(), each scaled gene has…
+  choices:
+    - Mean 1 and variance 0 across cells
+    - Mean 0 and variance 1 across cells
+    - Values between 0 and 1
+    - Integer values
+  answer: 1
+  explanation: Scaling shifts each gene to mean 0 and scales it to variance 1, so highly expressed genes don't dominate.
+  source:
+    vignette: pbmc3k_tutorial.Rmd
+    section: Scaling the data
+    quote: Shifts the expression of each gene, so that the mean expression across cells is 0
+- id: c1-q09-sctransform
+  after: c1-m06-scale
+  question: If you use SCTransform(), which steps does it replace?
+  choices:
+    - Read10X, CreateSeuratObject and subset
+    - NormalizeData, FindVariableFeatures and ScaleData
+    - RunPCA, FindNeighbors and FindClusters
+    - FindMarkers and FindAllMarkers
+  answer: 1
+  explanation: SCTransform replaces NormalizeData, FindVariableFeatures and ScaleData.
+  source:
+    vignette: pbmc3k_tutorial.Rmd
+    section: Normalizing the data
+    quote: >-
+      The use of `SCTransform` replaces the need to run `NormalizeData`,
+      `FindVariableFeatures`, or `ScaleData` (described below.)
+- id: c1-q10-elbow
+  after: c1-m08-dims
+  question: What does an ElbowPlot rank?
+  choices:
+    - Genes by their average expression
+    - Principal components by the percentage of variance each one explains
+    - Clusters by number of cells
+    - Cells by their number of detected genes
+  answer: 1
+  explanation: The elbow plot ranks PCs by the percentage of variance explained; the "elbow" suggests where true signal ends.
+  source:
+    vignette: pbmc3k_tutorial.Rmd
+    section: Determine the 'dimensionality' of the dataset
+    quote: >-
+      a ranking of principle components based on the percentage of variance
+      explained by each one (`ElbowPlot()` function)
+- id: c1-q11-err-high
+  after: c1-m08-dims
+  question: When unsure how many PCs to keep, the tutorial advises you to…
+  choices:
+    - Err on the lower side, e.g. 5 PCs
+    - Err on the higher side
+    - Always use exactly 2 PCs so you can plot them
+    - Use one PC per cluster
+  answer: 1
+  explanation: Downstream results often don't change much with more PCs, but using too few (e.g. 5) significantly hurts.
+  source:
+    vignette: pbmc3k_tutorial.Rmd
+    section: Determine the 'dimensionality' of the dataset
+    quote: We advise users to err on the higher side when choosing this parameter.
+- id: c1-q12-jaccard
+  after: c1-m09-cluster
+  question: How does FindNeighbors() refine the edge weights of the KNN graph?
+  choices:
+    - By the correlation of mitochondrial reads between cells
+    - By the shared overlap in the cells' local neighborhoods (Jaccard similarity)
+    - By the number of UMIs per cell
+    - By UMAP distance
+  answer: 1
+  explanation: The KNN graph is built on Euclidean distance in PCA space, and edges are re-weighted by Jaccard similarity of neighborhoods (a shared nearest neighbor graph).
+  source:
+    vignette: pbmc3k_tutorial.Rmd
+    section: Cluster the cells
+    quote: >-
+      refine the edge weights between any two cells based on the shared
+      overlap in their local neighborhoods (Jaccard similarity)
+- id: c1-q13-resolution
+  after: c1-m09-cluster
+  question: What happens as you increase FindClusters()'s resolution parameter?
+  choices:
+    - Fewer, larger clusters
+    - More clusters
+    - The UMAP becomes sharper
+    - More genes are tested for markers
+  answer: 1
+  explanation: Resolution sets the granularity; higher values give more clusters. 0.4-1.2 works well for ~3K cells.
+  source:
+    vignette: pbmc3k_tutorial.Rmd
+    section: Cluster the cells
+    quote: >-
+      contains a resolution parameter that sets the 'granularity' of the
+      downstream clustering, with increased values leading to a greater number
+      of clusters
+- id: c1-q14-umap
+  after: c1-m10-umap
+  question: What caution does the tutorial give about UMAP and t-SNE plots?
+  choices:
+    - They should never be used for single-cell data
+    - They preserve global distances perfectly, so cluster positions are meaningful
+    - Use them for visualization, but avoid drawing biological conclusions solely from them
+    - They are only valid for fewer than 1,000 cells
+  answer: 2
+  explanation: These methods preserve local neighborhoods but often not global relationships.
+  source:
+    vignette: pbmc3k_tutorial.Rmd
+    section: Run non-linear dimensional reduction (UMAP / t-SNE)
+    quote: >-
+      We encourage users to leverage techniques like UMAP for visualization,
+      but to avoid drawing biological conclusions solely on the basis of
+      visualization techniques.
+- id: c1-q15-roc
+  after: c1-m11-markers
+  question: With FindMarkers(test.use = "roc"), what does the test report for each marker?
+  choices:
+    - A p-value from a t-test
+    - Its 'classification power', from 0 (random) to 1 (perfect)
+    - The number of cells expressing it
+    - Its rank among variable features
+  answer: 1
+  explanation: The ROC test returns each marker's classification power, ranging from 0 (random) to 1 (perfect).
+  source:
+    vignette: pbmc3k_tutorial.Rmd
+    section: Finding differentially expressed features (cluster biomarkers)
+    quote: >-
+      the ROC test returns the 'classification power' for any individual
+      marker (ranging from 0 - random, to 1 - perfect)

@@ -1,0 +1,60 @@
+id: c1-m04-normalize
+title: Level the playing field
+points: 5
+source:
+  vignette: pbmc3k_tutorial.Rmd
+  section: Normalizing the data
+  quote: >-
+    By default, we employ a global-scaling normalization method "LogNormalize"
+    that normalizes the feature expression measurements for each cell by the
+    total expression, multiplies this by a scale factor (10,000 by default),
+    and log-transforms the result.
+briefing: |
+  Some of {name}'s cells were sequenced more deeply than others, so raw counts
+  aren't comparable between cells. Normalize the data so expression values
+  are on the same scale for every cell.
+
+  In Seurat v5 the normalized values land in a new `data` layer next to the
+  raw `counts`.
+task:
+  - Normalize `pbmc` with the "LogNormalize" method and a scale factor of 10,000.
+setup: |
+  curelab_libraries()
+  load_checkpoint("c1-m03-filter")
+starter_code: |
+  # Normalize pbmc (LogNormalize, scale factor 10,000):
+
+solution: |
+  pbmc <- NormalizeData(pbmc, normalization.method = "LogNormalize", scale.factor = 1e4)
+check: |
+  curelab_check({
+    obj <- curelab_obj("pbmc", "Seurat")
+    expect_command(obj, "NormalizeData",
+      "pbmc hasn't been normalized yet. Remember to assign: pbmc <- NormalizeData(pbmc, ...)")
+    expect_param(obj, "NormalizeData", "normalization.method", "LogNormalize",
+      "Use normalization.method = \"LogNormalize\"")
+    expect_param(obj, "NormalizeData", "scale.factor", 10000,
+      "Use scale.factor = 1e4 (10,000)")
+    expect_true("data" %in% Layers(obj),
+      "There is no `data` layer: normalized values should be stored in pbmc[[\"RNA\"]]$data.")
+    expect_equal_ref(round(sum(LayerData(obj, layer = "data")[, 1]), 4), "cell1_sum",
+      "The normalized values of the first cell don't match")
+  })
+hints:
+  - One function call normalizes every cell; its defaults already match the tutorial, but spell them out.
+  - "`NormalizeData(pbmc, normalization.method = \"LogNormalize\", scale.factor = 1e4)`, and assign the result back to `pbmc`."
+  - |
+    ```r
+    pbmc <- NormalizeData(pbmc, normalization.method = "LogNormalize", scale.factor = 1e4)
+    ```
+notebook_pages: [c1-nb03-normalize]
+state: [pbmc]
+expected:
+  cell1_sum: round(sum(LayerData(pbmc, layer = "data")[, 1]), 4)
+wrong_solutions:
+  - why: wrong normalization method
+    code: |
+      pbmc <- NormalizeData(pbmc, normalization.method = "RC", scale.factor = 1e4)
+  - why: wrong scale factor
+    code: |
+      pbmc <- NormalizeData(pbmc, normalization.method = "LogNormalize", scale.factor = 1e6)

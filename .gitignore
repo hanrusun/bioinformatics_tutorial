@@ -22,3 +22,4 @@ packs/*/data/downloads/
 .DS_Store
 .idea/
 .vscode/
+.cache/

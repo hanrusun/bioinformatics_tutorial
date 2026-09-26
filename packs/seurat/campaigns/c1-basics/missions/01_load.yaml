@@ -1,0 +1,89 @@
+id: c1-m01-load
+title: First samples from the sequencer
+points: 6
+source:
+  vignette: pbmc3k_tutorial.Rmd
+  section: Set up the Seurat object
+  quote: >-
+    The `Read10X()` function reads in the output of the
+    [cellranger](https://www.10xgenomics.com/support/software/cell-ranger/latest/getting-started/cr-what-is-cell-ranger)
+    pipeline from 10X, returning a unique molecular identified (UMI) count matrix.
+briefing: |
+  {full_name}'s blood sample is back from the sequencer: peripheral blood
+  mononuclear cells (PBMCs) run through the 10x Genomics Cell Ranger pipeline.
+  To study how his immune system is responding to the tumor, the lab needs the
+  raw counts in a Seurat object.
+
+  The Seurat guided tutorial uses the same kind of data: 2,700 single PBMCs
+  sequenced on an Illumina NextSeq 500.
+task:
+  - Load `dplyr`, `Seurat` and `patchwork`.
+  - Read the Cell Ranger output in `data_dir` into `pbmc.data` with `Read10X()`.
+  - Create a Seurat object `pbmc` from `pbmc.data` with project `"pbmc3k"`, keeping genes detected in at least 3 cells and cells with at least 200 genes.
+starter_code: |
+  library(dplyr)
+  library(Seurat)
+  library(patchwork)
+
+  # Cell Ranger output for the patient's sample:
+  data_dir <- "/opt/curelab/datasets/pbmc3k/filtered_gene_bc_matrices/hg19/"
+
+  # 1. Read the count matrix into pbmc.data
+
+  # 2. Create the Seurat object `pbmc`
+
+solution: |
+  library(dplyr)
+  library(Seurat)
+  library(patchwork)
+  pbmc.data <- Read10X(data.dir = "/opt/curelab/datasets/pbmc3k/filtered_gene_bc_matrices/hg19/") # curelab: adapted
+  pbmc <- CreateSeuratObject(counts = pbmc.data, project = "pbmc3k", min.cells = 3, min.features = 200)
+  pbmc
+check: |
+  curelab_check({
+    counts <- curelab_obj("pbmc.data", hint = "Read the matrix with Read10X() first.")
+    expect_true(inherits(counts, "dgCMatrix"),
+      "`pbmc.data` should be the sparse count matrix that Read10X() returns.")
+    expect_equal_ref(dim(counts), "raw_dim",
+      "`pbmc.data` doesn't look like the full 10x matrix (genes x cells)")
+    obj <- curelab_obj("pbmc", "Seurat", hint = "Create it with CreateSeuratObject().")
+    expect_equal_ref(nrow(obj), "n_genes",
+      "`pbmc` has the wrong number of genes. Keep genes detected in at least 3 cells (min.cells = 3)")
+    expect_equal_ref(ncol(obj), "n_cells",
+      "`pbmc` has the wrong number of cells. Keep cells with at least 200 detected genes (min.features = 200)")
+    expect_true(identical(as.character(Project(obj)), "pbmc3k"),
+      "Set the project name to \"pbmc3k\" (project = \"pbmc3k\").")
+  })
+hints:
+  - >-
+    Two steps: read the Cell Ranger folder into a count matrix, then wrap
+    that matrix in a Seurat object. CreateSeuratObject() can drop rare genes
+    and near-empty cells as it goes.
+  - >-
+    Use `Read10X(data.dir = data_dir)`, then
+    `CreateSeuratObject(counts = ..., project = "pbmc3k", min.cells = 3, min.features = 200)`.
+  - |
+    ```r
+    library(dplyr)
+    library(Seurat)
+    library(patchwork)
+    pbmc.data <- Read10X(data.dir = data_dir)
+    pbmc <- CreateSeuratObject(counts = pbmc.data, project = "pbmc3k", min.cells = 3, min.features = 200)
+    pbmc
+    ```
+debug:
+  - pattern: "min.cells = 3"
+    help: min.cells removes genes (rows) that are detected in fewer than that many cells.
+  - pattern: "min.features = 200"
+    help: min.features removes cells (columns) with fewer than that many detected genes.
+notebook_pages: [c1-nb01-load]
+state: [pbmc]
+expected:
+  raw_dim: dim(pbmc.data)
+  n_genes: nrow(pbmc)
+  n_cells: ncol(pbmc)
+wrong_solutions:
+  - why: no min.cells / min.features filtering
+    code: |
+      pbmc.data <- Read10X(data.dir = "/opt/curelab/datasets/pbmc3k/filtered_gene_bc_matrices/hg19/")
+      pbmc <- CreateSeuratObject(counts = pbmc.data, project = "pbmc3k")

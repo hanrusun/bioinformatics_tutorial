@@ -1,0 +1,16 @@
+id: c2-multiome
+title: Seurat for the Multiome Lab
+subtitle: The skills behind the neuroblastoma TRN pipeline
+illness: neuroblastoma
+order: 2
+unlock_after: c1-basics
+summary: >-
+  Mia's tumor samples are coming from a multiome lab. Learn the Seurat v5
+  skills that the NBL scRNA/scATAC pipeline relies on: object anatomy and
+  layers, subsetting, cell-cycle scoring and regression, splitting and Harmony
+  integration, conserved markers, pseudobulk differential expression, label
+  transfer onto a query, and merging objects for co-embedding.
+datasets:
+  - SeuratData pbmc3k, ifnb and panc8
+  - Nestorowa et al. murine hematopoietic progenitors (cell-cycle vignette files)
+  - Kang et al. demuxlet donor assignments (for pseudobulk)

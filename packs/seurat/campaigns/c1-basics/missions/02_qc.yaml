@@ -1,0 +1,73 @@
+id: c1-m02-qc
+title: Spot the dying cells
+points: 5
+source:
+  vignette: pbmc3k_tutorial.Rmd
+  section: QC and selecting cells for further analysis
+  quote: >-
+    We calculate mitochondrial QC metrics with the `PercentageFeatureSet()`
+    function, which calculates the percentage of counts originating from a set
+    of features
+briefing: |
+  Some of the cells in {name}'s sample were damaged or dying before they were
+  captured. Dying cells often leak cytoplasmic RNA while their mitochondrial
+  transcripts stay behind, so a high fraction of mitochondrial reads is a
+  classic warning sign.
+
+  Human mitochondrial genes start with `MT-`. Record, for every cell, the
+  percentage of its counts that come from those genes, then look at the QC
+  metrics side by side.
+task:
+  - Add a metadata column `percent.mt` to `pbmc` with the percentage of counts from genes starting with `MT-`.
+  - Look at the first rows of `pbmc@meta.data` and draw the three QC violin plots.
+setup: |
+  curelab_libraries()
+  load_checkpoint("c1-m01-load")
+starter_code: |
+  # `pbmc` is loaded. Add the mitochondrial QC metric:
+
+
+  # Where are QC metrics stored?
+  head(pbmc@meta.data, 5)
+solution: |
+  pbmc[["percent.mt"]] <- PercentageFeatureSet(pbmc, pattern = "^MT-")
+  head(pbmc@meta.data, 5)
+  VlnPlot(pbmc, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
+check: |
+  curelab_check({
+    obj <- curelab_obj("pbmc", "Seurat")
+    expect_true("percent.mt" %in% colnames(obj@meta.data),
+      "There is no `percent.mt` column in the metadata yet. The `[[` operator adds columns: pbmc[[\"percent.mt\"]] <- ...")
+    expect_true(is.numeric(obj$percent.mt), "`percent.mt` should be numeric (a percentage per cell).")
+    expect_true(max(obj$percent.mt) > 0,
+      "Every cell has 0% mitochondrial counts. Human mitochondrial genes are upper case: the pattern is \"^MT-\".")
+    expect_equal_ref(ncol(obj), "n_cells", "Don't filter cells yet; that's the next mission")
+    expect_equal_ref(round(mean(obj$percent.mt), 6), "mean_mt",
+      "The mitochondrial percentages don't match. Use PercentageFeatureSet(pbmc, pattern = \"^MT-\")")
+  })
+hints:
+  - >-
+    Seurat can compute "what percentage of this cell's counts come from genes
+    matching a pattern" in one call, and `[[` stores the result as a metadata
+    column.
+  - >-
+    `PercentageFeatureSet(pbmc, pattern = "^MT-")` returns the percentages;
+    assign them with `pbmc[["percent.mt"]] <- ...`.
+  - |
+    ```r
+    pbmc[["percent.mt"]] <- PercentageFeatureSet(pbmc, pattern = "^MT-")
+    head(pbmc@meta.data, 5)
+    VlnPlot(pbmc, features = c("nFeature_RNA", "nCount_RNA", "percent.mt"), ncol = 3)
+    ```
+debug:
+  - pattern: "0% mitochondrial"
+    help: Gene symbols are case-sensitive. Human mitochondrial genes look like MT-CO1, so the pattern is "^MT-" (mouse uses "^mt-").
+notebook_pages: [c1-nb02-qc]
+state: [pbmc]
+expected:
+  n_cells: ncol(pbmc)
+  mean_mt: round(mean(pbmc$percent.mt), 6)
+wrong_solutions:
+  - why: mouse-style lower-case pattern gives all zeros
+    code: |
+      pbmc[["percent.mt"]] <- PercentageFeatureSet(pbmc, pattern = "^mt-")

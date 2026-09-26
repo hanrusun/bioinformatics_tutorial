@@ -1,0 +1,56 @@
+id: c2-m04-regress
+title: Regress out the cell cycle
+points: 6
+source:
+  vignette: cell_cycle_vignette.Rmd
+  section: Regress out cell cycle scores during data scaling
+  quote: >-
+    For each gene, Seurat models the relationship between gene expression and
+    the S and G2M cell cycle scores. The scaled residuals of this model
+    represent a 'corrected' expression matrix, that can be used downstream for
+    dimensional reduction.
+briefing: |
+  Now remove the cell-cycle signal so it doesn't split cells that are
+  otherwise the same state. This is the move behind `vars.to.regress` in
+  the NBL scripts. Rescale every gene while regressing out the S and G2M
+  scores, then redo the PCA on the corrected data.
+
+  This one takes a minute or two to run; the clock is paused meanwhile.
+task:
+  - Rescale all genes of `marrow`, regressing out `S.Score` and `G2M.Score`.
+  - Re-run PCA on the variable features.
+setup: |
+  curelab_libraries()
+  load_checkpoint("c2-m03-cellcycle")
+starter_code: |
+  marrow <- ScaleData(marrow, vars.to.regress = , features = rownames(marrow))
+
+  # Now, a PCA on the variable genes no longer returns components associated with cell cycle
+  marrow <- RunPCA(marrow, features = VariableFeatures(marrow), nfeatures.print = 10)
+solution: |
+  marrow <- ScaleData(marrow, vars.to.regress = c('S.Score', 'G2M.Score'), features = rownames(marrow))
+  marrow <- RunPCA(marrow, features = VariableFeatures(marrow), nfeatures.print = 10)
+check: |
+  curelab_check({
+    obj <- curelab_obj("marrow", "Seurat")
+    regressed <- command_param(obj, "ScaleData", "vars.to.regress")
+    expect_true(!is.null(regressed) && setequal(regressed, c("S.Score", "G2M.Score")),
+      "Regress out both cell-cycle scores: vars.to.regress = c('S.Score', 'G2M.Score').")
+    expect_true(nrow(LayerData(obj, layer = "scale.data")) == nrow(obj),
+      "Scale all genes: features = rownames(marrow).")
+    expect_true(ran_after(obj, "ScaleData", "RunPCA"),
+      "Re-run RunPCA() after regressing, so the PCA uses the corrected data.")
+  })
+hints:
+  - "Regression happens inside ScaleData(), via an argument that names metadata columns to model out."
+  - "`ScaleData(marrow, vars.to.regress = c('S.Score', 'G2M.Score'), features = rownames(marrow))`, then RunPCA again."
+  - |
+    ```r
+    marrow <- ScaleData(marrow, vars.to.regress = c('S.Score', 'G2M.Score'), features = rownames(marrow))
+    marrow <- RunPCA(marrow, features = VariableFeatures(marrow), nfeatures.print = 10)
+    ```
+notebook_pages: [c2-nb03-cellcycle]
+wrong_solutions:
+  - why: re-ran PCA without regressing
+    code: |
+      marrow <- RunPCA(marrow, features = VariableFeatures(marrow), nfeatures.print = 10)

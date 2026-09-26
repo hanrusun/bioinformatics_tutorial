@@ -1,0 +1,80 @@
+# Seurat tool pack for Cure Lab.
+#
+# All tutorial content cites the Seurat vignettes at the exact release that is
+# installed in the image (satijalab/seurat:5.5.1). tools/verify_sources.py
+# checks every quote and solution line against these files.
+id: seurat
+name: Seurat
+tool: Seurat (R)
+tool_version: "5.5.1"
+language: r
+kernel: ir
+editor_mode: r
+source_pin:
+  repo: satijalab/seurat
+  ref: v5.5.1
+  path: vignettes
+  site: https://satijalab.org/seurat/articles/
+init_code: |
+  source("{pack_dir}/r/helpers.R")
+mission_prelude: curelab_set_mission("{mission_id}")
+campaigns: [c1-basics, c2-multiome]
+
+# Explanations for common R/Seurat errors. Matched (case-insensitively)
+# against the error text after every failed Run or Submit; mission files can
+# add their own, more specific rules.
+debug:
+  - pattern: 'could not find function "(Read10X|CreateSeuratObject|NormalizeData|FindVariableFeatures|ScaleData|RunPCA|FindNeighbors|FindClusters|RunUMAP|FindMarkers|FindAllMarkers|DimPlot|VlnPlot|FeaturePlot)"'
+    help: >-
+      R can't find a Seurat function. Load the package first with
+      `library(Seurat)` (and `library(dplyr)` for `%>%`, `group_by()` and
+      `filter()`).
+  - pattern: 'could not find function "%>%"'
+    help: The pipe `%>%` comes from dplyr (or magrittr). Run `library(dplyr)` first.
+  - pattern: could not find function
+    help: >-
+      R doesn't know that function name. Check the spelling and capitalization
+      (R is case-sensitive: `FindClusters`, not `findclusters`), and that the
+      package providing it is loaded.
+  - pattern: "object '([^']+)' not found"
+    help: >-
+      You used a name that doesn't exist in this session. Check its spelling,
+      and make sure you saved results with `<-`, e.g.
+      `pbmc <- NormalizeData(pbmc)`. `NormalizeData(pbmc)` on its own computes
+      the result and then throws it away.
+  - pattern: "unexpected (symbol|string constant|numeric constant|'\\)'|'\\}'|','|'='|input)"
+    help: >-
+      R couldn't parse the code. Look for a missing comma between arguments,
+      an unclosed bracket or quote, or a stray character near the position R
+      reports.
+  - pattern: unexpected end of input
+    help: A bracket `(`, `[`, `{` or a quote was opened and never closed.
+  - pattern: argument .* is missing, with no default
+    help: A required argument is missing. Check the function call against the notebook, or run `?FunctionName`.
+  - pattern: unused argument
+    help: >-
+      One of the argument names isn't accepted by this function. It is often a
+      typo (`resolution`, `nfeatures`, `min.features`) or an argument that
+      belongs to a different function.
+  - pattern: "(does not exist|cannot open file|No such file or directory)"
+    help: >-
+      R can't find that file or folder. Use the exact path given in the
+      starter code; it points at the data baked into this lab image.
+  - pattern: there is no package called
+    help: That package isn't installed in this lab image. The missions only need Seurat, dplyr, patchwork and SeuratData.
+  - pattern: "(not found in this Seurat object|None of the requested features|Could not find|cannot find .* in this Seurat object)"
+    help: >-
+      Seurat couldn't find a gene, metadata column or reduction with that name.
+      Check capitalization (human genes are upper case, e.g. `MS4A1`) and that
+      the step that creates it has run.
+  - pattern: "(No layer matching|layer.*not found|Please run NormalizeData)"
+    help: >-
+      Seurat v5 keeps data in layers (`counts`, `data`, `scale.data`). This
+      step needs a layer that doesn't exist yet. Run the earlier step
+      (NormalizeData, then ScaleData) first.
+  - pattern: non-numeric argument
+    help: Arithmetic was attempted on text. Check you're comparing numbers with numbers (no quotes around numbers).
+  - pattern: "subscript out of bounds"
+    help: You asked for an element that doesn't exist, e.g. a column or list entry name that is misspelled.
+  - pattern: "checker hit an error"
+    help: The checker couldn't inspect your objects. It usually means an object has an unexpected type. Re-run the starter code and compare against the task list.

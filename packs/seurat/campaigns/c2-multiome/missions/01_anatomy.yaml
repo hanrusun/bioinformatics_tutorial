@@ -1,0 +1,98 @@
+id: c2-m01-anatomy
+title: Anatomy of a Seurat v5 object
+points: 7
+source:
+  vignette: essential_commands.Rmd
+  section: Expression data (stored as layers in Seurat v5)
+  quote: "# Retrieve data in an expression matrix"
+briefing: |
+  Before anyone touches {full_name}'s tumor samples, the lab rehearses every
+  step on reference data. The neuroblastoma pipeline opens Seurat objects and
+  reaches straight into them: `seurat.rna[['RNA']]$counts`, `AddMetaData()`,
+  setting identities. Learn your way around a Seurat v5 object using the
+  PBMC 3k reference dataset.
+
+  `pbmc` is loaded from SeuratData and has cell type labels in the
+  `seurat_annotations` metadata column.
+task:
+  - Store the number of cells in `num_cells` and the number of features in `num_features`.
+  - Pull the raw counts matrix of the RNA assay out into `mtx` with the v5 layer accessor.
+  - Set the cell identities to the `seurat_annotations` metadata column.
+  - Add a metadata column `groups` holding random labels "g1"/"g2" (one per cell).
+setup: |
+  curelab_libraries("SeuratData")
+  pbmc <- LoadData('pbmc3k')
+starter_code: |
+  pbmc
+  Layers(pbmc)
+  head(pbmc[[]])
+
+  # 1. number of cells / features
+  num_cells <-
+  num_features <-
+
+  # 2. raw counts of the RNA assay (Seurat v5 layer accessor)
+  mtx <-
+
+  # 3. identities from the seurat_annotations column
+
+  table(Idents(pbmc))
+
+  # 4. random group labels as a new metadata column
+  random_group_labels <- sample(x = c('g1', 'g2'), size = ncol(x = pbmc), replace = TRUE)
+
+solution: |
+  num_cells <- ncol(pbmc)
+  num_features <- nrow(pbmc)
+  Layers(pbmc)
+  mtx <- pbmc[["RNA"]]$counts
+  Idents(object = pbmc) <- 'seurat_annotations'
+  table(Idents(pbmc))
+  random_group_labels <- sample(x = c('g1', 'g2'), size = ncol(x = pbmc), replace = TRUE)
+  pbmc$groups <- random_group_labels
+check: |
+  curelab_check({
+    obj <- curelab_obj("pbmc", "Seurat")
+    n <- curelab_obj("num_cells")
+    expect_true(is.numeric(n) && length(n) == 1 && n == ncol(obj), "`num_cells` should be the number of cells: ncol(pbmc).")
+    f <- curelab_obj("num_features")
+    expect_true(is.numeric(f) && length(f) == 1 && f == nrow(obj), "`num_features` should be the number of features: nrow(pbmc).")
+    m <- curelab_obj("mtx")
+    expect_true(inherits(m, "dgCMatrix") && identical(dim(m), dim(obj)),
+      "`mtx` should be the sparse raw counts matrix: pbmc[[\"RNA\"]]$counts.")
+    expect_true(isTRUE(all.equal(m, LayerData(obj, assay = "RNA", layer = "counts"))),
+      "`mtx` isn't the counts layer. Use pbmc[[\"RNA\"]]$counts (or LayerData(pbmc, assay = 'RNA', layer = 'counts')).")
+    expect_true(identical(as.character(Idents(obj)), as.character(obj$seurat_annotations)),
+      "The identities should come from the seurat_annotations column: Idents(object = pbmc) <- 'seurat_annotations'.")
+    expect_true("groups" %in% colnames(obj[[]]), "Add a metadata column called `groups` (pbmc$groups <- ...).")
+    expect_true(all(obj$groups %in% c("g1", "g2")), "`groups` should only contain \"g1\" and \"g2\".")
+  })
+hints:
+  - "Cells are columns and features are rows. In Seurat v5, assays keep matrices in layers you can reach with `$`. Metadata columns are added with `$` on the object."
+  - "`ncol(pbmc)`, `nrow(pbmc)`, `pbmc[[\"RNA\"]]$counts`, `Idents(object = pbmc) <- 'seurat_annotations'`, `pbmc$groups <- random_group_labels`."
+  - |
+    ```r
+    num_cells <- ncol(pbmc)
+    num_features <- nrow(pbmc)
+    mtx <- pbmc[["RNA"]]$counts
+    Idents(object = pbmc) <- 'seurat_annotations'
+    random_group_labels <- sample(x = c('g1', 'g2'), size = ncol(x = pbmc), replace = TRUE)
+    pbmc$groups <- random_group_labels
+    ```
+notebook_pages: [c2-nb01-anatomy]
+state: [pbmc]
+wrong_solutions:
+  - why: identities left as orig.ident
+    code: |
+      num_cells <- ncol(pbmc)
+      num_features <- nrow(pbmc)
+      mtx <- pbmc[["RNA"]]$counts
+      random_group_labels <- sample(x = c('g1', 'g2'), size = ncol(x = pbmc), replace = TRUE)
+      pbmc$groups <- random_group_labels
+  - why: mtx taken from the wrong place
+    code: |
+      num_cells <- ncol(pbmc)
+      num_features <- nrow(pbmc)
+      mtx <- pbmc[[]]
+      Idents(object = pbmc) <- 'seurat_annotations'
+      pbmc$groups <- sample(x = c('g1', 'g2'), size = ncol(x = pbmc), replace = TRUE)

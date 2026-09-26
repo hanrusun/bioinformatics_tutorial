@@ -1,0 +1,75 @@
+id: c1-m13-annotate
+title: Name the cells
+points: 9
+source:
+  vignette: pbmc3k_tutorial.Rmd
+  section: Assigning cell type identity to clusters
+  quote: >-
+    Fortunately in the case of this dataset, we can use canonical markers to
+    easily match the unbiased clustering to known cell types
+briefing: |
+  Last step for this sample: turn cluster numbers into cell types. The
+  canonical markers point to naive and memory CD4 T cells, CD8 T cells, B
+  cells, NK cells, two kinds of monocytes, dendritic cells and platelets.
+  With {name}'s immune landscape labelled, the cure team can see what the
+  tumor is doing to his blood.
+
+  | Cluster | Markers | Cell type |
+  |---|---|---|
+  | 0 | IL7R, CCR7 | Naive CD4+ T |
+  | 1 | CD14, LYZ | CD14+ Mono |
+  | 2 | IL7R, S100A4 | Memory CD4+ |
+  | 3 | MS4A1 | B |
+  | 4 | CD8A | CD8+ T |
+  | 5 | FCGR3A, MS4A7 | FCGR3A+ Mono |
+  | 6 | GNLY, NKG7 | NK |
+  | 7 | FCER1A, CST3 | DC |
+  | 8 | PPBP | Platelet |
+task:
+  - Build `new.cluster.ids` with the nine labels in cluster order, named by the current cluster levels.
+  - Rename the identities of `pbmc` and plot the labelled UMAP.
+setup: |
+  curelab_libraries()
+  load_checkpoint("c1-m12-visualize")
+starter_code: |
+  new.cluster.ids <- c("Naive CD4 T", "CD14+ Mono", "Memory CD4 T", "B", "CD8 T", "FCGR3A+ Mono", "NK", "DC", "Platelet")
+  # name the labels by the current cluster levels, then rename the identities
+
+  DimPlot(pbmc, reduction = 'umap', label = TRUE, pt.size = 0.5) + NoLegend()
+solution: |
+  new.cluster.ids <- c("Naive CD4 T", "CD14+ Mono", "Memory CD4 T", "B", "CD8 T", "FCGR3A+ Mono", "NK", "DC", "Platelet")
+  names(new.cluster.ids) <- levels(pbmc)
+  pbmc <- RenameIdents(pbmc, new.cluster.ids)
+  DimPlot(pbmc, reduction = 'umap', label = TRUE, pt.size = 0.5) + NoLegend()
+check: |
+  curelab_check({
+    obj <- curelab_obj("pbmc", "Seurat")
+    expect_true(!any(levels(Idents(obj)) %in% as.character(0:20)),
+      "The identities are still cluster numbers. Rename them: pbmc <- RenameIdents(pbmc, new.cluster.ids).")
+    expect_equal_ref(levels(Idents(obj)), "levels", "The cell type labels (or their order) aren't right", show = FALSE)
+    expect_equal_ref(as.vector(table(Idents(obj))), "sizes", "Cells were assigned to the wrong labels. Name new.cluster.ids by levels(pbmc) before renaming", show = FALSE)
+    b <- WhichCells(obj, idents = "B")
+    expect_true(mean(FetchData(obj, vars = "MS4A1", cells = b)[, 1]) > 1,
+      "The cells labelled B don't express the B cell marker MS4A1. Check the label order.")
+  })
+hints:
+  - "RenameIdents() takes a named vector: names are the old identities (cluster levels), values are the new labels."
+  - "`names(new.cluster.ids) <- levels(pbmc)` then `pbmc <- RenameIdents(pbmc, new.cluster.ids)`."
+  - |
+    ```r
+    new.cluster.ids <- c("Naive CD4 T", "CD14+ Mono", "Memory CD4 T", "B", "CD8 T", "FCGR3A+ Mono", "NK", "DC", "Platelet")
+    names(new.cluster.ids) <- levels(pbmc)
+    pbmc <- RenameIdents(pbmc, new.cluster.ids)
+    DimPlot(pbmc, reduction = 'umap', label = TRUE, pt.size = 0.5) + NoLegend()
+    ```
+notebook_pages: [c1-nb07-markers]
+state: [pbmc]
+expected:
+  levels: levels(Idents(pbmc))
+  sizes: as.vector(table(Idents(pbmc)))
+wrong_solutions:
+  - why: labels in the wrong order
+    code: |
+      new.cluster.ids <- c("B", "CD14+ Mono", "Memory CD4 T", "Naive CD4 T", "CD8 T", "FCGR3A+ Mono", "NK", "DC", "Platelet")
+      names(new.cluster.ids) <- levels(pbmc)
+      pbmc <- RenameIdents(pbmc, new.cluster.ids)

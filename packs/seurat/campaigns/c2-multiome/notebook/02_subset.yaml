@@ -1,0 +1,24 @@
+id: c2-nb02-subset
+title: Subsetting objects
+rp: 1
+missions: [c2-m02-subset]
+blocks:
+  - code: |
+      # Subset Seurat object based on identity class, also see ?SubsetData
+      subset(x = pbmc, idents = 'B')
+      subset(x = pbmc, idents = c('Naive CD4 T', 'CD8 T'), invert = TRUE)
+      # Subset on the expression level of a gene/feature
+      subset(x = pbmc, subset = MS4A1 > 2.5)
+      # Subset on a combination of criteria
+      subset(x = pbmc, subset = MS4A1 > 2.5 & PC_1 > 5)
+      subset(x = pbmc, subset = MS4A1 > 2.5, idents = 'B')
+      # Subset on a value in the object meta data
+      subset(x = pbmc, subset = groups == "g1")
+      # Downsample the number of cells per identity class
+      subset(x = pbmc, downsample = 100)
+    source: {vignette: essential_commands.Rmd, section: "Subset Seurat objects"}
+  - text: >-
+      In the TRN co-embedding script, each run starts by keeping one
+      sample: `seurat.rna = subset(seurat.rna, biospecimen_id == sampleID0)`.
+      That is the metadata form above, with the `subset =` argument name
+      left out.

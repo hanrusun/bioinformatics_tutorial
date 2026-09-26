@@ -1,0 +1,46 @@
+id: c2-nb03-cellcycle
+title: Cell-cycle scoring and regression
+rp: 2
+missions: [c2-m03-cellcycle, c2-m04-regress]
+blocks:
+  - quote: >-
+      First, we assign each cell a score, based on its expression of G2/M and S
+      phase markers. These marker sets should be anticorrelated in their
+      expression levels, and cells expressing neither are likely not cycling
+      and in G1 phase.
+    source: {vignette: cell_cycle_vignette.Rmd, section: "Assign Cell-Cycle Scores"}
+  - code: |
+      # A list of cell cycle markers, from Tirosh et al, 2015, is loaded with Seurat.
+      # We can segregate this list into markers of G2/M phase and markers of S phase
+      s.genes <- cc.genes$s.genes
+      g2m.genes <- cc.genes$g2m.genes
+    source: {vignette: cell_cycle_vignette.Rmd, section: "Assign Cell-Cycle Scores"}
+  - code: |
+      marrow <- CellCycleScoring(marrow, s.features = s.genes, g2m.features = g2m.genes, set.ident = TRUE)
+      #view cell cycle scores and phase assignments
+      head(marrow[[]])
+    source: {vignette: cell_cycle_vignette.Rmd, section: "Assign Cell-Cycle Scores"}
+  - quote: >-
+      For each gene, Seurat models the relationship between gene expression
+      and the S and G2M cell cycle scores. The scaled residuals of this model
+      represent a 'corrected' expression matrix, that can be used downstream
+      for dimensional reduction.
+    source: {vignette: cell_cycle_vignette.Rmd, section: "Regress out cell cycle scores during data scaling"}
+  - code: |
+      marrow <- ScaleData(marrow, vars.to.regress = c('S.Score', 'G2M.Score'), features = rownames(marrow))
+    source: {vignette: cell_cycle_vignette.Rmd, section: "Regress out cell cycle scores during data scaling"}
+  - quote: >-
+      As an alternative, we suggest regressing out the **difference** between
+      the G2M and S phase scores.
+    source: {vignette: cell_cycle_vignette.Rmd, section: "Alternate Workflow"}
+  - code: |
+      marrow$CC.Difference <- marrow$S.Score - marrow$G2M.Score
+      marrow <- ScaleData(marrow, vars.to.regress = 'CC.Difference', features = rownames(marrow))
+    source: {vignette: cell_cycle_vignette.Rmd, section: "Alternate Workflow"}
+  - text: >-
+      `AddModuleScore()`, which the NBL scripts also use, is the general
+      version of this scoring: it scores cells for any gene list.
+  - quote: >-
+      See `?AddModuleScore()` in Seurat for more information, this function
+      can be used to calculate supervised module scores for any gene list.
+    source: {vignette: cell_cycle_vignette.Rmd, section: "Assign Cell-Cycle Scores"}

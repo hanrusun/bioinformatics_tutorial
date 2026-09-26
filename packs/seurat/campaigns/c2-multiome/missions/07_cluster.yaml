@@ -1,0 +1,63 @@
+id: c2-m07-cluster
+title: Cluster the integrated cells
+points: 7
+source:
+  vignette: integration_introduction.Rmd
+  section: Perform integration
+  quote: >-
+    The method returns a dimensional reduction (i.e. `integrated.cca`) which
+    can be used for visualization and unsupervised clustering analysis.
+briefing: |
+  With both conditions aligned, rejoin the layers, then cluster and embed
+  using the Harmony space instead of the raw PCA. Cells of the same type
+  from both conditions should now land together.
+task:
+  - Rejoin the RNA layers of `ifnb`.
+  - Build the neighbor graph from the first 30 dimensions of the "harmony" reduction and cluster at resolution 1.
+  - Run UMAP on the same Harmony dimensions and plot it by `stim` and `seurat_annotations`.
+setup: |
+  curelab_libraries()
+  load_checkpoint("c2-m06-harmony")
+starter_code: |
+  # re-join layers after integration
+  ifnb[["RNA"]] <-
+
+  ifnb <- FindNeighbors(ifnb, reduction = , dims = 1:30)
+  ifnb <- FindClusters(ifnb, resolution = 1)
+  ifnb <- RunUMAP(ifnb, dims = 1:30, reduction = )
+  DimPlot(ifnb, reduction = 'umap', group.by=c('stim','seurat_annotations'))
+solution: |
+  ifnb[["RNA"]] <- JoinLayers(ifnb[["RNA"]])
+  ifnb <- FindNeighbors(ifnb, reduction = "harmony", dims = 1:30) # curelab: adapted
+  ifnb <- FindClusters(ifnb, resolution = 1)
+  ifnb <- RunUMAP(ifnb, dims = 1:30, reduction = "harmony") # curelab: adapted
+  DimPlot(ifnb, reduction = 'umap', group.by=c('stim','seurat_annotations'))
+check: |
+  curelab_check({
+    obj <- curelab_obj("ifnb", "Seurat")
+    expect_true("counts" %in% Layers(obj) && !any(startsWith(Layers(obj), "counts.")),
+      "Rejoin the layers: ifnb[[\"RNA\"]] <- JoinLayers(ifnb[[\"RNA\"]]).")
+    expect_param(obj, "FindNeighbors", "reduction", "harmony", "Build the neighbor graph on the Harmony space: reduction = \"harmony\"")
+    expect_param(obj, "FindClusters", "resolution", 1, "Cluster at resolution = 1")
+    expect_reduction(obj, "umap", "Run RunUMAP() on the harmony reduction.")
+    expect_param(obj, "RunUMAP", "reduction", "harmony", "Run the UMAP on the Harmony space: reduction = \"harmony\"")
+  })
+hints:
+  - "Same clustering steps as Campaign 1. Point them at the integrated reduction instead of \"pca\"."
+  - "`JoinLayers(ifnb[[\"RNA\"]])`; `FindNeighbors(ifnb, reduction = \"harmony\", dims = 1:30)`; `RunUMAP(ifnb, dims = 1:30, reduction = \"harmony\")`."
+  - |
+    ```r
+    ifnb[["RNA"]] <- JoinLayers(ifnb[["RNA"]])
+    ifnb <- FindNeighbors(ifnb, reduction = "harmony", dims = 1:30)
+    ifnb <- FindClusters(ifnb, resolution = 1)
+    ifnb <- RunUMAP(ifnb, dims = 1:30, reduction = "harmony")
+    DimPlot(ifnb, reduction = 'umap', group.by=c('stim','seurat_annotations'))
+    ```
+notebook_pages: [c2-nb04-integration]
+state: [ifnb]
+wrong_solutions:
+  - why: clustered on the unintegrated PCA
+    code: |
+      ifnb[["RNA"]] <- JoinLayers(ifnb[["RNA"]])
+      ifnb <- FindNeighbors(ifnb, reduction = "pca", dims = 1:30)
+      ifnb <- FindClusters(ifnb, resolution = 1)

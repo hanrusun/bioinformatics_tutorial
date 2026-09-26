@@ -1,0 +1,68 @@
+id: c1-m09-cluster
+title: Group the cells
+points: 9
+source:
+  vignette: pbmc3k_tutorial.Rmd
+  section: Cluster the cells
+  quote: >-
+    This step is performed using the `FindNeighbors()` function, and takes as
+    input the previously defined dimensionality of the dataset (first 10 PCs).
+briefing: |
+  Time to find out which kinds of immune cells are in {name}'s blood. Seurat
+  builds a k-nearest-neighbor graph of the cells in PCA space, then splits
+  that graph into communities: the clusters.
+
+  Use the first 10 PCs and a resolution of 0.5, the tutorial's settings for
+  about 3,000 cells.
+task:
+  - Build the neighbor graph from PCs 1-10.
+  - Find clusters at resolution 0.5.
+  - Look at the cluster IDs of the first 5 cells with `Idents()`.
+setup: |
+  curelab_libraries()
+  load_checkpoint("c1-m08-dims")
+starter_code: |
+  pbmc <- FindNeighbors(pbmc, dims = )
+  pbmc <- FindClusters(pbmc, resolution = )
+
+  # Look at cluster IDs of the first 5 cells
+  head(Idents(pbmc), 5)
+solution: |
+  pbmc <- FindNeighbors(pbmc, dims = 1:10)
+  pbmc <- FindClusters(pbmc, resolution = 0.5)
+  head(Idents(pbmc), 5)
+check: |
+  curelab_check({
+    obj <- curelab_obj("pbmc", "Seurat")
+    expect_command(obj, "FindNeighbors", "Build the neighbor graph with FindNeighbors() first.")
+    expect_param(obj, "FindNeighbors", "dims", 1:10, "Use the first 10 PCs: dims = 1:10")
+    expect_command(obj, "FindClusters", "Now cluster the graph with FindClusters().")
+    expect_param(obj, "FindClusters", "resolution", 0.5, "Use resolution = 0.5")
+    expect_true("seurat_clusters" %in% colnames(obj@meta.data), "FindClusters() should add a seurat_clusters column.")
+    expect_equal_ref(nlevels(Idents(obj)), "n_clusters", "Unexpected number of clusters")
+  })
+hints:
+  - Two steps. First build the graph from a range of PCs, then cluster it at a chosen resolution.
+  - "`FindNeighbors(pbmc, dims = 1:10)`, then `FindClusters(pbmc, resolution = 0.5)`, each assigned back to `pbmc`."
+  - |
+    ```r
+    pbmc <- FindNeighbors(pbmc, dims = 1:10)
+    pbmc <- FindClusters(pbmc, resolution = 0.5)
+    head(Idents(pbmc), 5)
+    ```
+debug:
+  - pattern: "Use resolution = 0.5"
+    help: Higher resolution means more, smaller clusters. The tutorial finds 0.4-1.2 works well for ~3K cells.
+notebook_pages: [c1-nb06-cluster-umap]
+state: [pbmc]
+expected:
+  n_clusters: nlevels(Idents(pbmc))
+wrong_solutions:
+  - why: resolution too high
+    code: |
+      pbmc <- FindNeighbors(pbmc, dims = 1:10)
+      pbmc <- FindClusters(pbmc, resolution = 1.5)
+  - why: too few PCs in the graph
+    code: |
+      pbmc <- FindNeighbors(pbmc, dims = 1:3)
+      pbmc <- FindClusters(pbmc, resolution = 0.5)

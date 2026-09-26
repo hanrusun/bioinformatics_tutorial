@@ -1,0 +1,48 @@
+id: c2-nb01-anatomy
+title: Inside a Seurat v5 object
+rp: 2
+missions: [c2-m01-anatomy]
+blocks:
+  - quote: >-
+      Seurat v5 assays store data in layers. These layers can store raw,
+      un-normalized counts (`layer='counts'`), normalized data
+      (`layer='data'`), or z-scored/variance-stabilized data
+      (`layer='scale.data'`).
+    source: {vignette: seurat5_integration.Rmd, section: "Layers in the Seurat v5 object"}
+  - code: |
+      # number of cells/features
+      num_cells <- ncol(pbmc)
+      num_features <- nrow(pbmc)
+      # List of object layers
+      Layers(pbmc)
+    source: {vignette: essential_commands.Rmd, section: "Cell, feature, and layer names"}
+  - code: |
+      # RNA counts matrix
+      pbmc[["RNA"]]$counts
+      # Alternate accessor function with the same result
+      LayerData(pbmc,assay = 'RNA',layer = 'counts')
+      # GetAssayData from Seurat v4 is still supported; use "layer" instead of "slot"
+      GetAssayData(object = pbmc, assay = 'RNA', layer = 'counts')
+    source: {vignette: essential_commands.Rmd, section: "Expression data (stored as layers in Seurat v5)"}
+  - text: >-
+      The NBL scripts use both styles: `seurat.rna[['RNA']]$counts` (v5
+      layers) and `seurat.atac@assays$ATAC@counts` (v3-style slot access).
+      The co-embedding script also sets
+      `options(Seurat.object.assay.version = "v3")` before creating new
+      objects, so recognizing both styles pays off.
+  - code: |
+      # Set identity classes to an existing column in meta data
+      Idents(object = pbmc) <- 'seurat_annotations'
+      # View cell identities, get summary table
+      Idents(pbmc)
+      table(Idents(pbmc))
+    source: {vignette: essential_commands.Rmd, section: "Identity class labels"}
+  - code: |
+      # View metadata data frame, stored in object@meta.data
+      pbmc[[]]
+      # Retrieve specific values from the metadata
+      pbmc$nCount_RNA
+      # Add metadata, see ?AddMetaData
+      random_group_labels <- sample(x = c('g1', 'g2'), size = ncol(x = pbmc), replace = TRUE)
+      pbmc$groups <- random_group_labels
+    source: {vignette: essential_commands.Rmd, section: "Cell metadata"}

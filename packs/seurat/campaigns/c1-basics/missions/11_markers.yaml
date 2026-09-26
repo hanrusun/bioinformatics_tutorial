@@ -1,0 +1,84 @@
+id: c1-m11-markers
+title: What makes each cluster different?
+points: 10
+source:
+  vignette: pbmc3k_tutorial.Rmd
+  section: Finding differentially expressed features (cluster biomarkers)
+  quote: >-
+    By default, it identifies positive and negative markers of a single cluster
+    (specified in `ident.1`), compared to all other cells.
+briefing: |
+  Clusters are just numbers until you know which genes define them. Find the
+  marker genes that set each cluster in {name}'s blood apart. They will reveal
+  which immune cells are responding, and which may be missing.
+task:
+  - Find all markers of cluster 2 vs all other cells (`cluster2.markers`).
+  - Find markers distinguishing cluster 5 from clusters 0 and 3 (`cluster5.markers`).
+  - Find positive markers for every cluster (`pbmc.markers`) and filter to avg_log2FC > 1.
+setup: |
+  curelab_libraries()
+  load_checkpoint("c1-m10-umap")
+starter_code: |
+  # find all markers of cluster 2
+  cluster2.markers <-
+  head(cluster2.markers, n = 5)
+
+  # find all markers distinguishing cluster 5 from clusters 0 and 3
+  cluster5.markers <-
+  head(cluster5.markers, n = 5)
+
+  # find markers for every cluster compared to all remaining cells, report only the positive ones
+  pbmc.markers <-
+  pbmc.markers %>%
+      group_by(cluster) %>%
+      dplyr::filter(avg_log2FC > 1)
+solution: |
+  cluster2.markers <- FindMarkers(pbmc, ident.1 = 2)
+  head(cluster2.markers, n = 5)
+  cluster5.markers <- FindMarkers(pbmc, ident.1 = 5, ident.2 = c(0, 3))
+  head(cluster5.markers, n = 5)
+  pbmc.markers <- FindAllMarkers(pbmc, only.pos = TRUE)
+  pbmc.markers %>%
+      group_by(cluster) %>%
+      dplyr::filter(avg_log2FC > 1)
+check: |
+  curelab_check({
+    m2 <- curelab_obj("cluster2.markers", "data.frame")
+    expect_columns(m2, c("p_val", "avg_log2FC", "pct.1", "pct.2", "p_val_adj"), "`cluster2.markers`")
+    expect_equal_ref(head(rownames(m2), 3), "c2_top", "`cluster2.markers` should compare cluster 2 with all other cells (ident.1 = 2)", show = FALSE)
+    m5 <- curelab_obj("cluster5.markers", "data.frame")
+    expect_equal_ref(head(rownames(m5), 3), "c5_top", "`cluster5.markers` should compare cluster 5 against clusters 0 and 3 (ident.1 = 5, ident.2 = c(0, 3))", show = FALSE)
+    all_m <- curelab_obj("pbmc.markers", "data.frame")
+    expect_columns(all_m, c("cluster", "gene", "avg_log2FC"), "`pbmc.markers`")
+    expect_true(all(all_m$avg_log2FC > 0), "Report only positive markers: FindAllMarkers(pbmc, only.pos = TRUE).")
+    expect_equal_ref(nrow(all_m), "n_all", "`pbmc.markers` has an unexpected number of rows. Use FindAllMarkers(pbmc, only.pos = TRUE) with default thresholds")
+  })
+hints:
+  - FindMarkers() compares one group against another (or against everything else). FindAllMarkers() repeats that for every cluster.
+  - "`FindMarkers(pbmc, ident.1 = 2)`, `FindMarkers(pbmc, ident.1 = 5, ident.2 = c(0, 3))` and `FindAllMarkers(pbmc, only.pos = TRUE)`."
+  - |
+    ```r
+    cluster2.markers <- FindMarkers(pbmc, ident.1 = 2)
+    cluster5.markers <- FindMarkers(pbmc, ident.1 = 5, ident.2 = c(0, 3))
+    pbmc.markers <- FindAllMarkers(pbmc, only.pos = TRUE)
+    pbmc.markers %>%
+        group_by(cluster) %>%
+        dplyr::filter(avg_log2FC > 1)
+    ```
+notebook_pages: [c1-nb07-markers]
+state: [pbmc, pbmc.markers]
+expected:
+  c2_top: head(rownames(cluster2.markers), 3)
+  c5_top: head(rownames(cluster5.markers), 3)
+  n_all: nrow(pbmc.markers)
+wrong_solutions:
+  - why: kept negative markers too
+    code: |
+      cluster2.markers <- FindMarkers(pbmc, ident.1 = 2)
+      cluster5.markers <- FindMarkers(pbmc, ident.1 = 5, ident.2 = c(0, 3))
+      pbmc.markers <- FindAllMarkers(pbmc)
+  - why: cluster 5 compared against everything
+    code: |
+      cluster2.markers <- FindMarkers(pbmc, ident.1 = 2)
+      cluster5.markers <- FindMarkers(pbmc, ident.1 = 5)
+      pbmc.markers <- FindAllMarkers(pbmc, only.pos = TRUE)

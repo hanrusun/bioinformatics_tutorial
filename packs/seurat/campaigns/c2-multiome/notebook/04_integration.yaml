@@ -1,0 +1,45 @@
+id: c2-nb04-integration
+title: Splitting layers and integrating
+rp: 2
+missions: [c2-m05-split, c2-m06-harmony, c2-m07-cluster]
+blocks:
+  - quote: >-
+      In previous versions of Seurat, we would require the data to be
+      represented as two different Seurat objects. In Seurat v5, we keep all
+      the data in one object, but simply split it into multiple 'layers'.
+    source: {vignette: integration_introduction.Rmd, section: "Setup the Seurat objects"}
+  - code: |
+      # split the RNA measurements into two layers
+      # one for control cells, one for stimulated cells
+      ifnb[["RNA"]] <- split(ifnb[["RNA"]], f = ifnb$stim)
+    source: {vignette: integration_introduction.Rmd, section: "Setup the Seurat objects"}
+  - code: |
+      # run standard analysis workflow
+      ifnb <- NormalizeData(ifnb)
+      ifnb <- FindVariableFeatures(ifnb)
+      ifnb <- ScaleData(ifnb)
+      ifnb <- RunPCA(ifnb)
+    source: {vignette: integration_introduction.Rmd, section: "Perform analysis without integration"}
+  - quote: >-
+      Seurat v5 enables streamlined integrative analysis using the
+      `IntegrateLayers` function. The method currently supports five
+      integration methods.
+    source: {vignette: seurat5_integration.Rmd, section: "Perform streamlined (one-line) integrative analysis"}
+  - code: |
+      obj <- IntegrateLayers(
+        object = obj, method = HarmonyIntegration,
+        orig.reduction = "pca", new.reduction = 'harmony',
+        verbose = FALSE)
+    source: {vignette: seurat5_integration.Rmd, section: "Perform streamlined (one-line) integrative analysis"}
+  - text: >-
+      `HarmonyIntegration` runs `harmony::RunHarmony()` on the PCA embeddings.
+      The NBL integration script calls `RunHarmony()` directly on a Seurat
+      object instead; the idea and the output (a `harmony` reduction) are the
+      same.
+  - code: |
+      # re-join layers after integration
+      ifnb[["RNA"]] <- JoinLayers(ifnb[["RNA"]])
+      ifnb <- FindNeighbors(ifnb, reduction = "integrated.cca", dims = 1:30)
+      ifnb <- FindClusters(ifnb, resolution = 1)
+    source: {vignette: integration_introduction.Rmd, section: "Perform integration"}
+  - text: For Harmony, point FindNeighbors() and RunUMAP() at `reduction = "harmony"` instead of `"integrated.cca"`.

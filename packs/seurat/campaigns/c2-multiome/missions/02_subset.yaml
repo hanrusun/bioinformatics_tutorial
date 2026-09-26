@@ -1,0 +1,51 @@
+id: c2-m02-subset
+title: Pull out the cells you need
+points: 6
+source:
+  vignette: essential_commands.Rmd
+  section: Subset Seurat objects
+  quote: "# Subset on a value in the object meta data"
+briefing: |
+  The TRN pipeline runs once per patient sample. Its first move is to
+  subset the big object down to one biospecimen:
+  `subset(seurat.rna, biospecimen_id == sampleID0)`. Practice both kinds of
+  subsetting on the reference data: by identity class and by a metadata value.
+task:
+  - Make `b_cells`, a Seurat object with only the cells whose identity is "B".
+  - Make `g1_cells`, a Seurat object with only the cells whose `groups` metadata value is "g1".
+setup: |
+  curelab_libraries("SeuratData")
+  load_checkpoint("c2-m01-anatomy")
+starter_code: |
+  table(Idents(pbmc))
+  table(pbmc$groups)
+
+  b_cells <-
+  g1_cells <-
+solution: |
+  b_cells <- subset(x = pbmc, idents = 'B')
+  g1_cells <- subset(x = pbmc, subset = groups == "g1")
+check: |
+  curelab_check({
+    obj <- curelab_obj("pbmc", "Seurat")
+    b <- curelab_obj("b_cells", "Seurat", hint = "Use subset() with the idents argument.")
+    expect_true(all(as.character(Idents(b)) == "B"), "`b_cells` contains cells that aren't B cells. Use idents = 'B'.")
+    expect_true(ncol(b) == sum(Idents(obj) == "B", na.rm = TRUE), "`b_cells` should contain every B cell.")
+    g <- curelab_obj("g1_cells", "Seurat", hint = "Use subset() with a subset = condition on the metadata.")
+    expect_true(all(g$groups == "g1"), "`g1_cells` contains cells from other groups. Use subset = groups == \"g1\".")
+    expect_true(ncol(g) == sum(obj$groups == "g1"), "`g1_cells` should contain every g1 cell.")
+  })
+hints:
+  - "subset() can keep cells by identity class (`idents =`) or by a logical condition on metadata (`subset =`)."
+  - "`subset(x = pbmc, idents = 'B')` and `subset(x = pbmc, subset = groups == \"g1\")`."
+  - |
+    ```r
+    b_cells <- subset(x = pbmc, idents = 'B')
+    g1_cells <- subset(x = pbmc, subset = groups == "g1")
+    ```
+notebook_pages: [c2-nb02-subset]
+wrong_solutions:
+  - why: inverted the selection
+    code: |
+      b_cells <- subset(x = pbmc, idents = 'B', invert = TRUE)
+      g1_cells <- subset(x = pbmc, subset = groups == "g1")

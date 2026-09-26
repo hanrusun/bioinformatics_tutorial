@@ -1,0 +1,90 @@
+id: c2-m05-split
+title: Two conditions, one object
+points: 7
+source:
+  vignette: integration_introduction.Rmd
+  section: Perform analysis without integration
+  quote: >-
+    We can first analyze the dataset without integration. The resulting
+    clusters are defined both by cell type and stimulation condition, which
+    creates challenges for downstream analysis.
+briefing: |
+  {name}'s samples were collected at diagnosis and again after chemotherapy,
+  and the NBL study integrates across samples like these. Rehearse on the
+  `ifnb` dataset: PBMCs from a control and an interferon-stimulated
+  condition. In Seurat v5 you keep both in one object and split the RNA assay
+  into layers per condition.
+
+  Run the standard workflow without integration first, to see the problem
+  integration solves.
+task:
+  - Split the RNA assay of `ifnb` into layers by the `stim` column.
+  - Normalize, find variable features, scale and run PCA.
+  - Cluster (PCs 1-30, resolution 2) and run a UMAP named `umap.unintegrated`; plot it by `stim` and cluster.
+setup: |
+  curelab_libraries("SeuratData")
+  ifnb <- LoadData('ifnb')
+starter_code: |
+  # split the RNA measurements into two layers
+  # one for control cells, one for stimulated cells
+  ifnb[["RNA"]] <-
+  Layers(ifnb)
+
+  # run standard analysis workflow
+  ifnb <- NormalizeData(ifnb)
+
+  ifnb <- FindNeighbors(ifnb, dims=1:30, reduction = 'pca')
+  ifnb <- FindClusters(ifnb, resolution = 2)
+  ifnb <- RunUMAP(ifnb, dims = 1:30, reduction = 'pca', reduction.name = 'umap.unintegrated')
+  DimPlot(ifnb, reduction = 'umap.unintegrated', group.by=c('stim','seurat_clusters'))
+solution: |
+  ifnb[["RNA"]] <- split(ifnb[["RNA"]], f = ifnb$stim)
+  ifnb <- NormalizeData(ifnb)
+  ifnb <- FindVariableFeatures(ifnb)
+  ifnb <- ScaleData(ifnb)
+  ifnb <- RunPCA(ifnb)
+  ifnb <- FindNeighbors(ifnb, dims=1:30, reduction = 'pca')
+  ifnb <- FindClusters(ifnb, resolution = 2)
+  ifnb <- RunUMAP(ifnb, dims = 1:30, reduction = 'pca', reduction.name = 'umap.unintegrated')
+  DimPlot(ifnb, reduction = 'umap.unintegrated', group.by=c('stim','seurat_clusters'))
+check: |
+  curelab_check({
+    obj <- curelab_obj("ifnb", "Seurat")
+    layers <- Layers(obj)
+    expect_true(all(c("counts.CTRL", "counts.STIM") %in% layers),
+      "The RNA assay isn't split by condition. Use ifnb[[\"RNA\"]] <- split(ifnb[[\"RNA\"]], f = ifnb$stim).")
+    expect_true(all(c("data.CTRL", "data.STIM") %in% layers), "Normalize the split object with NormalizeData().")
+    expect_command(obj, "NormalizeData", "Normalize the split object with NormalizeData().")
+    d <- LayerData(obj, layer = "data.CTRL")[, 1:20]
+    raw <- LayerData(obj, layer = "counts.CTRL")[, 1:20]
+    expect_true(!isTRUE(all.equal(d, raw, check.attributes = FALSE)),
+      "The data layers still hold raw counts. Run NormalizeData() after splitting.")
+    expect_command(obj, "FindVariableFeatures", "Find variable features with FindVariableFeatures().")
+    expect_true("scale.data" %in% layers, "Scale the data with ScaleData().")
+    expect_reduction(obj, "pca", "Run RunPCA().")
+    expect_param(obj, "FindClusters", "resolution", 2, "Cluster at resolution = 2")
+    expect_reduction(obj, "umap.unintegrated", "Run RunUMAP(..., reduction.name = 'umap.unintegrated').")
+  })
+hints:
+  - "`split()` on the RNA assay creates one counts layer per value of a metadata column. After that the usual Normalize, Variable features, Scale, PCA steps run per layer."
+  - "`ifnb[[\"RNA\"]] <- split(ifnb[[\"RNA\"]], f = ifnb$stim)`, then NormalizeData, FindVariableFeatures, ScaleData, RunPCA."
+  - |
+    ```r
+    ifnb[["RNA"]] <- split(ifnb[["RNA"]], f = ifnb$stim)
+    ifnb <- NormalizeData(ifnb)
+    ifnb <- FindVariableFeatures(ifnb)
+    ifnb <- ScaleData(ifnb)
+    ifnb <- RunPCA(ifnb)
+    ifnb <- FindNeighbors(ifnb, dims=1:30, reduction = 'pca')
+    ifnb <- FindClusters(ifnb, resolution = 2)
+    ifnb <- RunUMAP(ifnb, dims = 1:30, reduction = 'pca', reduction.name = 'umap.unintegrated')
+    ```
+notebook_pages: [c2-nb04-integration]
+state: [ifnb]
+wrong_solutions:
+  - why: split only, no analysis
+    code: |
+      ifnb[["RNA"]] <- split(ifnb[["RNA"]], f = ifnb$stim)
+  - why: analysed without splitting the layers
+    code: |
+      ifnb <- NormalizeData(ifnb)

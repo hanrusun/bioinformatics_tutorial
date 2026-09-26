@@ -1,0 +1,94 @@
+id: c2-m09-pseudobulk
+title: Pseudobulk the donors
+points: 10
+source:
+  vignette: de_vignette.Rmd
+  section: Perform DE analysis after pseudobulking
+  quote: >-
+    To pseudobulk, we will use
+    [AggregateExpression()](https://satijalab.org/seurat/reference/aggregateexpression)
+    to sum together gene counts of all the cells from the same sample for each
+    cell type.
+briefing: |
+  Treating every cell as an independent replicate inflates significance.
+  Cells from the same donor are correlated, and the NBL study's
+  diagnosis-vs-post-chemotherapy comparisons span patients. The fix is
+  pseudobulk: sum counts per donor x condition x cell type, then test at the
+  sample level with DESeq2.
+
+  `ifnb` already has a `donor_id` column (added exactly as in the DE
+  vignette). Compare stimulated vs control CD14 monocytes.
+task:
+  - Pseudobulk `ifnb` by `stim`, `donor_id` and `seurat_annotations` into a Seurat object `pseudo_ifnb`.
+  - Add a `celltype.stim` column (annotation and condition joined by "_") and make it the identity.
+  - Run DESeq2 for "CD14 Mono_STIM" vs "CD14 Mono_CTRL" and store the result in `bulk.mono.de`.
+setup: |
+  curelab_libraries()
+  load_prep("ifnb_donors")
+starter_code: |
+  table(ifnb$donor_id, ifnb$stim)
+
+  # pseudobulk the counts based on donor-condition-celltype
+  pseudo_ifnb <- AggregateExpression(ifnb, assays = "RNA", return.seurat = T, group.by = )
+
+  # each 'cell' is a donor-condition-celltype pseudobulk profile
+  tail(Cells(pseudo_ifnb))
+  pseudo_ifnb$celltype.stim <-
+
+  Idents(pseudo_ifnb) <- "celltype.stim"
+  bulk.mono.de <- FindMarkers(object = pseudo_ifnb,
+                           ident.1 = "CD14 Mono_STIM",
+                           ident.2 = "CD14 Mono_CTRL",
+                           test.use = )
+  head(bulk.mono.de, n = 15)
+solution: |
+  pseudo_ifnb <- AggregateExpression(ifnb, assays = "RNA", return.seurat = T, group.by = c("stim", "donor_id", "seurat_annotations"))
+  tail(Cells(pseudo_ifnb))
+  pseudo_ifnb$celltype.stim <- paste(pseudo_ifnb$seurat_annotations, pseudo_ifnb$stim, sep = "_")
+  Idents(pseudo_ifnb) <- "celltype.stim"
+  bulk.mono.de <- FindMarkers(object = pseudo_ifnb,
+                           ident.1 = "CD14 Mono_STIM",
+                           ident.2 = "CD14 Mono_CTRL",
+                           test.use = "DESeq2")
+  head(bulk.mono.de, n = 15)
+check: |
+  curelab_check({
+    pb <- curelab_obj("pseudo_ifnb", "Seurat", hint = "Create it with AggregateExpression(..., return.seurat = T).")
+    expect_equal_ref(ncol(pb), "n_profiles",
+      "`pseudo_ifnb` should have one profile per stim x donor x cell type: group.by = c(\"stim\", \"donor_id\", \"seurat_annotations\")")
+    expect_true("celltype.stim" %in% colnames(pb[[]]), "Add the celltype.stim column to pseudo_ifnb.")
+    expect_true(all(c("CD14 Mono_STIM", "CD14 Mono_CTRL") %in% pb$celltype.stim),
+      "celltype.stim should join the annotation and the condition with \"_\", e.g. \"CD14 Mono_STIM\".")
+    de <- curelab_obj("bulk.mono.de", "data.frame")
+    expect_columns(de, c("p_val", "avg_log2FC", "p_val_adj"), "`bulk.mono.de`")
+    expect_equal_ref(head(rownames(de), 5), "top_genes", "The top DE genes don't match", show = FALSE)
+    expect_equal_ref(signif(head(de$p_val, 5), 6), "top_p", "The p-values don't match a DESeq2 test (test.use = \"DESeq2\")", tolerance = 1e-4, show = FALSE)
+  })
+hints:
+  - AggregateExpression() sums counts over every combination of the group.by columns. FindMarkers() can hand the pseudobulk profiles to DESeq2 via test.use.
+  - "`group.by = c(\"stim\", \"donor_id\", \"seurat_annotations\")`; `paste(pseudo_ifnb$seurat_annotations, pseudo_ifnb$stim, sep = \"_\")`; `test.use = \"DESeq2\"`."
+  - |
+    ```r
+    pseudo_ifnb <- AggregateExpression(ifnb, assays = "RNA", return.seurat = T, group.by = c("stim", "donor_id", "seurat_annotations"))
+    pseudo_ifnb$celltype.stim <- paste(pseudo_ifnb$seurat_annotations, pseudo_ifnb$stim, sep = "_")
+    Idents(pseudo_ifnb) <- "celltype.stim"
+    bulk.mono.de <- FindMarkers(object = pseudo_ifnb,
+                             ident.1 = "CD14 Mono_STIM",
+                             ident.2 = "CD14 Mono_CTRL",
+                             test.use = "DESeq2")
+    ```
+notebook_pages: [c2-nb05-de]
+expected:
+  n_profiles: ncol(pseudo_ifnb)
+  top_genes: head(rownames(bulk.mono.de), 5)
+  top_p: signif(head(bulk.mono.de$p_val, 5), 6)
+wrong_solutions:
+  - why: default Wilcoxon test on pseudobulk profiles
+    code: |
+      pseudo_ifnb <- AggregateExpression(ifnb, assays = "RNA", return.seurat = T, group.by = c("stim", "donor_id", "seurat_annotations"))
+      pseudo_ifnb$celltype.stim <- paste(pseudo_ifnb$seurat_annotations, pseudo_ifnb$stim, sep = "_")
+      Idents(pseudo_ifnb) <- "celltype.stim"
+      bulk.mono.de <- FindMarkers(object = pseudo_ifnb, ident.1 = "CD14 Mono_STIM", ident.2 = "CD14 Mono_CTRL")
+  - why: aggregated without donors
+    code: |
+      pseudo_ifnb <- AggregateExpression(ifnb, assays = "RNA", return.seurat = T, group.by = c("stim", "seurat_annotations"))

@@ -1,0 +1,226 @@
+# Journal-club questions for Campaign 2. Each quote is checked verbatim
+# against the cited vignette at satijalab/seurat@v5.5.1.
+- id: c2-q01-layers
+  after: c2-m01-anatomy
+  question: In a Seurat v5 assay, which layer holds z-scored (scaled) data?
+  choices: ["counts", "data", "scale.data", "meta.data"]
+  answer: 2
+  explanation: counts = raw, data = normalized, scale.data = z-scored / variance-stabilized.
+  source:
+    vignette: seurat5_integration.Rmd
+    section: Layers in the Seurat v5 object
+    quote: >-
+      These layers can store raw, un-normalized counts (`layer='counts'`),
+      normalized data (`layer='data'`), or z-scored/variance-stabilized data
+      (`layer='scale.data'`).
+- id: c2-q02-getassaydata
+  after: c2-m01-anatomy
+  question: GetAssayData() from Seurat v4 still works in v5. Which argument replaces the old `slot` argument?
+  choices: ["assay", "layer", "features", "cells"]
+  answer: 1
+  explanation: Use `layer =` instead of `slot =`. Older scripts, including parts of the NBL code, still use the v3-style `@counts`/`slot` access.
+  source:
+    vignette: essential_commands.Rmd
+    section: Expression data (stored as layers in Seurat v5)
+    quote: '# GetAssayData from Seurat v4 is still supported; use "layer" instead of "slot"'
+- id: c2-q03-oldident
+  after: c2-m03-cellcycle
+  question: After CellCycleScoring(..., set.ident = TRUE), where are the original identities kept?
+  choices: ["They are deleted", "In the old.ident metadata column", "In the Phase column", "In marrow@misc"]
+  answer: 1
+  explanation: set.ident = TRUE sets identities to the phase and stores the originals as old.ident.
+  source:
+    vignette: cell_cycle_vignette.Rmd
+    section: Assign Cell-Cycle Scores
+    quote: >-
+      `CellCycleScoring()` can also set the identity of the Seurat object to
+      the cell-cycle phase by passing `set.ident = TRUE` (the original
+      identities are stored as `old.ident`).
+- id: c2-q04-scores
+  after: c2-m04-regress
+  question: When Seurat regresses out the cell cycle, what does it use?
+  choices:
+    - The discrete G1/S/G2M phase calls
+    - The quantitative S and G2M scores
+    - The expression of MKI67 only
+    - The number of detected genes
+  answer: 1
+  explanation: Seurat uses the continuous S and G2M scores, not the discrete phase classifications.
+  source:
+    vignette: cell_cycle_vignette.Rmd
+    section: Assign Cell-Cycle Scores
+    quote: >-
+      Please note that Seurat does not use the discrete classifications
+      (G2M/G1/S) in downstream cell cycle regression. Instead, it uses the
+      quantitative scores for G2M and S phase.
+- id: c2-q05-ccdiff
+  after: c2-m04-regress
+  question: In a differentiating system, why regress out the DIFFERENCE between the S and G2M scores instead of both scores?
+  choices:
+    - It is faster to compute
+    - It keeps the signal separating cycling from non-cycling cells, while removing phase differences among proliferating cells
+    - It removes all cell-cycle signal more completely
+    - It is required when using Harmony
+  answer: 1
+  explanation: Regressing out all cell-cycle effects can blur stem vs progenitor distinctions; the difference keeps cycling vs non-cycling signal.
+  source:
+    vignette: cell_cycle_vignette.Rmd
+    section: Alternate Workflow
+    quote: >-
+      This means that signals separating non-cycling cells and cycling cells
+      will be maintained, but differences in cell cycle phase among
+      proliferating cells (which are often uninteresting), will be regressed
+      out of the data
+- id: c2-q06-perbatch
+  after: c2-m05-split
+  question: After splitting the RNA assay into layers, how are normalization and variable-feature selection performed?
+  choices:
+    - Once, on all cells pooled
+    - For each batch (layer) independently, with a consensus set of variable features identified automatically
+    - Only on the first layer
+    - They are skipped until the layers are joined
+  answer: 1
+  explanation: Each layer is processed independently, and Seurat identifies a consensus set of variable features.
+  source:
+    vignette: seurat5_integration.Rmd
+    section: Layers in the Seurat v5 object
+    quote: >-
+      Note that since the data is split into layers, normalization and
+      variable feature identification is performed for each batch
+      independently (a consensus set of variable features is automatically
+      identified).
+- id: c2-q07-returns
+  after: c2-m06-harmony
+  question: What does IntegrateLayers() return?
+  choices:
+    - A corrected counts matrix that replaces the raw data
+    - A new dimensional reduction that aims to co-embed shared cell types across batches
+    - A list of marker genes per batch
+    - A new Seurat object per batch
+  answer: 1
+  explanation: Each method integrates in low-dimensional space and returns a dimensional reduction, e.g. `harmony` or `integrated.cca`.
+  source:
+    vignette: seurat5_integration.Rmd
+    section: Perform streamlined (one-line) integrative analysis
+    quote: >-
+      Each of these methods performs integration in low-dimensional space, and
+      returns a dimensional reduction (i.e. `integrated.rpca`) that aims to
+      co-embed shared cell types across batches
+- id: c2-q08-goal
+  after: c2-m07-cluster
+  question: What is the goal of integrating control and stimulated cells?
+  choices:
+    - To remove all biological differences between the conditions
+    - To learn shared cell types/states first, so each cell type can then be compared across conditions
+    - To double the number of cells for clustering
+    - To correct sequencing errors
+  answer: 1
+  explanation: Integration is not meant to erase biology; aligning shared states is what makes the per-cell-type comparison possible.
+  source:
+    vignette: integration_introduction.Rmd
+    section: Perform integration
+    quote: >-
+      our goal is not to remove biological differences across conditions, but
+      to learn shared cell types/states in an initial step
+- id: c2-q09-conserved
+  after: c2-m08-conserved
+  question: How does FindConservedMarkers() combine evidence across conditions?
+  choices:
+    - It averages expression over both conditions and runs one test
+    - It tests each group separately and combines the p-values with meta-analysis methods
+    - It keeps only genes with identical fold changes
+    - It uses the Harmony embedding
+  answer: 1
+  explanation: It runs DE per dataset/group and combines p-values using meta-analysis methods from the MetaDE package.
+  source:
+    vignette: integration_introduction.Rmd
+    section: Identify conserved cell type markers
+    quote: >-
+      This function performs differential gene expression testing for each
+      dataset/group and combines the p-values using meta-analysis methods from
+      the MetaDE R package.
+- id: c2-q10-wilcox
+  after: c2-m09-pseudobulk
+  question: By default, which test does FindMarkers() use?
+  choices: ["DESeq2", "MAST", "The non-parametric Wilcoxon rank sum test", "Student's t-test"]
+  answer: 2
+  explanation: The default is the Wilcoxon rank sum test; other tests are selected with test.use.
+  source:
+    vignette: de_vignette.Rmd
+    section: Perform default differential expression tests
+    quote: >-
+      By default, Seurat performs differential expression (DE) testing based
+      on the non-parametric Wilcoxon rank sum test.
+- id: c2-q11-samples
+  after: c2-m09-pseudobulk
+  question: In pseudobulk DE with DESeq2, what is treated as the independent observation?
+  choices: ["Each cell", "Each gene", "Each sample", "Each cluster"]
+  answer: 2
+  explanation: Pseudobulking treats samples, not individual cells, as independent observations.
+  source:
+    vignette: de_vignette.Rmd
+    section: Perform DE analysis after pseudobulking
+    quote: This treats the samples, rather than the individual cells, as independent observations.
+- id: c2-q12-cca
+  after: c2-m10-mapping
+  question: When transferring labels from scRNA-seq to scATAC-seq, why use reduction = 'cca' in FindTransferAnchors()?
+  choices:
+    - CCA is faster than PCA on large datasets
+    - Across modalities, CCA better captures the shared feature correlation structure
+    - ATAC data has no PCA
+    - CCA removes batch effects within the ATAC data
+  answer: 1
+  explanation: For scRNA-to-scRNA transfer Seurat projects the reference PCA; across modalities CCA works better. The NBL co-embedding script uses reduction = 'cca'.
+  source:
+    vignette: seurat5_atacseq_integration_vignette.Rmd
+    section: Why do you choose different (non-default) values for reduction and weight.reduction?
+    quote: >-
+      However, when transferring across modalities we find that CCA better
+      captures the shared feature correlation structure and therefore set
+      `reduction = 'cca'` here.
+- id: c2-q13-lsi
+  after: c2-m10-mapping
+  question: For scRNA-to-scATAC transfer, which space weights the anchors in TransferData() (weight.reduction)?
+  choices:
+    - The scRNA-seq UMAP
+    - The LSI computed on the ATAC-seq data
+    - The raw peak counts
+    - The CCA space
+  answer: 1
+  explanation: The LSI of the ATAC data better captures the ATAC data's internal structure.
+  source:
+    vignette: seurat5_atacseq_integration_vignette.Rmd
+    section: Why do you choose different (non-default) values for reduction and weight.reduction?
+    quote: >-
+      In the case of scRNA-seq to scATAC-seq transfer, we use the low
+      dimensional space learned by computing an LSI on the ATAC-seq data to
+      compute these weights as this better captures the internal structure of
+      the ATAC-seq data.
+- id: c2-q14-rejoin
+  after: c2-m11-merge
+  question: After merge() in Seurat v5, what should you do if you are NOT going to integrate?
+  choices:
+    - Nothing, the layers are joined automatically
+    - Rejoin the layers with JoinLayers()
+    - Split the object again
+    - Run IntegrateLayers() anyway
+  answer: 1
+  explanation: merge() keeps each object's data in separate layers; rejoin them for a standard analysis.
+  source:
+    vignette: essential_commands.Rmd
+    section: Merge objects (without integration)
+    quote: If not proceeding with integration, rejoin the layers after merging.
+- id: c2-q15-coembed
+  after: c2-m11-merge
+  question: According to the Seurat ATAC vignette, what is co-embedding scRNA-seq and scATAC-seq cells primarily for?
+  choices:
+    - Replacing label transfer
+    - Visualization; it is an optional step
+    - Calling peaks
+    - Removing doublets
+  answer: 1
+  explanation: Seurat focuses on label transfer; co-embedding (imputing RNA into ATAC cells, then merge) is mainly for visualization. The NBL pipeline goes further and builds metacells on it.
+  source:
+    vignette: seurat5_atacseq_integration_vignette.Rmd
+    section: Co-embedding scRNA-seq and scATAC-seq datasets
+    quote: We emphasize that this step is primarily for visualization, and is an optional step.

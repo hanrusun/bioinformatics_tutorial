@@ -1,0 +1,40 @@
+id: c1-nb05-pca
+title: PCA and choosing dimensions
+rp: 2
+missions: [c1-m07-pca, c1-m08-dims]
+blocks:
+  - quote: >-
+      Next we perform PCA on the scaled data. By default, only the previously
+      determined variable features are used as input, but can be defined using
+      `features` argument if you wish to choose a different subset (if you do
+      want to use a custom subset of features, make sure you pass these to
+      `ScaleData` first).
+    source: {vignette: pbmc3k_tutorial.Rmd, section: "Perform linear dimensional reduction"}
+  - code: |
+      pbmc <- RunPCA(pbmc, features = VariableFeatures(object = pbmc))
+      print(pbmc[['pca']], dims = 1:5, nfeatures = 5)
+      VizDimLoadings(pbmc, dims = 1:2, reduction = 'pca')
+      DimPlot(pbmc, reduction = 'pca') + NoLegend()
+    source: {vignette: pbmc3k_tutorial.Rmd, section: "Perform linear dimensional reduction"}
+  - quote: >-
+      To overcome the extensive technical noise in any single feature for
+      scRNA-seq data, Seurat clusters cells based on their PCA scores, with
+      each PC essentially representing a 'metafeature' that combines
+      information across a correlated feature set.
+    source: {vignette: pbmc3k_tutorial.Rmd, section: "Determine the 'dimensionality' of the dataset"}
+  - quote: >-
+      An alternative heuristic method generates an elbow plot: a ranking of
+      principle components based on the percentage of variance explained by
+      each one (`ElbowPlot()` function). In this example, we can observe an
+      'elbow' around PC9-10, suggesting that the majority of true signal is
+      captured in the first 10 PCs.
+    source: {vignette: pbmc3k_tutorial.Rmd, section: "Determine the 'dimensionality' of the dataset"}
+  - code: |
+      DimHeatmap(pbmc, dims = 1:15, cells = 500, balanced = TRUE)
+      ElbowPlot(pbmc)
+    source: {vignette: pbmc3k_tutorial.Rmd, section: "Determine the 'dimensionality' of the dataset"}
+  - quote: >-
+      We advise users to err on the higher side when choosing this parameter.
+      For example, performing downstream analyses with only 5 PCs does
+      significantly and adversely affect results.
+    source: {vignette: pbmc3k_tutorial.Rmd, section: "Determine the 'dimensionality' of the dataset"}

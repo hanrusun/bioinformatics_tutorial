@@ -1,0 +1,41 @@
+id: c1-nb04-hvg-scale
+title: Variable features and scaling
+rp: 2
+missions: [c1-m05-hvg, c1-m06-scale]
+blocks:
+  - quote: >-
+      We next calculate a subset of features that exhibit high cell-to-cell
+      variation in the dataset (i.e, they are highly expressed in some cells,
+      and lowly expressed in others). We and
+      [others](https://www.nature.com/articles/nmeth.2645) have found that
+      focusing on these genes in downstream analysis helps to highlight
+      biological signal in single-cell datasets.
+    source: {vignette: pbmc3k_tutorial.Rmd, section: "Identification of highly variable features (feature selection)"}
+  - quote: By default, we return 2,000 features per dataset. These will be used in downstream analysis, like PCA.
+    source: {vignette: pbmc3k_tutorial.Rmd, section: "Identification of highly variable features (feature selection)"}
+  - code: |
+      pbmc <- FindVariableFeatures(pbmc, selection.method = 'vst', nfeatures = 2000)
+      # Identify the 10 most highly variable genes
+      top10 <- head(VariableFeatures(pbmc), 10)
+    source: {vignette: pbmc3k_tutorial.Rmd, section: "Identification of highly variable features (feature selection)"}
+  - quote: |
+      * Shifts the expression of each gene, so that the mean expression across cells is 0
+      * Scales the expression of each gene, so that the variance across cells is 1
+          + This step gives equal weight in downstream analyses, so that highly-expressed genes do not dominate
+    source: {vignette: pbmc3k_tutorial.Rmd, section: "Scaling the data"}
+  - quote: >-
+      The results of this are stored in `pbmc[["RNA"]]$scale.data`. By
+      default, only variable features are scaled; you can specify the
+      `features` argument to scale additional features.
+    source: {vignette: pbmc3k_tutorial.Rmd, section: "Scaling the data"}
+  - code: |
+      all.genes <- rownames(pbmc)
+      pbmc <- ScaleData(pbmc, features = all.genes)
+    source: {vignette: pbmc3k_tutorial.Rmd, section: "Scaling the data"}
+  - text: >-
+      `ScaleData()` can also regress out unwanted variation. The NBL
+      scripts use `vars.to.regress`, and so does Campaign 2's cell-cycle
+      mission:
+  - code: |
+      pbmc <- ScaleData(pbmc, vars.to.regress = 'percent.mt')
+    source: {vignette: pbmc3k_tutorial.Rmd, section: "How can I remove unwanted sources of variation?"}

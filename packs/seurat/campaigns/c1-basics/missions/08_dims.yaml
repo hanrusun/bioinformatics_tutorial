@@ -1,0 +1,57 @@
+id: c1-m08-dims
+title: How many components matter?
+points: 5
+source:
+  vignette: pbmc3k_tutorial.Rmd
+  section: Determine the 'dimensionality' of the dataset
+  quote: >-
+    In this example, we might have been justified in choosing anything between
+    PC 7-12 as a cutoff.
+briefing: |
+  Clustering {name}'s cells uses the top principal components, but how many?
+  Too few throws away real biology; too many adds noise. Use the tutorial's
+  two diagnostics, heatmaps of the top PCs and an elbow plot, and make the
+  call.
+task:
+  - Draw `DimHeatmap()` for PCs 1-15 and an `ElbowPlot()`.
+  - Store the number of PCs you would keep in `n_pcs` (a single whole number).
+setup: |
+  curelab_libraries()
+  load_checkpoint("c1-m07-pca")
+starter_code: |
+  DimHeatmap(pbmc, dims = 1:15, cells = 500, balanced = TRUE)
+  ElbowPlot(pbmc)
+
+  # Where does the elbow flatten out? Keep that many PCs:
+  n_pcs <-
+solution: |
+  DimHeatmap(pbmc, dims = 1:15, cells = 500, balanced = TRUE)
+  ElbowPlot(pbmc)
+  n_pcs <- 10 # curelab: adapted
+check: |
+  curelab_check({
+    n <- curelab_obj("n_pcs", hint = "Store your choice, e.g. n_pcs <- 10.")
+    expect_true(is.numeric(n) && length(n) == 1 && n == round(n),
+      "`n_pcs` should be a single whole number.")
+    expect_true(n >= 7,
+      "Too few PCs. The tutorial warns that using only 5 PCs significantly and adversely affects results. Look where the elbow flattens.")
+    expect_true(n <= 12,
+      "That keeps PCs past the elbow, where the curve has flattened into noise. The tutorial considers 7-12 justified for this dataset.")
+  })
+hints:
+  - Find where the curve bends and flattens. Past that point each PC explains little extra variance.
+  - The tutorial says the elbow is around PC 9-10, and anything from 7 to 12 is a defensible cut-off.
+  - |
+    ```r
+    ElbowPlot(pbmc)
+    n_pcs <- 10
+    ```
+notebook_pages: [c1-nb05-pca]
+state: [pbmc]
+wrong_solutions:
+  - why: too few PCs
+    code: |
+      n_pcs <- 3
+  - why: not a number
+    code: |
+      n_pcs <- "ten"

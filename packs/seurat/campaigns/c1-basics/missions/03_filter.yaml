@@ -1,0 +1,70 @@
+id: c1-m03-filter
+title: Triage the sample
+points: 6
+source:
+  vignette: pbmc3k_tutorial.Rmd
+  section: QC and selecting cells for further analysis
+  quote: We filter cells that have unique feature counts over 2,500 or less than 200
+briefing: |
+  With the QC metrics in hand, remove the cells that would mislead the
+  analysis of {name}'s immune cells:
+
+  * near-empty droplets and low-quality cells (too few genes),
+  * likely doublets (too many genes),
+  * dying cells (too many mitochondrial reads).
+
+  The Seurat tutorial's cut-offs for this dataset are 200 to 2,500 detected
+  genes and under 5% mitochondrial counts. Plot the relationships first, then
+  filter.
+task:
+  - Look at `FeatureScatter()` plots of nCount_RNA vs percent.mt and nCount_RNA vs nFeature_RNA.
+  - Keep only cells with more than 200 and fewer than 2,500 genes, and less than 5% mitochondrial counts. Overwrite `pbmc`.
+setup: |
+  curelab_libraries()
+  load_checkpoint("c1-m02-qc")
+starter_code: |
+  plot1 <- FeatureScatter(pbmc, feature1 = "nCount_RNA", feature2 = "percent.mt")
+  plot2 <- FeatureScatter(pbmc, feature1 = "nCount_RNA", feature2 = "nFeature_RNA")
+  plot1 + plot2
+
+  # Now keep only the good cells:
+  pbmc <- subset(pbmc, subset = )
+solution: |
+  plot1 <- FeatureScatter(pbmc, feature1 = "nCount_RNA", feature2 = "percent.mt")
+  plot2 <- FeatureScatter(pbmc, feature1 = "nCount_RNA", feature2 = "nFeature_RNA")
+  plot1 + plot2
+  pbmc <- subset(pbmc, subset = nFeature_RNA > 200 & nFeature_RNA < 2500 & percent.mt < 5)
+check: |
+  curelab_check({
+    obj <- curelab_obj("pbmc", "Seurat")
+    expect_true(all(obj$nFeature_RNA > 200),
+      "Some remaining cells have 200 or fewer genes. Keep nFeature_RNA > 200.")
+    expect_true(all(obj$nFeature_RNA < 2500),
+      "Some remaining cells have 2,500 or more genes (possible doublets). Keep nFeature_RNA < 2500.")
+    expect_true(all(obj$percent.mt < 5),
+      "Some remaining cells have 5% or more mitochondrial counts. Keep percent.mt < 5.")
+    expect_equal_ref(ncol(obj), "n_cells",
+      "The number of cells left is off. Combine all three conditions with & in one subset() call")
+  })
+hints:
+  - >-
+    `subset()` keeps the cells for which a logical condition on metadata
+    columns is TRUE. Combine conditions with `&`.
+  - >-
+    `subset(pbmc, subset = nFeature_RNA > 200 & nFeature_RNA < 2500 & percent.mt < ...)`
+    (don't forget to assign the result back to `pbmc`).
+  - |
+    ```r
+    pbmc <- subset(pbmc, subset = nFeature_RNA > 200 & nFeature_RNA < 2500 & percent.mt < 5)
+    ```
+notebook_pages: [c1-nb02-qc]
+state: [pbmc]
+expected:
+  n_cells: ncol(pbmc)
+wrong_solutions:
+  - why: forgot the mitochondrial filter
+    code: |
+      pbmc <- subset(pbmc, subset = nFeature_RNA > 200 & nFeature_RNA < 2500)
+  - why: did not assign the subset back to pbmc
+    code: |
+      subset(pbmc, subset = nFeature_RNA > 200 & nFeature_RNA < 2500 & percent.mt < 5)

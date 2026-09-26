@@ -1,0 +1,46 @@
+id: c1-m10-umap
+title: Draw the map
+points: 7
+source:
+  vignette: pbmc3k_tutorial.Rmd
+  section: Run non-linear dimensional reduction (UMAP / t-SNE)
+  quote: >-
+    The goal of these algorithms is to learn underlying structure in the
+    dataset, in order to place similar cells together in low-dimensional space.
+briefing: |
+  The clinicians want a picture. UMAP places similar cells close together in
+  two dimensions, so the clusters you just found should show up as islands.
+  Use the same 10 PCs as the clustering.
+task:
+  - Run UMAP on PCs 1-10.
+  - Plot the UMAP colored by cluster.
+setup: |
+  curelab_libraries()
+  load_checkpoint("c1-m09-cluster")
+starter_code: |
+  pbmc <- RunUMAP(pbmc, dims = )
+  DimPlot(pbmc, reduction = 'umap')
+solution: |
+  pbmc <- RunUMAP(pbmc, dims = 1:10)
+  DimPlot(pbmc, reduction = 'umap')
+check: |
+  curelab_check({
+    obj <- curelab_obj("pbmc", "Seurat")
+    expect_reduction(obj, "umap", "There is no 'umap' reduction yet. Run RunUMAP() and assign back to pbmc.")
+    expect_param(obj, "RunUMAP", "dims", 1:10, "Use the same PCs as the clustering: dims = 1:10")
+    expect_true(ncol(Embeddings(obj, reduction = "umap")) == 2, "The UMAP should have 2 dimensions.")
+  })
+hints:
+  - UMAP runs on principal components. Use the ones you clustered on.
+  - "`RunUMAP(pbmc, dims = 1:10)` then `DimPlot(pbmc, reduction = 'umap')`."
+  - |
+    ```r
+    pbmc <- RunUMAP(pbmc, dims = 1:10)
+    DimPlot(pbmc, reduction = 'umap')
+    ```
+notebook_pages: [c1-nb06-cluster-umap]
+state: [pbmc]
+wrong_solutions:
+  - why: different PCs than the clustering
+    code: |
+      pbmc <- RunUMAP(pbmc, dims = 1:5)

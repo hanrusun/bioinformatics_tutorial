@@ -1,0 +1,70 @@
+id: c1-m12-visualize
+title: Show the evidence
+points: 5
+source:
+  vignette: pbmc3k_tutorial.Rmd
+  section: Finding differentially expressed features (cluster biomarkers)
+  quote: >-
+    `DoHeatmap()` generates an expression heatmap for given cells and features.
+    In this case, we are plotting the top 10 markers (or all markers if less
+    than 10) for each cluster.
+briefing: |
+  The tumor board wants to see the marker evidence before trusting any
+  labels. Plot canonical markers as violins and on the UMAP, then build a
+  heatmap of the top 10 markers of every cluster.
+task:
+  - Draw `VlnPlot()` for MS4A1 and CD79A, and a `FeaturePlot()` of the canonical markers.
+  - Build `top10`, the top 10 markers per cluster with avg_log2FC > 1.
+  - Draw `DoHeatmap()` of `top10$gene`.
+setup: |
+  curelab_libraries()
+  load_checkpoint("c1-m11-markers")
+starter_code: |
+  VlnPlot(pbmc, features = c("MS4A1", "CD79A"))
+  FeaturePlot(pbmc, features = c("MS4A1", "GNLY", "CD3E", "CD14", "FCER1A", "FCGR3A", "LYZ", "PPBP", "CD8A"))
+
+  # top 10 markers per cluster with avg_log2FC > 1
+  pbmc.markers %>%
+      group_by(cluster) %>%
+
+  DoHeatmap(pbmc, features = top10$gene) + NoLegend()
+solution: |
+  VlnPlot(pbmc, features = c("MS4A1", "CD79A"))
+  FeaturePlot(pbmc, features = c("MS4A1", "GNLY", "CD3E", "CD14", "FCER1A", "FCGR3A", "LYZ", "PPBP", "CD8A"))
+  pbmc.markers %>%
+      group_by(cluster) %>%
+      dplyr::filter(avg_log2FC > 1) %>%
+      slice_head(n = 10) %>%
+      ungroup() -> top10
+  DoHeatmap(pbmc, features = top10$gene) + NoLegend()
+check: |
+  curelab_check({
+    top <- curelab_obj("top10", "data.frame", hint = "Pipe pbmc.markers into group_by/filter/slice_head and store it as top10.")
+    expect_columns(top, c("cluster", "gene", "avg_log2FC"), "`top10`")
+    expect_true(all(top$avg_log2FC > 1), "Keep only markers with avg_log2FC > 1.")
+    expect_true(max(table(top$cluster)) <= 10, "Keep at most 10 markers per cluster (slice_head(n = 10) after group_by(cluster)).")
+    expect_equal_ref(nrow(top), "n_top", "`top10` has an unexpected number of rows")
+  })
+hints:
+  - "Group the markers by cluster, filter on the fold change, then keep the first 10 rows of each group."
+  - "`group_by(cluster) %>% dplyr::filter(avg_log2FC > 1) %>% slice_head(n = 10) %>% ungroup()`."
+  - |
+    ```r
+    pbmc.markers %>%
+        group_by(cluster) %>%
+        dplyr::filter(avg_log2FC > 1) %>%
+        slice_head(n = 10) %>%
+        ungroup() -> top10
+    DoHeatmap(pbmc, features = top10$gene) + NoLegend()
+    ```
+notebook_pages: [c1-nb07-markers]
+state: [pbmc, pbmc.markers]
+expected:
+  n_top: nrow(top10)
+wrong_solutions:
+  - why: forgot the fold-change filter
+    code: |
+      pbmc.markers %>%
+          group_by(cluster) %>%
+          slice_head(n = 10) %>%
+          ungroup() -> top10

@@ -1,0 +1,55 @@
+id: c2-m08-conserved
+title: Markers that survive treatment
+points: 7
+source:
+  vignette: integration_introduction.Rmd
+  section: Identify conserved cell type markers
+  quote: >-
+    To identify canonical cell type marker genes that are conserved across
+    conditions, we provide the `FindConservedMarkers()` function.
+briefing: |
+  A marker is only useful for tracking {name}'s disease if it holds up in
+  both conditions. Find NK cell markers that are conserved between the
+  control and stimulated cells: FindConservedMarkers() tests each condition
+  separately and combines the evidence.
+task:
+  - Set the identities of `ifnb` to the `seurat_annotations` column.
+  - Store the conserved markers of "NK" cells across the `stim` groups in `nk.markers`.
+setup: |
+  curelab_libraries()
+  load_checkpoint("c2-m07-cluster")
+starter_code: |
+  Idents(ifnb) <-
+  nk.markers <- FindConservedMarkers(ifnb, ident.1 = , grouping.var = , verbose = FALSE)
+  head(nk.markers)
+solution: |
+  Idents(ifnb) <- "seurat_annotations"
+  nk.markers <- FindConservedMarkers(ifnb, ident.1 = "NK", grouping.var = "stim", verbose = FALSE)
+  head(nk.markers)
+check: |
+  curelab_check({
+    obj <- curelab_obj("ifnb", "Seurat")
+    expect_true(identical(as.character(Idents(obj)), as.character(obj$seurat_annotations)),
+      "Set the identities to the annotations first: Idents(ifnb) <- \"seurat_annotations\".")
+    m <- curelab_obj("nk.markers", "data.frame")
+    expect_columns(m, c("CTRL_p_val", "STIM_p_val", "max_pval", "minimump_p_val"),
+      "`nk.markers` should come from FindConservedMarkers() with grouping.var = \"stim\"; it")
+    expect_equal_ref(head(rownames(m), 3), "nk_top", "These aren't the conserved NK markers (ident.1 = \"NK\")", show = FALSE)
+  })
+hints:
+  - FindConservedMarkers() works like FindMarkers(), plus a grouping variable that says which metadata column defines the conditions.
+  - "`Idents(ifnb) <- \"seurat_annotations\"`, then `FindConservedMarkers(ifnb, ident.1 = \"NK\", grouping.var = \"stim\", verbose = FALSE)`."
+  - |
+    ```r
+    Idents(ifnb) <- "seurat_annotations"
+    nk.markers <- FindConservedMarkers(ifnb, ident.1 = "NK", grouping.var = "stim", verbose = FALSE)
+    head(nk.markers)
+    ```
+notebook_pages: [c2-nb05-de]
+expected:
+  nk_top: head(rownames(nk.markers), 3)
+wrong_solutions:
+  - why: ordinary markers, not conserved across conditions
+    code: |
+      Idents(ifnb) <- "seurat_annotations"
+      nk.markers <- FindMarkers(ifnb, ident.1 = "NK", verbose = FALSE)

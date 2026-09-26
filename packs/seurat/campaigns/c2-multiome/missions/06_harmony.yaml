@@ -1,0 +1,63 @@
+id: c2-m06-harmony
+title: Integrate with Harmony
+points: 11
+source:
+  vignette: seurat5_integration.Rmd
+  section: Perform streamlined (one-line) integrative analysis
+  quote: >-
+    Seurat v5 enables streamlined integrative analysis using the
+    `IntegrateLayers` function.
+briefing: |
+  Integration lines up shared cell types across conditions, so cells
+  from diagnosis and post-chemo samples can be compared type by type. The NBL
+  study integrates its malignant cells with Harmony. In Seurat v5 that's a
+  single line: `IntegrateLayers()` with `method = HarmonyIntegration`.
+
+  The Seurat vignette calls its object `obj`; here it's `ifnb`.
+task:
+  - Integrate the split layers of `ifnb` with Harmony, starting from the "pca" reduction and saving the result as a new reduction called "harmony".
+setup: |
+  curelab_libraries()
+  load_checkpoint("c2-m05-split")
+starter_code: |
+  ifnb <- IntegrateLayers(
+    object = ifnb, method = ,
+    orig.reduction = "pca", new.reduction = ,
+    verbose = FALSE)
+  ifnb
+solution: |
+  ifnb <- IntegrateLayers(
+    object = ifnb, method = HarmonyIntegration, # curelab: adapted
+    orig.reduction = "pca", new.reduction = 'harmony',
+    verbose = FALSE)
+check: |
+  curelab_check({
+    obj <- curelab_obj("ifnb", "Seurat")
+    expect_reduction(obj, "harmony",
+      "There is no 'harmony' reduction. Use IntegrateLayers(object = ifnb, method = HarmonyIntegration, orig.reduction = \"pca\", new.reduction = 'harmony', verbose = FALSE).")
+    emb <- Embeddings(obj, reduction = "harmony")
+    expect_true(nrow(emb) == ncol(obj), "The harmony reduction should cover every cell.")
+    expect_true(ncol(emb) == ncol(Embeddings(obj, reduction = "pca")),
+      "Integrate starting from the 'pca' reduction (orig.reduction = \"pca\").")
+    expect_true(all(c("counts.CTRL", "counts.STIM") %in% Layers(obj)),
+      "Keep the layers split for now; you'll join them in the next mission.")
+  })
+hints:
+  - IntegrateLayers() takes an integration method function and names for the input and output reductions.
+  - "`method = HarmonyIntegration`, `orig.reduction = \"pca\"`, `new.reduction = 'harmony'`."
+  - |
+    ```r
+    ifnb <- IntegrateLayers(
+      object = ifnb, method = HarmonyIntegration,
+      orig.reduction = "pca", new.reduction = 'harmony',
+      verbose = FALSE)
+    ```
+debug:
+  - pattern: "object 'Harmony[A-Za-z]*' not found|HarmonyIntegration"
+    help: The method is a function object, written without quotes, `method = HarmonyIntegration`, with exactly that capitalization.
+notebook_pages: [c2-nb04-integration]
+state: [ifnb]
+wrong_solutions:
+  - why: joined the layers instead of integrating
+    code: |
+      ifnb <- JoinLayers(ifnb)

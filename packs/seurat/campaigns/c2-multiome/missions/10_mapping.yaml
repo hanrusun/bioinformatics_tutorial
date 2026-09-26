@@ -1,0 +1,79 @@
+id: c2-m10-mapping
+title: Transfer the labels
+points: 11
+source:
+  vignette: integration_mapping.Rmd
+  section: Cell type classification using an integrated reference
+  quote: >-
+    After finding anchors, we use the `TransferData()` function to classify
+    the query cells based on reference data (a vector of reference cell type
+    labels).
+briefing: |
+  The NBL pipeline annotates its scATAC-seq cells by transferring labels
+  from the annotated scRNA-seq cells: `FindTransferAnchors()` then
+  `TransferData()`. {name}'s ATAC data will get the same treatment. Rehearse
+  label transfer on pancreatic islet data: `pancreas.ref` (two
+  technologies, integrated and annotated) is the reference, and cells from
+  two other technologies in `panc8` are the query.
+task:
+  - Make `pancreas.query`, the `panc8` cells from the "fluidigmc1" and "celseq" technologies, and normalize it.
+  - Find transfer anchors (reference PCA, dims 1:30) and transfer the reference `celltype` labels.
+  - Add the predictions to the query metadata, then compare `predicted.id` with the true `celltype` in a new column `prediction.match`.
+setup: |
+  curelab_libraries()
+  load_prep("panc8_ref")
+starter_code: |
+  table(panc8$tech)
+
+  # select two technologies for the query datasets
+  pancreas.query <-
+  pancreas.query <- NormalizeData(pancreas.query)
+
+  pancreas.anchors <- FindTransferAnchors(reference = pancreas.ref, query = pancreas.query, dims = 1:30, reference.reduction="pca")
+  predictions <-
+  pancreas.query <- AddMetaData(pancreas.query, metadata = predictions)
+
+  pancreas.query$prediction.match <-
+  table(pancreas.query$prediction.match)
+solution: |
+  pancreas.query <- subset(panc8, tech %in% c("fluidigmc1", "celseq"))
+  pancreas.query <- NormalizeData(pancreas.query)
+  pancreas.anchors <- FindTransferAnchors(reference = pancreas.ref, query = pancreas.query, dims = 1:30, reference.reduction="pca")
+  predictions <- TransferData(anchorset = pancreas.anchors, refdata = pancreas.ref$celltype, dims = 1:30)
+  pancreas.query <- AddMetaData(pancreas.query, metadata = predictions)
+  pancreas.query$prediction.match <- pancreas.query$predicted.id == pancreas.query$celltype
+  table(pancreas.query$prediction.match)
+check: |
+  curelab_check({
+    q <- curelab_obj("pancreas.query", "Seurat")
+    expect_true(setequal(unique(q$tech), c("fluidigmc1", "celseq")),
+      "The query should hold exactly the fluidigmc1 and celseq cells: subset(panc8, tech %in% c(\"fluidigmc1\", \"celseq\")).")
+    expect_columns(q[[]], c("predicted.id", "prediction.score.max"),
+      "The query metadata (add the TransferData() output with AddMetaData())")
+    expect_true("prediction.match" %in% colnames(q[[]]) && is.logical(q$prediction.match),
+      "Add prediction.match: pancreas.query$predicted.id == pancreas.query$celltype.")
+    expect_equal_ref(round(mean(q$prediction.match), 3), "accuracy",
+      "The transferred labels don't match the reference run. Transfer pancreas.ref$celltype with dims = 1:30", tolerance = 0.01)
+  })
+hints:
+  - "Three steps: subset the query technologies, find anchors between reference and query, then transfer the reference's celltype labels through those anchors."
+  - "`TransferData(anchorset = pancreas.anchors, refdata = pancreas.ref$celltype, dims = 1:30)`; then `AddMetaData(pancreas.query, metadata = predictions)`."
+  - |
+    ```r
+    pancreas.query <- subset(panc8, tech %in% c("fluidigmc1", "celseq"))
+    pancreas.query <- NormalizeData(pancreas.query)
+    pancreas.anchors <- FindTransferAnchors(reference = pancreas.ref, query = pancreas.query, dims = 1:30, reference.reduction="pca")
+    predictions <- TransferData(anchorset = pancreas.anchors, refdata = pancreas.ref$celltype, dims = 1:30)
+    pancreas.query <- AddMetaData(pancreas.query, metadata = predictions)
+    pancreas.query$prediction.match <- pancreas.query$predicted.id == pancreas.query$celltype
+    ```
+notebook_pages: [c2-nb06-mapping]
+expected:
+  accuracy: round(mean(pancreas.query$prediction.match), 3)
+wrong_solutions:
+  - why: predictions never added to the query
+    code: |
+      pancreas.query <- subset(panc8, tech %in% c("fluidigmc1", "celseq"))
+      pancreas.query <- NormalizeData(pancreas.query)
+      pancreas.anchors <- FindTransferAnchors(reference = pancreas.ref, query = pancreas.query, dims = 1:30, reference.reduction="pca")
+      predictions <- TransferData(anchorset = pancreas.anchors, refdata = pancreas.ref$celltype, dims = 1:30)

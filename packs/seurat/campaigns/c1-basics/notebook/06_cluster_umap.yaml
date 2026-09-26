@@ -1,0 +1,37 @@
+id: c1-nb06-cluster-umap
+title: Graph clustering and UMAP
+rp: 2
+missions: [c1-m09-cluster, c1-m10-umap]
+blocks:
+  - quote: >-
+      As in PhenoGraph, we first construct a KNN graph based on the Euclidean
+      distance in PCA space, and refine the edge weights between any two cells
+      based on the shared overlap in their local neighborhoods (Jaccard
+      similarity). This step is performed using the `FindNeighbors()`
+      function, and takes as input the previously defined dimensionality of
+      the dataset (first 10 PCs).
+    source: {vignette: pbmc3k_tutorial.Rmd, section: "Cluster the cells"}
+  - quote: >-
+      We find that setting this parameter between 0.4-1.2 typically returns
+      good results for single-cell datasets of around 3K cells. Optimal
+      resolution often increases for larger datasets. The clusters can be
+      found using the `Idents()` function.
+    source: {vignette: pbmc3k_tutorial.Rmd, section: "Cluster the cells"}
+  - code: |
+      pbmc <- FindNeighbors(pbmc, dims = 1:10)
+      pbmc <- FindClusters(pbmc, resolution = 0.5)
+      # Look at cluster IDs of the first 5 cells
+      head(Idents(pbmc), 5)
+    source: {vignette: pbmc3k_tutorial.Rmd, section: "Cluster the cells"}
+  - quote: >-
+      Therefore, cells that are grouped together within graph-based clusters
+      determined above should co-localize on these dimension reduction plots.
+    source: {vignette: pbmc3k_tutorial.Rmd, section: "Run non-linear dimensional reduction (UMAP / t-SNE)"}
+  - code: |
+      pbmc <- RunUMAP(pbmc, dims = 1:10)
+      DimPlot(pbmc, reduction = 'umap')
+    source: {vignette: pbmc3k_tutorial.Rmd, section: "Run non-linear dimensional reduction (UMAP / t-SNE)"}
+  - text: >-
+      The NBL scripts chain the same steps with the `%>%` pipe, e.g.
+      `RunUMAP(obj, reduction = 'pca', dim = 1:npc) %>% FindNeighbors(...) %>% FindClusters(resolution = 0.2)`.
+      The order of UMAP and clustering doesn't matter: both read the PCA.
