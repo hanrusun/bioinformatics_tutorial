@@ -39,7 +39,10 @@ for (const [name, script] of [
   ['builder', '/builder_test.R'],
 ]) {
   const res = await shelter.captureR(`source("${script}")`);
-  const lines = res.output.map((o) => o.data).join('\n');
+  // stdout/stderr lines are strings; R warnings and messages arrive as condition objects
+  const lines = res.output
+    .map((o) => (typeof o.data === 'string' ? o.data : `${o.type === 'warning' ? 'Warning' : 'Note'}: ${o.data?.message ?? String(o.type)}`))
+    .join('\n');
   if (!/^PASS /m.test(lines)) {
     failures++;
     console.log(`${name} tests did not run`);

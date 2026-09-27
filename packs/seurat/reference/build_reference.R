@@ -52,7 +52,24 @@ local({
 
   clear_env <- function() {
     rm(list = ls(globalenv(), all.names = TRUE), envir = globalenv())
+    # collect now: otherwise the last mission's objects can still be held
+    # while the next checkpoint loads, doubling the peak memory
+    invisible(gc())
     set.seed(42) # the wipe also removed .Random.seed; keep builds reproducible
+  }
+
+  # Resident memory of this R process, now and at its peak (Linux only).
+  memory <- function() {
+    status <- if (file.exists("/proc/self/status")) readLines("/proc/self/status") else character()
+    kb <- function(field) {
+      line <- grep(paste0("^", field, ":"), status, value = TRUE)
+      if (length(line)) as.numeric(gsub("[^0-9]", "", line)) / 1024^2 else NA
+    }
+    c(now = kb("VmRSS"), peak = kb("VmHWM"))
+  }
+  memory_note <- function() {
+    m <- memory()
+    if (is.na(m[["now"]])) "" else sprintf(", %.1f GB in use, peak %.1f GB", m[["now"]], m[["peak"]])
   }
 
   run_code <- function(code) {
@@ -165,7 +182,7 @@ local({
       # 6: the check must accept the reference solution
       res <- run_check(m)
       if (!isTRUE(res$pass)) fail(m$id, ": check rejected the reference solution: ", res$message)
-      else message("   reference solution passes (", elapsed(t0), ")")
+      else message("   reference solution passes (", elapsed(t0), memory_note(), ")")
 
       # 7: the check must reject each wrong solution
       if (!skip_wrong) {
@@ -194,5 +211,7 @@ local({
     message("\n", length(failures), " problem(s):\n", paste0(" - ", failures, collapse = "\n"))
     quit(status = 1)
   }
+  peak <- memory()[["peak"]]
+  if (!is.na(peak)) message(sprintf("\nPeak memory of the reference build: %.1f GB", peak))
   message("\nAll missions verified.")
 })

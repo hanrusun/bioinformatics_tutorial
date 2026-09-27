@@ -83,6 +83,14 @@ jobs:
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
           docker system prune -af
           df -h /
+      - name: Add swap (the reference build holds the 20k-cell Mixscape screen in memory)
+        run: |
+          sudo swapoff -a || true
+          sudo fallocate -l 8G /mnt/curelab.swap
+          sudo chmod 600 /mnt/curelab.swap
+          sudo mkswap /mnt/curelab.swap
+          sudo swapon /mnt/curelab.swap
+          free -h
       - name: Build (fails if any mission check misbehaves)
         run: docker build -f packs/seurat/Dockerfile -t curelab-seurat:ci .
       - name: Image size

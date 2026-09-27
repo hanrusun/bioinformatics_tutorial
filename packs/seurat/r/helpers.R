@@ -38,6 +38,7 @@ local({
     # with `prefix.` (e.g. "FindNeighbors" matches "FindNeighbors.RNA.pca").
     curelab_command <- function(obj, prefix) {
       cmds <- names(obj@commands)
+      if (!length(cmds)) return(NULL) # a freshly loaded object has no command log
       hits <- cmds[cmds == prefix | startsWith(cmds, paste0(prefix, "."))]
       if (!length(hits)) return(NULL)
       stamps <- vapply(hits, function(h) as.numeric(obj@commands[[h]]@time.stamp), numeric(1))
