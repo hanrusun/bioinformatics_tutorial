@@ -32,8 +32,8 @@ docker compose up --build seurat
 Then open <http://localhost:8000>.
 
 The first build downloads the datasets and runs every mission's reference
-solution once. It takes about 45–60 minutes and produces an image of about
-5 GB. Later starts are instant. Your progress and lab notebook are kept in a
+solution once. On a 4-core machine it takes about 40 minutes and produces an
+image of about 9 GB (measured in CI). Later starts are instant. Your progress and lab notebook are kept in a
 Docker volume (`curelab-seurat-data`).
 
 The port is bound to `127.0.0.1` on purpose: the game executes the code you

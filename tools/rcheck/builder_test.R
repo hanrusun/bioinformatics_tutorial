@@ -110,6 +110,8 @@ local({
 setwd("/mock/reference")
 # the builder defaults to <pack>/reference only when this is unset
 Sys.unsetenv("CURELAB_REFERENCE_DIR")
+# webR cannot start child R processes, so run every mission in this one
+Sys.setenv(CURELAB_BUILD_IN_PROCESS = "1")
 withCallingHandlers(
   source("/mock/reference/build_reference.R"),
   message = function(m) {
