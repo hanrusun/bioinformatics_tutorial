@@ -40,6 +40,24 @@ The port is bound to `127.0.0.1` on purpose: the game executes the code you
 type, so only your own machine can reach it. To skip the Campaign 1
 requirement, set `CURELAB_UNLOCK_ALL: "1"` in `docker-compose.yml`.
 
+### System requirements
+
+Measured in CI on a 4-core Linux machine:
+
+| | Needs |
+|---|---|
+| Disk | about 9 GB for the image, plus a few GB of scratch space while it builds |
+| Build time | about 40 minutes the first time (one Campaign 2 step alone takes 15) |
+| RAM to build | about 10 GB: the heaviest mission (the build runs one mission at a time) |
+| RAM to play Campaign 1 | about 2 GB for R, plus about 1 GB for the game |
+| RAM to play Campaign 2 | about 4 GB for R, plus about 1 GB |
+| RAM to play Campaign 3 (Mixscape) | about 9.5 GB for R, plus about 1 GB: the 20,729-cell CRISPR screen |
+
+On Linux, Docker can use all of your RAM. On macOS and Windows, Docker Desktop
+runs in a virtual machine with its own memory limit: set **Settings →
+Resources → Memory** to at least 12 GB to build the image and play Campaign 3
+(6 GB is enough for Campaigns 1 and 2 once the image is built).
+
 ## How to play
 
 ![Walter's room, the lab and the cure/lethality/health bars](docs/img/game.png)
