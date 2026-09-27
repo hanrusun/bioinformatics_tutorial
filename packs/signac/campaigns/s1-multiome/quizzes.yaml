@@ -1,0 +1,172 @@
+# Journal-club questions for the Signac pack. Each quote is checked verbatim
+# against the cited vignette (Signac 1.17.1, or Seurat v5.5.1 for "seurat:").
+- id: s1-q01-h5
+  after: s1-m01-build
+  question: What does the 10x multiome .h5 file contain?
+  choices: ["Only the RNA counts", "Both the RNA and the ATAC data", "Only the ATAC peaks", "The fragment coordinates"]
+  answer: 1
+  explanation: Read10X_h5() returns a list with the gene expression matrix and the peak matrix.
+  source:
+    vignette: seurat:weighted_nearest_neighbor_analysis.Rmd
+    section: WNN analysis of 10x Multiome, RNA + ATAC
+    quote: the 10x hdf5 file contains both data types.
+- id: s1-q02-chromosomes
+  after: s1-m01-build
+  question: Which ATAC peaks does the WNN vignette keep?
+  choices: ["Every peak", "Peaks in standard chromosomes", "Only peaks at promoters", "The 2,000 most variable peaks"]
+  answer: 1
+  explanation: Peaks on unplaced contigs and alternative haplotypes are dropped.
+  source:
+    vignette: seurat:weighted_nearest_neighbor_analysis.Rmd
+    section: WNN analysis of 10x Multiome, RNA + ATAC
+    quote: we'll only use peaks in standard chromosomes
+- id: s1-q03-qc-data
+  after: s1-m02-atac-qc
+  question: Which data do NucleosomeSignal() and TSSEnrichment() compute their per-cell QC metrics from?
+  choices: ["The RNA counts", "The DNA accessibility data", "The protein counts", "The cluster labels"]
+  answer: 1
+  explanation: Both read the ATAC fragments of each cell.
+  source:
+    vignette: pbmc_multiomic.Rmd
+    section: Quality control
+    quote: >-
+      We can compute per-cell quality control metrics using the DNA
+      accessibility data and remove cells that are outliers for these metrics
+- id: s1-q04-densityscatter
+  after: s1-m02-atac-qc
+  question: Which Signac function plots two metadata variables against each other and can suggest QC cutoffs?
+  choices: ["VlnPlot()", "DensityScatter()", "FeaturePlot()", "DoHeatmap()"]
+  answer: 1
+  explanation: With quantiles = TRUE it marks the quantiles of each variable.
+  source:
+    vignette: pbmc_multiomic.Rmd
+    section: Quality control
+    quote: >-
+      This can also be used to quickly find suitable cutoff values for
+      different QC metrics by setting quantiles=TRUE
+- id: s1-q05-wnn-qc
+  after: s1-m03-filter
+  question: What is the WNN vignette's basic QC based on?
+  choices: ["TSS enrichment only", "Detected molecules per modality and mitochondrial percentage", "Doublet scores", "Cluster sizes"]
+  answer: 1
+  explanation: Both nCount_ATAC and nCount_RNA are bounded, plus percent.mt.
+  source:
+    vignette: seurat:weighted_nearest_neighbor_analysis.Rmd
+    section: WNN analysis of 10x Multiome, RNA + ATAC
+    quote: >-
+      We perform basic QC based on the number of detected molecules for each
+      modality as well as mitochondrial percentage.
+- id: s1-q06-lsi1
+  after: s1-m05-lsi
+  question: Why does the ATAC UMAP skip the first LSI component?
+  choices: ["It is pure noise", "It is typically correlated with sequencing depth", "It captures the cell cycle", "It is always zero"]
+  answer: 1
+  explanation: The first LSI component mostly reflects how many fragments a cell has, not its biology.
+  source:
+    vignette: seurat:weighted_nearest_neighbor_analysis.Rmd
+    section: WNN analysis of 10x Multiome, RNA + ATAC
+    quote: We exclude the first dimension as this is typically correlated with sequencing depth
+- id: s1-q07-lsi
+  after: s1-m05-lsi
+  question: How is the DNA accessibility assay processed?
+  choices: ["PCA on log counts", "Latent semantic indexing (LSI)", "SCTransform", "t-SNE"]
+  answer: 1
+  explanation: TF-IDF normalization followed by singular value decomposition.
+  source:
+    vignette: pbmc_multiomic.Rmd
+    section: DNA accessibility data processing
+    quote: >-
+      Here we process the DNA accessibility assay the same way we would
+      process a scATAC-seq dataset, by performing latent semantic indexing
+      (LSI).
+- id: s1-q08-wnn
+  after: s1-m06-wnn
+  question: What does the WNN graph represent?
+  choices: ["RNA similarity only", "A weighted combination of RNA and ATAC-seq modalities", "Co-accessible peaks", "Spatial neighbors"]
+  answer: 1
+  explanation: Each cell gets its own weights for the two modalities.
+  source:
+    vignette: seurat:weighted_nearest_neighbor_analysis.Rmd
+    section: WNN analysis of 10x Multiome, RNA + ATAC
+    quote: >-
+      We calculate a WNN graph, representing a weighted combination of RNA and
+      ATAC-seq modalities.
+- id: s1-q09-separation
+  after: s1-m07-annotate
+  question: Which analysis gave the clearest separation of cell states in the multiome data?
+  choices: ["RNA alone", "ATAC alone", "WNN", "They were identical"]
+  answer: 2
+  explanation: The differences are subtle, but the combined graph separates cell states best.
+  source:
+    vignette: seurat:weighted_nearest_neighbor_analysis.Rmd
+    section: WNN analysis of 10x Multiome, RNA + ATAC
+    quote: but we find that WNN provides the clearest separation of cell states.
+- id: s1-q10-cd8
+  after: s1-m08-coverage
+  question: Which distinction does the ATAC-seq data help with?
+  choices: ["CD4 vs CD8 T cell states", "T cells vs B cells", "NK cells vs monocytes", "Naive B vs plasma cells"]
+  answer: 0
+  explanation: Several loci, such as CD8A, differ in accessibility between T-cell subtypes.
+  source:
+    vignette: seurat:weighted_nearest_neighbor_analysis.Rmd
+    section: WNN analysis of 10x Multiome, RNA + ATAC
+    quote: >-
+      For example, the ATAC-seq data assists in the separation of CD4 and CD8 T
+      cell states.
+- id: s1-q11-linkpeaks
+  after: s1-m09-links
+  question: Which biases does LinkPeaks correct for?
+  choices: ["Batch and donor", "GC content, overall accessibility and peak size", "Cell cycle", "Mitochondrial reads"]
+  answer: 1
+  explanation: Background peaks matched on these properties give each correlation a null distribution.
+  source:
+    vignette: pbmc_multiomic.Rmd
+    section: Linking peaks to genes
+    quote: >-
+      correcting for bias due to GC content, overall accessibility, and peak
+      size.
+- id: s1-q12-subset-genes
+  after: s1-m09-links
+  question: Why does the vignette link peaks for only two genes?
+  choices: ["Only two genes have peaks", "Running it on the whole genome can be time consuming", "The other genes are not expressed", "LinkPeaks needs exactly two genes"]
+  answer: 1
+  explanation: Omitting genes.use links every gene, which takes much longer.
+  source:
+    vignette: pbmc_multiomic.Rmd
+    section: Linking peaks to genes
+    quote: >-
+      Running this step on the whole genome can be time consuming, so here we
+      demonstrate peak-gene links for a subset of genes as an example.
+- id: s1-q13-chromvar
+  after: s1-m10-chromvar
+  question: What does chromVAR compute?
+  choices: ["Per-cell expression of each TF", "A per-cell accessibility score for known motifs", "The GC content of each peak", "Cell-cycle scores"]
+  answer: 1
+  explanation: The scores become a third assay, "chromvar".
+  source:
+    vignette: seurat:weighted_nearest_neighbor_analysis.Rmd
+    section: WNN analysis of 10x Multiome, RNA + ATAC
+    quote: This calculates a per-cell accessibility score for known motifs
+- id: s1-q14-regulators
+  after: s1-m11-regulators
+  question: What two things must a putative regulator of a cell type show?
+  choices: ["High expression and a long gene body", "Enriched expression (RNA) and enriched motif accessibility (ATAC)", "Many peaks and many links", "A high AUC in either test"]
+  answer: 1
+  explanation: Requiring both tests narrows the list to the most likely candidates.
+  source:
+    vignette: seurat:weighted_nearest_neighbor_analysis.Rmd
+    section: WNN analysis of 10x Multiome, RNA + ATAC
+    quote: >-
+      We aim to identify TFs whose expression is enriched in multiple cell
+      types in the RNA measurements, but *also* have enriched accessibility for
+      their motifs in the ATAC measurements.
+- id: s1-q15-auc
+  after: s1-m11-regulators
+  question: In presto, what does an AUC of 1 mean?
+  choices: ["No difference", "A perfect marker", "The test failed", "An adjusted p-value of 1"]
+  answer: 1
+  explanation: AUC is on the same scale for genes and motifs, so the two can be averaged.
+  source:
+    vignette: seurat:weighted_nearest_neighbor_analysis.Rmd
+    section: WNN analysis of 10x Multiome, RNA + ATAC
+    quote: A maximum AUC value of 1 indicates a perfect marker.

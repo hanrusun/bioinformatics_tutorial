@@ -1,0 +1,15 @@
+id: s1-multiome
+title: Chromatin and Regulators
+subtitle: Single-cell multiome (RNA + ATAC) with Signac and Seurat
+illness: ewing
+order: 1
+summary: >-
+  Tomás's sarcoma is driven by a transcription factor that rewires chromatin.
+  Learn the multiome workflow on 10x data where RNA and chromatin
+  accessibility were measured in the same cells: build a Signac
+  ChromatinAssay, run ATAC quality control, process each modality (SCTransform
+  and LSI), combine them with weighted nearest neighbors, annotate cell types,
+  plot chromatin coverage, link peaks to genes, score transcription-factor
+  motifs with chromVAR, and rank the regulators of each cell type.
+datasets:
+  - 10x Genomics multiome PBMC 10k (pbmc_granulocyte_sorted_10k), human hg38

@@ -93,7 +93,7 @@ export function TitleScreen({ meta, activeEnded, onStart, onContinue }: Props) {
         ))}
       </section>
       <footer class="credits fine">
-        Tutorial content is quoted from {meta.pack.source_pin.repo}@{meta.pack.source_pin.ref} and belongs to its
+        Tutorial content is quoted from {(meta.pack.sources ?? [meta.pack.source_pin]).map((s) => `${s.repo}@${s.ref}`).join(' and ')} and belongs to its
         authors. Patients are fictional. Game mechanics inspired by Plague Inc. (Ndemic Creations); not affiliated.
       </footer>
     </main>

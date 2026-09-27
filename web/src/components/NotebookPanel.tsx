@@ -136,7 +136,7 @@ function PageView({
               </a>{' '}
               ·{' '}
               <a href={b.source.pinned_url} target="_blank" rel="noopener noreferrer">
-                pinned {b.source.ref}
+                pinned {b.source.repo ? `${b.source.repo}@` : ''}{b.source.ref}
               </a>
             </cite>
           )}

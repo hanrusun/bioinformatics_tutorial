@@ -40,19 +40,34 @@ notebook page.
 | `DimPlot()`, `FeaturePlot()`, `VlnPlot()` | everywhere | throughout C1 |
 | `RenameCells()` | co-embedding | not covered (one-line rename of cell barcodes) |
 
-## Not Seurat: candidates for future packs
+## Signac, motifs and chromVAR: the Signac pack
+
+The optional Signac image (`docker compose up --build signac`) teaches the
+chromatin half of the pipeline on the 10x multiome PBMC data. "S1" is its
+campaign, Chromatin and Regulators.
+
+| Call or step in the NBL scripts | Where it appears | Taught in |
+|---|---|---|
+| `CreateChromatinAssay()`, `StringToGRanges()`, `GetGRangesFromEnsDb()`, `seqlevelsStyle<-` | snATAC processing, gene–peak links | S1 mission 1, S1 nb "A multiome object" |
+| Fragment files, `NucleosomeSignal()`, `TSSEnrichment()` | snATAC QC | S1 missions 1–3, S1 nb "Quality control for two modalities" |
+| `RunTFIDF()`, `FindTopFeatures()`, `RunSVD()` (LSI; drop LSI 1) | snATAC processing, co-embedding | S1 mission 5, S1 nb "Processing each modality", quiz on the first LSI component |
+| RNA + ATAC in the same cells (the co-embedding's goal) | co-embedding | S1 mission 6 (weighted nearest neighbors), S1 nb "Weighted nearest neighbors and cell types" |
+| Enhancer–gene links (peak accessibility vs gene expression) | `regr_gene_peak_links_metacell_malignant.R` | S1 mission 9 (`RegionStats()`, `LinkPeaks()`), S1 nb "Coverage plots and peak-gene links" |
+| TF motif scan of peaks (`matchMotifs` via `CreateMotifMatrix()`), JASPAR, BSgenome hg38 | `motif_scan.R` | S1 mission 10, S1 nb "Motif activity with chromVAR" |
+| chromVAR deviation scores per cell | upstream of `predict_tf_regulons_cellstate.R` | S1 mission 10 |
+| TFs whose motif activity and expression both mark a cell state (the idea behind a TRN) | `predict_tf_regulons_cellstate.R` | S1 mission 11 (presto markers on RNA and chromVAR), S1 nb "From motifs to regulators" |
+| `CoveragePlot()` | figures | S1 mission 8 |
+
+Not covered: `GeneActivity()` and `CollapseToLongestTranscript()` (the C2
+notebook shows where a gene-activity assay comes from), and the regression
+and network assembly itself, which is base R / data.table rather than a
+library call.
+
+## Still outside Cure Lab
 
 | Tool | Used for | Script |
 |---|---|---|
-| **Signac** (`RunTFIDF`, `RunSVD`, `GeneActivity`, `CollapseToLongestTranscript`) | scATAC processing, gene activity, TSS annotation | `snATAC-seq-analysis/*`, `regr_gene_peak_links_metacell_malignant.R` |
 | **hdWGCNA** (`SetupForWGCNA`, `MetacellsByGroups`, `NormalizeMetacells`) | RNA+ATAC metacells on the co-embedding | `coembedding_perSample_metacell_malignant.R` |
-| **motifmatchr / chromVARmotifs / BSgenome** (`matchMotifs`) | TF motif scan of peaks | `motif_scan.R` |
-| **chromVAR** (deviation scores, consumed by the TRN script) | TF activity per cell state | upstream of `predict_tf_regulons_cellstate.R` |
 | **data.table / GenomicRanges / base R regression** | enhancer–gene links, TRN assembly | `regr_gene_peak_links_metacell_malignant.R`, `predict_tf_regulons_cellstate.R` |
 | **DoubletFinder, decontX (celda)** | doublets and ambient RNA | `snRNA-seq-analysis/PreProcess/*` |
 | **enrichR, fgsea, edgeR/limma** | pathway enrichment, pseudobulk DAP/DEG | TRN, DEG, DAP scripts |
-
-A **Signac pack** would be the natural next step: the NBL snATAC processing
-and the gene-activity/co-embedding steps are its core vignettes. Following
-the one-illness-per-campaign rule, it could reuse neuroblastoma, or bring a
-new disease.

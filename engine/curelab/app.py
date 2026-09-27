@@ -146,13 +146,15 @@ def _patient_view(illness: Illness) -> dict[str, Any]:
 
 
 def _source_view(pack: Pack, src) -> dict[str, Any]:
+    pin, document = pack.resolve_source(src.vignette)
     return {
-        "vignette": src.vignette,
+        "vignette": document,
         "section": src.section,
         "quote": src.quote,
-        "site_url": pack.source_pin.site_url(src.vignette),
-        "pinned_url": pack.source_pin.blob_url(src.vignette),
-        "ref": pack.source_pin.ref,
+        "site_url": pin.site_url(document),
+        "pinned_url": pin.blob_url(document),
+        "ref": pin.ref,
+        "repo": pin.repo,
     }
 
 
@@ -340,6 +342,7 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
                 "language": pack.language,
                 "editor_mode": pack.editor_mode,
                 "source_pin": pack.source_pin.model_dump(),
+                "sources": [pin.model_dump() for pin in pack.all_pins()],
             },
             "campaigns": campaigns,
             "difficulties": [

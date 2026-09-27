@@ -1,0 +1,29 @@
+id: s1-nb07-regulators
+title: From motifs to regulators
+rp: 1
+missions: [s1-m11-regulators]
+blocks:
+  - quote: >-
+      We aim to identify TFs whose expression is enriched in multiple cell
+      types in the RNA measurements, but also have enriched accessibility for
+      their motifs in the ATAC measurements.
+    source: {vignette: "seurat:weighted_nearest_neighbor_analysis.Rmd", section: "WNN analysis of 10x Multiome, RNA + ATAC"}
+  - quote: >-
+      presto also calculates an "AUC" statistic, which reflects the power of
+      each gene (or motif) to serve as a marker of cell type. A maximum AUC
+      value of 1 indicates a perfect marker.
+    source: {vignette: "seurat:weighted_nearest_neighbor_analysis.Rmd", section: "WNN analysis of 10x Multiome, RNA + ATAC"}
+  - code: |
+      markers_rna <- presto:::wilcoxauc.Seurat(X = pbmc, group_by = 'celltype', assay = 'data', seurat_assay = 'SCT')
+      markers_motifs <- presto:::wilcoxauc.Seurat(X = pbmc, group_by = 'celltype', assay = 'data', seurat_assay = 'chromvar')
+      motif.names <- markers_motifs$feature
+      colnames(markers_rna) <- paste0("RNA.", colnames(markers_rna))
+      colnames(markers_motifs) <- paste0("motif.", colnames(markers_motifs))
+      markers_rna$gene <- markers_rna$RNA.feature
+      markers_motifs$gene <- ConvertMotifID(pbmc, id = motif.names)
+    source: {vignette: "seurat:weighted_nearest_neighbor_analysis.Rmd", section: "WNN analysis of 10x Multiome, RNA + ATAC"}
+  - quote: >-
+      We recover well-established regulators, including TBX21 for NK cells,
+      IRF4 for plasma cells, SOX4 for hematopoietic progenitors, EBF1 and PAX5
+      for B cells, IRF8 and TCF4 for pDC.
+    source: {vignette: "seurat:weighted_nearest_neighbor_analysis.Rmd", section: "WNN analysis of 10x Multiome, RNA + ATAC"}

@@ -1,0 +1,39 @@
+id: s1-nb02-qc
+title: Quality control for two modalities
+rp: 2
+missions: [s1-m02-atac-qc, s1-m03-filter]
+blocks:
+  - quote: >-
+      We can compute per-cell quality control metrics using the DNA
+      accessibility data and remove cells that are outliers for these metrics,
+      as well as cells with low or unusually high counts for either the RNA or
+      ATAC assay.
+    source: {vignette: pbmc_multiomic.Rmd, section: "Quality control"}
+  - code: |
+      DefaultAssay(pbmc) <- "ATAC"
+      pbmc <- NucleosomeSignal(pbmc)
+      pbmc <- TSSEnrichment(pbmc)
+    source: {vignette: pbmc_multiomic.Rmd, section: "Quality control"}
+  - quote: >-
+      The relationship between variables stored in the object metadata can be
+      visualized using the DensityScatter() function. This can also be used to
+      quickly find suitable cutoff values for different QC metrics by setting
+      quantiles=TRUE:
+    source: {vignette: pbmc_multiomic.Rmd, section: "Quality control"}
+  - code: |
+      DensityScatter(pbmc, x = 'nCount_ATAC', y = 'TSS.enrichment', log_x = TRUE, quantiles = TRUE)
+    source: {vignette: pbmc_multiomic.Rmd, section: "Quality control"}
+  - quote: >-
+      We perform basic QC based on the number of detected molecules for each
+      modality as well as mitochondrial percentage.
+    source: {vignette: "seurat:weighted_nearest_neighbor_analysis.Rmd", section: "WNN analysis of 10x Multiome, RNA + ATAC"}
+  - code: |
+      pbmc <- subset(
+        x = pbmc,
+        subset = nCount_ATAC < 7e4 &
+          nCount_ATAC > 5e3 &
+          nCount_RNA < 25000 &
+          nCount_RNA > 1000 &
+          percent.mt < 20
+      )
+    source: {vignette: "seurat:weighted_nearest_neighbor_analysis.Rmd", section: "WNN analysis of 10x Multiome, RNA + ATAC"}

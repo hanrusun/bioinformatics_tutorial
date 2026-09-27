@@ -1,0 +1,58 @@
+id: s1-m04-rna
+title: The RNA side
+points: 7
+source:
+  vignette: seurat:weighted_nearest_neighbor_analysis.Rmd
+  section: WNN analysis of 10x Multiome, RNA + ATAC
+  quote: >-
+    We next perform pre-processing and dimensional reduction on both assays
+    independently, using standard approaches for RNA and ATAC-seq data.
+briefing: |
+  Process each modality on its own first. For the RNA, the vignette uses
+  SCTransform (a regularized negative binomial model that replaces
+  normalization, variable features and scaling), then PCA and a UMAP of the
+  RNA alone, named so it won't be overwritten later.
+task:
+  - Make "RNA" the default assay.
+  - Run SCTransform, PCA and a UMAP on the first 50 PCs saved as "umap.rna" (key 'rnaUMAP_'), in one piped line.
+setup: |
+  curelab_libraries(c("Signac", "EnsDb.Hsapiens.v86", "ggplot2", "GenomeInfoDb"))
+  load_checkpoint("s1-m03-filter")
+starter_code: |
+  # RNA analysis
+  DefaultAssay(pbmc) <-
+  pbmc <- SCTransform(pbmc, verbose = FALSE) %>% RunPCA() %>% RunUMAP(dims = , reduction.name = , reduction.key = 'rnaUMAP_')
+solution: |
+  DefaultAssay(pbmc) <- "RNA"
+  pbmc <- SCTransform(pbmc, verbose = FALSE) %>% RunPCA() %>% RunUMAP(dims = 1:50, reduction.name = 'umap.rna', reduction.key = 'rnaUMAP_')
+check: |
+  curelab_check({
+    obj <- curelab_obj("pbmc", "Seurat")
+    expect_true("SCT" %in% Assays(obj), "Normalize the RNA with SCTransform(pbmc, verbose = FALSE).")
+    expect_reduction(obj, "pca", "Run RunPCA() after SCTransform().")
+    expect_true(DefaultAssay(obj[["pca"]]) == "SCT", "Run the PCA on the SCT assay (SCTransform makes it the default).")
+    expect_equal_ref(round(Stdev(obj, reduction = "pca")[1:5], 3), "pca_sdev",
+      "The PCA doesn't match the reference. Run SCTransform on the RNA assay with the defaults, then RunPCA().",
+      tolerance = 1e-2, show = FALSE)
+    expect_reduction(obj, "umap.rna", "Save the RNA UMAP as reduction.name = 'umap.rna'.")
+    expect_param(obj, "RunUMAP", "dims", 1:50, "Use the first 50 PCs: dims = 1:50")
+  })
+expected:
+  pca_sdev: round(Stdev(pbmc, reduction = "pca")[1:5], 3)
+hints:
+  - SCTransform takes the raw RNA counts and produces a new "SCT" assay; PCA and UMAP then run on it.
+  - "`DefaultAssay(pbmc) <- \"RNA\"`, then `SCTransform(pbmc, verbose = FALSE) %>% RunPCA() %>% RunUMAP(dims = 1:50, reduction.name = 'umap.rna', reduction.key = 'rnaUMAP_')`."
+  - |
+    ```r
+    DefaultAssay(pbmc) <- "RNA"
+    pbmc <- SCTransform(pbmc, verbose = FALSE) %>% RunPCA() %>% RunUMAP(dims = 1:50, reduction.name = 'umap.rna', reduction.key = 'rnaUMAP_')
+    ```
+notebook_pages: [s1-nb03-modalities]
+state: [pbmc]
+timeout: 1800
+wrong_solutions:
+  - why: log-normalized instead of SCTransform
+    code: |
+      DefaultAssay(pbmc) <- "RNA"
+      pbmc <- NormalizeData(pbmc) %>% FindVariableFeatures() %>% ScaleData() %>% RunPCA() %>%
+        RunUMAP(dims = 1:50, reduction.name = 'umap.rna', reduction.key = 'rnaUMAP_')

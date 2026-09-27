@@ -1,0 +1,64 @@
+id: s1-m08-coverage
+title: Reading the chromatin at CD8A
+points: 6
+source:
+  vignette: seurat:weighted_nearest_neighbor_analysis.Rmd
+  section: WNN analysis of 10x Multiome, RNA + ATAC
+  quote: >-
+    For example, the ATAC-seq data assists in the separation of CD4 and CD8 T
+    cell states.
+briefing: |
+  A coverage plot stacks the ATAC fragments of each cell type over a region
+  of the genome, as "pseudobulk" tracks, next to the expression of a gene.
+  Look at CD8A in the T cells: the chromatin there opens in CD8 cells and
+  stays shut in CD4 cells.
+task:
+  - "`tcell.names`: the cell types whose name contains CD4, CD8 or Treg."
+  - "`tcells`: the T cells of `pbmc`."
+  - "`cov`: the coverage plot of the CD8A region with CD8A expression (ATAC and SCT assays, no peak track)."
+setup: |
+  curelab_libraries(c("Signac", "EnsDb.Hsapiens.v86", "ggplot2", "GenomeInfoDb"))
+  load_checkpoint("s1-m07-annotate")
+starter_code: |
+  ## to make the visualization easier, subset T cell clusters
+  celltype.names <- levels(pbmc)
+  tcell.names <- grep("CD4|CD8|Treg", celltype.names,value = TRUE)
+  tcells <- subset(pbmc, idents = )
+  cov <- CoveragePlot(tcells, region = 'CD8A', features = 'CD8A', assay = 'ATAC', expression.assay = 'SCT', peaks = FALSE)
+  cov
+solution: |
+  celltype.names <- levels(pbmc)
+  tcell.names <- grep("CD4|CD8|Treg", celltype.names,value = TRUE)
+  tcells <- subset(pbmc, idents = tcell.names)
+  cov <- CoveragePlot(tcells, region = 'CD8A', features = 'CD8A', assay = 'ATAC', expression.assay = 'SCT', peaks = FALSE)
+check: |
+  curelab_check({
+    tn <- curelab_obj("tcell.names")
+    expect_true(is.character(tn) && length(tn) > 0 && all(grepl("CD4|CD8|Treg", tn)),
+      "`tcell.names` should be the cell types matching \"CD4|CD8|Treg\": grep(\"CD4|CD8|Treg\", celltype.names, value = TRUE).")
+    tc <- curelab_obj("tcells", "Seurat")
+    expect_true(all(as.character(Idents(tc)) %in% tn), "`tcells` should only contain the T-cell types: subset(pbmc, idents = tcell.names).")
+    expect_equal_ref(ncol(tc), "n_tcells", "`tcells` should contain every CD4, CD8 and Treg cell.")
+    curelab_obj("cov", "ggplot", hint = "Save the CoveragePlot() as cov.")
+  })
+expected:
+  n_tcells: ncol(tcells)
+hints:
+  - Pick the T-cell labels with a regular expression, subset by identity, then draw the coverage of the CD8A locus.
+  - "`grep(\"CD4|CD8|Treg\", celltype.names, value = TRUE)`, `subset(pbmc, idents = tcell.names)`, then `CoveragePlot(tcells, region = 'CD8A', features = 'CD8A', assay = 'ATAC', expression.assay = 'SCT', peaks = FALSE)`."
+  - |
+    ```r
+    celltype.names <- levels(pbmc)
+    tcell.names <- grep("CD4|CD8|Treg", celltype.names,value = TRUE)
+    tcells <- subset(pbmc, idents = tcell.names)
+    cov <- CoveragePlot(tcells, region = 'CD8A', features = 'CD8A', assay = 'ATAC', expression.assay = 'SCT', peaks = FALSE)
+    ```
+notebook_pages: [s1-nb05-coverage-links]
+timeout: 1200
+wrong_solutions:
+  - why: plotted every cell type, not just the T cells
+    code: |
+      celltype.names <- levels(pbmc)
+      tcell.names <- grep("CD4|CD8|Treg", celltype.names,value = TRUE)
+      tcells <- pbmc
+      cov <- CoveragePlot(tcells, region = 'CD8A', features = 'CD8A', assay = 'ATAC', expression.assay = 'SCT', peaks = FALSE)

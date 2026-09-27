@@ -67,10 +67,11 @@ def render_page_markdown(pack: Pack, page: NotebookPage, read: Optional[bool] = 
             lines += [f"```{pack.editor_mode}", block.text.rstrip(), "```", ""]
         if block.source is not None:
             src = block.source
+            pin, document = pack.resolve_source(src.vignette)
             lines += [
-                f"<sub>Source: {src.vignette} — “{src.section}” "
-                f"([site]({pack.source_pin.site_url(src.vignette)}), "
-                f"[pinned {pack.source_pin.ref}]({pack.source_pin.blob_url(src.vignette)}))</sub>",
+                f"<sub>Source: {document} — “{src.section}” "
+                f"([site]({pin.site_url(document)}), "
+                f"[pinned {pin.repo}@{pin.ref}]({pin.blob_url(document)}))</sub>",
                 "",
             ]
     if read is not None:

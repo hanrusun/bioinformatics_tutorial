@@ -1,0 +1,34 @@
+id: s1-nb06-motifs
+title: Motif activity with chromVAR
+rp: 2
+missions: [s1-m10-chromvar]
+blocks:
+  - quote: >-
+      This calculates a per-cell accessibility score for known motifs, and adds
+      these scores as a third assay (chromvar) in the Seurat object.
+    source: {vignette: "seurat:weighted_nearest_neighbor_analysis.Rmd", section: "WNN analysis of 10x Multiome, RNA + ATAC"}
+  - code: |
+      # Scan the DNA sequence of each peak for the presence of each motif, and create a Motif object
+      DefaultAssay(pbmc) <- "ATAC"
+      pwm_set <- getMatrixSet(x = JASPAR2020, opts = list(species = 9606, all_versions = FALSE))
+      motif.matrix <- CreateMotifMatrix(features = granges(pbmc), pwm = pwm_set, genome = 'hg38', use.counts = FALSE)
+      motif.object <- CreateMotifObject(data = motif.matrix, pwm = pwm_set)
+      pbmc <- SetAssayData(pbmc, assay = 'ATAC', layer = 'motifs', new.data = motif.object)
+    source: {vignette: "seurat:weighted_nearest_neighbor_analysis.Rmd", section: "WNN analysis of 10x Multiome, RNA + ATAC"}
+  - code: |
+      chromvar_input <- chromVAR::addGCBias(chromvar_input, genome = BSgenome.Hsapiens.UCSC.hg38)
+      motif_ix <- GetMotifData(pbmc, assay = "ATAC", slot = "data")
+      bg_peaks <- chromVAR::getBackgroundPeaks(chromvar_input)
+      # Note that this step can take 30-60 minutes
+      dev <- chromVAR::computeDeviations(
+        object = chromvar_input,
+        annotations = motif_ix,
+        background_peaks = bg_peaks
+      )
+      chromvar_scores <- chromVAR::deviationScores(dev)
+    source: {vignette: "seurat:weighted_nearest_neighbor_analysis.Rmd", section: "WNN analysis of 10x Multiome, RNA + ATAC"}
+  - code: |
+      # Store per-cell motif accessibility as a third assay
+      pbmc[["chromvar"]] <- CreateAssayObject(counts = chromvar_scores)
+      pbmc <- SetAssayData(pbmc, assay = "chromvar", layer = "data", new.data = chromvar_scores)
+    source: {vignette: "seurat:weighted_nearest_neighbor_analysis.Rmd", section: "WNN analysis of 10x Multiome, RNA + ATAC"}

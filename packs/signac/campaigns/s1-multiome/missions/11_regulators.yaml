@@ -1,0 +1,128 @@
+id: s1-m11-regulators
+title: Naming the regulators
+points: 7
+source:
+  vignette: seurat:weighted_nearest_neighbor_analysis.Rmd
+  section: WNN analysis of 10x Multiome, RNA + ATAC
+  quote: >-
+    We aim to identify TFs whose expression is enriched in multiple cell types
+    in the RNA measurements, but *also* have enriched accessibility for their
+    motifs in the ATAC measurements.
+briefing: |
+  A convincing regulator of a cell type passes two independent tests: the
+  transcription factor's own gene is expressed more in that cell type (RNA),
+  and its motif is more accessible there (chromVAR). presto runs a fast
+  Wilcoxon test and an AUC for every gene and every motif; keep the factors
+  that pass both and rank them by their average AUC.
+
+  This is the core of a transcriptional regulatory network analysis, and
+  exactly how you'd go looking for the factors running Tomás's tumor.
+task:
+  - "`markers_rna`, `markers_motifs`: presto markers per `celltype` for the SCT data and the chromvar data."
+  - Prefix their columns with "RNA." and "motif." and give both a `gene` column (the motif IDs converted to TF names).
+  - Define the vignette's `topTFs()` function.
+  - "`nk_tfs`: the top 3 regulators of NK cells, and `motif.name`, the motif ID of TBX21."
+setup: |
+  curelab_libraries(c("Signac", "EnsDb.Hsapiens.v86", "ggplot2", "GenomeInfoDb"))
+  load_checkpoint("s1-m10-chromvar")
+starter_code: |
+  markers_rna <- presto:::wilcoxauc.Seurat(X = pbmc, group_by = 'celltype', assay = 'data', seurat_assay = 'SCT')
+  markers_motifs <- presto:::wilcoxauc.Seurat(X = pbmc, group_by = 'celltype', assay = 'data', seurat_assay = )
+  motif.names <- markers_motifs$feature
+  colnames(markers_rna) <- paste0("RNA.", colnames(markers_rna))
+  colnames(markers_motifs) <- paste0("motif.", colnames(markers_motifs))
+  markers_rna$gene <- markers_rna$RNA.feature
+  markers_motifs$gene <- ConvertMotifID(pbmc, id = motif.names)
+
+  # a simple function to implement the procedure above
+  topTFs <- function(celltype, padj.cutoff = 1e-2) {
+    ctmarkers_rna <- dplyr::filter(
+      markers_rna, RNA.group == celltype, RNA.padj < padj.cutoff, RNA.logFC > 0) %>%
+      arrange(-RNA.auc)
+    ctmarkers_motif <- dplyr::filter(
+      markers_motifs, motif.group == celltype, motif.padj < padj.cutoff, motif.logFC > 0) %>%
+      arrange(-motif.auc)
+    top_tfs <- inner_join(
+      x = ctmarkers_rna[, c(2, 11, 6, 7)],
+      y = ctmarkers_motif[, c(2, 1, 11, 6, 7)], by = "gene"
+    )
+    top_tfs$avg_auc <- (top_tfs$RNA.auc + top_tfs$motif.auc) / 2
+    top_tfs <- arrange(top_tfs, -avg_auc)
+    return(top_tfs)
+  }
+
+  # identify top markers in NK and visualize
+  nk_tfs <- head(topTFs("NK"), 3)
+  nk_tfs
+  motif.name <- ConvertMotifID(pbmc, name = 'TBX21')
+  gene_plot <- FeaturePlot(pbmc, features = "sct_TBX21", reduction = 'wnn.umap')
+  motif_plot <- FeaturePlot(pbmc, features = motif.name, min.cutoff = 0, cols = c("lightgrey", "darkred"), reduction = 'wnn.umap')
+  gene_plot | motif_plot
+solution: |
+  markers_rna <- presto:::wilcoxauc.Seurat(X = pbmc, group_by = 'celltype', assay = 'data', seurat_assay = 'SCT')
+  markers_motifs <- presto:::wilcoxauc.Seurat(X = pbmc, group_by = 'celltype', assay = 'data', seurat_assay = 'chromvar')
+  motif.names <- markers_motifs$feature
+  colnames(markers_rna) <- paste0("RNA.", colnames(markers_rna))
+  colnames(markers_motifs) <- paste0("motif.", colnames(markers_motifs))
+  markers_rna$gene <- markers_rna$RNA.feature
+  markers_motifs$gene <- ConvertMotifID(pbmc, id = motif.names)
+  topTFs <- function(celltype, padj.cutoff = 1e-2) {
+    ctmarkers_rna <- dplyr::filter(
+      markers_rna, RNA.group == celltype, RNA.padj < padj.cutoff, RNA.logFC > 0) %>% 
+      arrange(-RNA.auc)
+    ctmarkers_motif <- dplyr::filter(
+      markers_motifs, motif.group == celltype, motif.padj < padj.cutoff, motif.logFC > 0) %>% 
+      arrange(-motif.auc)
+    top_tfs <- inner_join(
+      x = ctmarkers_rna[, c(2, 11, 6, 7)], 
+      y = ctmarkers_motif[, c(2, 1, 11, 6, 7)], by = "gene"
+    )
+    top_tfs$avg_auc <- (top_tfs$RNA.auc + top_tfs$motif.auc) / 2
+    top_tfs <- arrange(top_tfs, -avg_auc)
+    return(top_tfs)
+  }
+  nk_tfs <- head(topTFs("NK"), 3)
+  motif.name <- ConvertMotifID(pbmc, name = 'TBX21')
+  gene_plot <- FeaturePlot(pbmc, features = "sct_TBX21", reduction = 'wnn.umap')
+  motif_plot <- FeaturePlot(pbmc, features = motif.name, min.cutoff = 0, cols = c("lightgrey", "darkred"), reduction = 'wnn.umap')
+check: |
+  curelab_check({
+    mr <- curelab_obj("markers_rna", "data.frame")
+    mm <- curelab_obj("markers_motifs", "data.frame")
+    expect_columns(mr, c("RNA.feature", "RNA.group", "RNA.auc", "RNA.padj", "gene"), "`markers_rna`")
+    expect_columns(mm, c("motif.feature", "motif.group", "motif.auc", "motif.padj", "gene"), "`markers_motifs`")
+    expect_true(!any(grepl("^MA[0-9]", mm$gene)), "Convert the motif IDs to TF names: markers_motifs$gene <- ConvertMotifID(pbmc, id = motif.names).")
+    expect_equal_ref(length(unique(mm$motif.feature)), "n_motifs",
+      "`markers_motifs` should test every chromVAR motif: seurat_assay = 'chromvar'.")
+    curelab_obj("topTFs", "function", hint = "Define the vignette's topTFs() function.")
+    nk <- curelab_obj("nk_tfs", "data.frame", hint = "nk_tfs <- head(topTFs(\"NK\"), 3)")
+    expect_equal_ref(nk$gene, "nk_top", "The top NK regulators don't match the reference. Check markers_rna, markers_motifs and topTFs().")
+    mn <- curelab_obj("motif.name")
+    expect_equal_ref(as.character(mn), "tbx21_motif", "`motif.name` should be the motif ID of TBX21: ConvertMotifID(pbmc, name = 'TBX21').")
+  })
+expected:
+  n_motifs: length(unique(markers_motifs$motif.feature))
+  nk_top: nk_tfs$gene
+  tbx21_motif: as.character(motif.name)
+hints:
+  - Run the same presto test twice (SCT expression, chromVAR motifs), put both tables in a common gene naming, then keep the TFs significant in both.
+  - "`seurat_assay = 'chromvar'` for the motifs; `ConvertMotifID(pbmc, id = motif.names)` names them; `head(topTFs(\"NK\"), 3)`."
+  - |
+    ```r
+    markers_motifs <- presto:::wilcoxauc.Seurat(X = pbmc, group_by = 'celltype', assay = 'data', seurat_assay = 'chromvar')
+    # ... column prefixes, gene columns and topTFs() as in the starter code ...
+    nk_tfs <- head(topTFs("NK"), 3)
+    motif.name <- ConvertMotifID(pbmc, name = 'TBX21')
+    ```
+notebook_pages: [s1-nb07-regulators]
+timeout: 1800
+wrong_solutions:
+  - why: tested the SCT expression twice instead of the motifs
+    code: |
+      markers_rna <- presto:::wilcoxauc.Seurat(X = pbmc, group_by = 'celltype', assay = 'data', seurat_assay = 'SCT')
+      markers_motifs <- presto:::wilcoxauc.Seurat(X = pbmc, group_by = 'celltype', assay = 'data', seurat_assay = 'SCT')
+      motif.names <- markers_motifs$feature
+      colnames(markers_rna) <- paste0("RNA.", colnames(markers_rna))
+      colnames(markers_motifs) <- paste0("motif.", colnames(markers_motifs))
+      markers_rna$gene <- markers_rna$RNA.feature
+      markers_motifs$gene <- markers_motifs$motif.feature

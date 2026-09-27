@@ -236,6 +236,13 @@ export function PatientScene({ art, stage, overlays, rr, hr, flash }: SceneProps
             <path d="M8 18 l5 -3 l5 3 v6 l-5 3 l-5 -3z" fill="#ffd66b" stroke="#c98a12" />
           </g>
         )}
+        {look.prop === 'ball' && stage !== 'deceased' && (
+          <g transform="translate(70 212)">
+            <circle cx="0" cy="0" r="13" fill="#fbfbfb" stroke="#cfd6dc" stroke-width="1" />
+            <path d="M0 -5 l4.8 3.5 -1.8 5.6 h-6 l-1.8 -5.6z" fill="#2b2f36" />
+            <path d="M0 -13 v8 M4.8 -1.5 l7.6 -2.5 M3 4.1 l4.6 6.8 M-3 4.1 l-4.6 6.8 M-4.8 -1.5 l-7.6 -2.5" stroke="#2b2f36" stroke-width="1.2" />
+          </g>
+        )}
         {look.prop === 'sourdough' && stage !== 'deceased' && (
           <g transform="translate(58 188)">
             <rect x="0" y="6" width="26" height="34" rx="6" fill="#e9f3fb" opacity="0.9" stroke="#b7c8d6" stroke-width="1.5" />
@@ -302,6 +309,17 @@ export function PatientScene({ art, stage, overlays, rr, hr, flash }: SceneProps
         )}
         <path d="M410 140 C410 200 330 226 262 246" stroke="#cfe6f3" stroke-width="2" fill="none" />
       </g>
+
+      {/* crutches */}
+      {ov.has('crutches') && (
+        <g stroke="#9aa7b2" stroke-width="3" stroke-linecap="round" fill="none">
+          <path d="M366 300 L384 168 M374 300 L392 168" />
+          <path d="M380 170 h16" stroke-width="5" />
+          <path d="M369 238 h9" stroke="#6b7d8d" stroke-width="4" />
+          <path d="M380 300 L398 172 M388 300 L406 172" opacity="0.8" />
+          <path d="M394 174 h16" stroke-width="5" opacity="0.8" />
+        </g>
+      )}
 
       {/* drain bottle */}
       {ov.has('drain') && (
@@ -370,6 +388,13 @@ export function PatientScene({ art, stage, overlays, rr, hr, flash }: SceneProps
               d={`M${head.cx - head.r - 1} ${head.cy} C${head.cx - head.r} ${head.cy - 34} ${head.cx + head.r} ${head.cy - 34} ${head.cx + head.r + 1} ${head.cy} C${head.cx + 16} ${head.cy - 20} ${head.cx - 16} ${head.cy - 20} ${head.cx - head.r - 1} ${head.cy}Z`}
               fill={look.hair}
             />
+          )}
+          {look.hairStyle === 'curly' && (
+            <g fill={look.hair}>
+              {[-20, -12, -4, 4, 12, 20].map((dx, i) => (
+                <circle cx={head.cx + dx} cy={head.cy - head.r + 6 - (Math.abs(dx) < 10 ? 4 : 0) + (i % 2)} r="6" />
+              ))}
+            </g>
           )}
           {look.hairStyle === 'short' && (
             <g fill={look.hairShade} opacity="0.55">

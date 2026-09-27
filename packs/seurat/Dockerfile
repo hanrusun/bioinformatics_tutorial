@@ -5,8 +5,8 @@
 #   docker build -f packs/seurat/Dockerfile -t curelab-seurat .
 #
 # The first build downloads the datasets and runs every mission's reference
-# solution (and its hidden checks) once; expect ~30-40 minutes and a ~5 GB
-# image. The build fails if any mission check misbehaves.
+# solution (and its hidden checks) once; expect ~40 minutes and a ~9 GB image
+# (measured in CI on 4 cores). The build fails if any mission check misbehaves.
 
 # ---------------------------------------------------------------- web UI
 FROM node:22-bookworm-slim AS web

@@ -26,8 +26,10 @@ jobs:
         run: python tools/simulate_balance.py --assert -n 300
       - name: Every quote and solution line is verbatim in the pinned Seurat vignettes
         run: python tools/verify_sources.py
-      - name: docs/SOURCES.md is up to date
-        run: git diff --exit-code docs/SOURCES.md
+      - name: Same for the Signac pack (Signac and Seurat vignettes)
+        run: python tools/verify_sources.py --pack packs/signac
+      - name: docs/SOURCES.md and docs/SOURCES-signac.md are up to date
+        run: git diff --exit-code docs/SOURCES.md docs/SOURCES-signac.md
 
   rcheck:
     name: R snippets (parse + helper unit tests, webR)
@@ -72,21 +74,22 @@ jobs:
           if-no-files-found: ignore
 
   docker:
-    name: Seurat image (downloads data, runs every reference solution and check)
+    name: Seurat and Signac images (download data, run every reference solution and check)
     needs: [engine, rcheck, web]
     runs-on: ubuntu-latest
-    timeout-minutes: 150
+    timeout-minutes: 350
     steps:
       - uses: actions/checkout@v4
-      - name: Free disk space for the ~9 GB image
+      - name: Free disk space for the images (~9 GB Seurat, Signac on top)
         run: |
-          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL \
+            /usr/local/share/powershell /usr/share/swift /usr/local/.ghcup
           docker system prune -af
-          df -h /
-      - name: Add swap (the reference build holds the 20k-cell Mixscape screen in memory)
+          df -h / /mnt
+      - name: Add swap (the reference builds hold whole datasets in memory)
         run: |
           sudo swapoff -a || true
-          sudo fallocate -l 8G /mnt/curelab.swap
+          sudo fallocate -l 12G /mnt/curelab.swap
           sudo chmod 600 /mnt/curelab.swap
           sudo mkswap /mnt/curelab.swap
           sudo swapon /mnt/curelab.swap
@@ -130,3 +133,33 @@ jobs:
           EOF
       - if: always()
         run: docker logs curelab || true
+      - name: Stop the Seurat game
+        if: always()
+        run: docker rm -f curelab || true
+
+      # The Signac image is built FROM the Seurat image above.
+      - name: Build the Signac image (fails if any mission check misbehaves)
+        run: |
+          docker builder prune -af
+          df -h /
+          docker build -f packs/signac/Dockerfile --build-arg SEURAT_IMAGE=curelab-seurat:ci -t curelab-signac:ci .
+      - name: Signac image size
+        run: |
+          docker image ls 'curelab-*'
+          docker history --format '{{.Size}}\t{{.CreatedBy}}' curelab-signac:ci | head -n 12 | cut -c1-160
+          docker run --rm --entrypoint du curelab-signac:ci -sh /opt/curelab/datasets/pbmc_multiome_10k \
+            /opt/curelab/reference-signac/checkpoints /opt/curelab/reference-signac/checkpoints/blobs
+          docker run --rm --entrypoint cat curelab-signac:ci /opt/curelab/reference-signac/memory.tsv
+      - name: Smoke test the Signac game
+        run: |
+          docker run -d --name curelab-signac -p 127.0.0.1:8001:8000 curelab-signac:ci
+          for i in $(seq 1 60); do curl -fsS http://127.0.0.1:8001/api/health && break; sleep 2; done
+          curl -fsS http://127.0.0.1:8001/api/meta | python3 -c "import sys, json; m = json.load(sys.stdin); assert [c['id'] for c in m['campaigns']] == ['s1-multiome'], m['campaigns']"
+          curl -fsS -X POST http://127.0.0.1:8001/api/game/start -H 'content-type: application/json' -d '{"campaign": "s1-multiome", "difficulty": "normal", "seed": 1}' > /dev/null
+          curl -fsS -X POST http://127.0.0.1:8001/api/missions/s1-m01-build/start | python3 -c "import sys, json; assert json.load(sys.stdin)['ok']"
+          # submit the mission's own reference solution, read from the pack in the image
+          docker exec curelab-signac /opt/curelab/venv/bin/python -c "import json, yaml; print(json.dumps({'code': yaml.safe_load(open('/opt/curelab/app/packs/signac/campaigns/s1-multiome/missions/01_build.yaml'))['solution']}))" > s1-m01.json
+          curl -fsS --max-time 900 -X POST http://127.0.0.1:8001/api/missions/s1-m01-build/submit -H 'content-type: application/json' -d @s1-m01.json \
+            | python3 -c "import sys, json; out = json.load(sys.stdin); print(out['outcome']['message']); assert out['outcome']['passed'], out['outcome']; assert out['game']['research'] == 11"
+      - if: always()
+        run: docker logs curelab-signac || true

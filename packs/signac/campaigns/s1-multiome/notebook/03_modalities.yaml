@@ -1,0 +1,27 @@
+id: s1-nb03-modalities
+title: Processing each modality
+rp: 2
+missions: [s1-m04-rna, s1-m05-lsi]
+blocks:
+  - quote: >-
+      We next perform pre-processing and dimensional reduction on both assays
+      independently, using standard approaches for RNA and ATAC-seq data.
+    source: {vignette: "seurat:weighted_nearest_neighbor_analysis.Rmd", section: "WNN analysis of 10x Multiome, RNA + ATAC"}
+  - code: |
+      # RNA analysis
+      DefaultAssay(pbmc) <- "RNA"
+      pbmc <- SCTransform(pbmc, verbose = FALSE) %>% RunPCA() %>% RunUMAP(dims = 1:50, reduction.name = 'umap.rna', reduction.key = 'rnaUMAP_')
+    source: {vignette: "seurat:weighted_nearest_neighbor_analysis.Rmd", section: "WNN analysis of 10x Multiome, RNA + ATAC"}
+  - quote: >-
+      Here we process the DNA accessibility assay the same way we would process
+      a scATAC-seq dataset, by performing latent semantic indexing (LSI).
+    source: {vignette: pbmc_multiomic.Rmd, section: "DNA accessibility data processing"}
+  - code: |
+      # ATAC analysis
+      # We exclude the first dimension as this is typically correlated with sequencing depth
+      DefaultAssay(pbmc) <- "ATAC"
+      pbmc <- RunTFIDF(pbmc)
+      pbmc <- FindTopFeatures(pbmc, min.cutoff = 'q0')
+      pbmc <- RunSVD(pbmc)
+      pbmc <- RunUMAP(pbmc, reduction = 'lsi', dims = 2:50, reduction.name = "umap.atac", reduction.key = "atacUMAP_")
+    source: {vignette: "seurat:weighted_nearest_neighbor_analysis.Rmd", section: "WNN analysis of 10x Multiome, RNA + ATAC"}

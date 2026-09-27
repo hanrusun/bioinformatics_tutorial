@@ -13,6 +13,7 @@ REPO = HERE.parents[1]
 FIXTURE_PACK = HERE / "fixtures" / "pack_py"
 ILLNESSES = REPO / "illnesses"
 SEURAT_PACK = REPO / "packs" / "seurat"
+SIGNAC_PACK = REPO / "packs" / "signac"
 
 
 @pytest.fixture(scope="session")

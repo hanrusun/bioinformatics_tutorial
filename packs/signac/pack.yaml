@@ -1,0 +1,77 @@
+# Signac tool pack for Cure Lab: single-cell chromatin (scATAC) and 10x
+# multiome analysis with Signac and Seurat, on human data (hg38).
+#
+# Built as its own image on top of the Seurat image (see Dockerfile), so it
+# is only downloaded and built if you ask for it:
+#   docker compose up --build signac
+#
+# Content cites two pinned sources: Signac's vignettes (the default) and
+# Seurat's (written "seurat:<file>"). tools/verify_sources.py --pack
+# packs/signac checks every quote and solution line against them.
+id: signac
+name: Signac
+tool: Signac + Seurat (R)
+tool_version: "1.17.1"
+language: r
+kernel: ir
+editor_mode: r
+source_pin:
+  repo: stuart-lab/signac
+  ref: "1.17.1"
+  path: vignettes
+  site: https://stuartlab.org/signac/articles/
+source_pins:
+  seurat:
+    repo: satijalab/seurat
+    ref: v5.5.1
+    path: vignettes
+    site: https://satijalab.org/seurat/articles/
+init_code: |
+  source("{pack_dir}/../seurat/r/helpers.R")
+  source("{pack_dir}/r/helpers.R")
+mission_prelude: curelab_set_mission("{mission_id}")
+campaigns: [s1-multiome]
+
+debug:
+  - pattern: 'could not find function "(CreateChromatinAssay|NucleosomeSignal|TSSEnrichment|RunTFIDF|FindTopFeatures|RunSVD|CoveragePlot|LinkPeaks|RegionStats|GetGRangesFromEnsDb|StringToGRanges|CreateMotifMatrix|CreateMotifObject|GetMotifData|ConvertMotifID|FindSubCluster)"'
+    help: >-
+      That function comes from Signac. Load it with `library(Signac)` (the
+      bench setup already does this; if you restarted, run it again).
+  - pattern: 'could not find function "(granges|seqnames|standardChromosomes|seqlevelsStyle|genome)'
+    help: >-
+      That is a GenomicRanges / GenomeInfoDb function. Run
+      `library(GenomeInfoDb)`; Signac loads GenomicRanges for you.
+  - pattern: 'could not find function "%>%"'
+    help: The pipe `%>%` comes from dplyr. Run `library(dplyr)` first.
+  - pattern: could not find function
+    help: >-
+      R doesn't know that function name. Check the spelling and capitalization
+      (R is case-sensitive) and that the package providing it is loaded.
+  - pattern: "object '([^']+)' not found"
+    help: >-
+      You used a name that doesn't exist in this session. Check its spelling,
+      and make sure you saved results with `<-`, e.g. `pbmc <- RunTFIDF(pbmc)`.
+  - pattern: "unexpected (symbol|string constant|numeric constant|'\\)'|'\\}'|','|'='|input)"
+    help: >-
+      R couldn't parse the code. Look for a missing comma between arguments,
+      an unclosed bracket or quote, or a stray character near the position R
+      reports.
+  - pattern: unexpected end of input
+    help: A bracket `(`, `[`, `{` or a quote was opened and never closed.
+  - pattern: argument .* is missing, with no default
+    help: A required argument is missing. Check the function call against the notebook, or run `?FunctionName`.
+  - pattern: unused argument
+    help: >-
+      One of the argument names isn't accepted by this function, often a typo
+      or an argument that belongs to a different function.
+  - pattern: "(does not exist|cannot open file|No such file or directory|fragment file)"
+    help: >-
+      R can't find that file. Use the exact paths given in the starter code;
+      they point at the 10x multiome files baked into this lab image.
+  - pattern: "(Cannot find|not found in|None of the requested features|Could not find)"
+    help: >-
+      Seurat or Signac couldn't find a feature, metadata column, assay or
+      reduction with that name. Check capitalization and that the step that
+      creates it has run (and which assay is the default: `DefaultAssay(pbmc)`).
+  - pattern: "checker hit an error"
+    help: The checker couldn't inspect your objects. It usually means an object has an unexpected type. Re-run the starter code and compare against the task list.

@@ -39,6 +39,12 @@ source_pin:                     # where every quote must come from, pinned
   ref: <tag or commit>
   path: ""
   site: https://scanpy.readthedocs.io/en/stable/tutorials/
+source_pins:                    # optional: more pinned repos, cited as "<key>:<file>"
+  scanpy:
+    repo: scverse/scanpy
+    ref: <tag or commit>
+    path: docs
+    site: https://scanpy.readthedocs.io/en/stable/
 init_code: |                    # run in a fresh kernel before each mission
   exec(open("{pack_dir}/helpers.py").read())
 mission_prelude: curelab_set_mission("{mission_id}")
@@ -54,7 +60,8 @@ debug:                          # regex -> explanation, shown for free
 id: c1-m03-filter
 title: Triage the sample
 points: 6                       # 85 points of missions + 15 of quizzes = 100 per campaign
-source: {vignette: <file in source_pin.path>, section: <exact heading>, quote: <verbatim sentence>}
+source: {vignette: <file in source_pin.path, or "scanpy:<file>" for a source_pins entry>,
+         section: <exact heading>, quote: <verbatim sentence>}
 briefing: |                     # Markdown; {name}, {full_name}, {companion} are filled in
 task: ["What the check verifies, one bullet each"]
 starter_code: |                 # shown in the editor (may contain blanks)
@@ -74,6 +81,25 @@ The check protocol is one line on stdout:
 `packs/seurat/r/helpers.R` (`curelab_check`, `curelab_obj`,
 `expect_equal_ref`, `expect_param`, …). For Python, see `init_code` in the
 fixture pack.
+
+## Building on another pack
+
+`packs/signac` shows how a pack can reuse another one instead of starting
+from scratch:
+
+- **Image**: its Dockerfile starts `FROM seurat`, a named build context that
+  `docker-compose.yml` points at the Seurat service
+  (`additional_contexts: {seurat: "service:seurat"}`). The new image shares
+  every Seurat layer and only adds its own packages, data and checkpoints.
+  Give it its own `CURELAB_PACK_DIR`, `CURELAB_REFERENCE_DIR`, compose port
+  and volume, and a compose `profiles:` entry so it only builds when named.
+- **Helpers**: its `init_code` sources `{pack_dir}/../seurat/r/helpers.R`
+  and then its own `r/helpers.R`.
+- **Reference build**: it runs the Seurat builder with
+  `build_reference.R --pack <dir>`, which loads the pack's `init_code`
+  exactly as the game's kernel does.
+- **Sources**: it cites Signac's vignettes by default and Seurat's through
+  `source_pins.seurat` (`vignette: seurat:weighted_nearest_neighbor_analysis.Rmd`).
 
 ## An illness
 
@@ -113,7 +139,8 @@ the disease along the tree.
 1. `pytest engine/tests`: content loads and the campaign totals 100 points
    (add a structural test like `test_seurat_pack.py`).
 2. `python tools/verify_sources.py --pack packs/<tool>`: every quote and
-   solution line is verbatim.
+   solution line is verbatim. It writes `docs/SOURCES-<tool>.md`; commit it
+   (CI checks it is up to date).
 3. `python tools/simulate_balance.py --assert`: the illness keeps the balance
    targets.
 4. Add a service to `docker-compose.yml`, and a CI job that builds the image

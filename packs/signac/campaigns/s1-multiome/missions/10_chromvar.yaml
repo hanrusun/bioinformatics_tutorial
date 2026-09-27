@@ -1,0 +1,128 @@
+id: s1-m10-chromvar
+title: Which transcription factors are active?
+points: 11
+source:
+  vignette: seurat:weighted_nearest_neighbor_analysis.Rmd
+  section: WNN analysis of 10x Multiome, RNA + ATAC
+  quote: >-
+    This calculates a per-cell accessibility score for known motifs, and adds
+    these scores as a third assay (`chromvar`) in the Seurat object.
+briefing: |
+  A transcription factor binds a short DNA motif. If a factor is active in a
+  cell, the peaks that contain its motif tend to be open there. chromVAR
+  turns that into a per-cell score for every motif: scan each peak for the
+  JASPAR human motifs, compare each cell's accessibility at a motif's peaks
+  with matched background peaks (same GC content and accessibility), and
+  report the deviation.
+
+  For Tomás this is the heart of the matter: his tumor's driver, EWSR1-FLI1,
+  is a transcription factor, and chromVAR is how you'd see its footprint.
+
+  The vignette warns this step can take 30-60 minutes. The bench uses every
+  CPU core to speed it up, and the hospital clock is paused while it runs.
+task:
+  - Load chromVAR, JASPAR2020, TFBSTools, motifmatchr and the hg38 genome.
+  - Scan every ATAC peak for the JASPAR 2020 human motifs (species 9606) and store the motif object in the ATAC assay.
+  - Build the chromVAR input from the ATAC counts, add GC bias, pick background peaks and compute the deviations.
+  - Store the deviation scores as a new assay called "chromvar" (as counts and as data).
+setup: |
+  curelab_libraries(c("Signac", "EnsDb.Hsapiens.v86", "ggplot2", "GenomeInfoDb"))
+  load_checkpoint("s1-m09-links")
+  curelab_parallel()
+  set.seed(42) # background peaks are sampled at random; this keeps them reproducible
+starter_code: |
+  library(chromVAR)
+  library(JASPAR2020)
+  library(TFBSTools)
+  library(motifmatchr)
+  library(BSgenome.Hsapiens.UCSC.hg38)
+
+  # Scan the DNA sequence of each peak for the presence of each motif, and create a Motif object
+  DefaultAssay(pbmc) <- "ATAC"
+  pwm_set <- getMatrixSet(x = JASPAR2020, opts = list(species = , all_versions = FALSE))
+  motif.matrix <- CreateMotifMatrix(features = granges(pbmc), pwm = pwm_set, genome = 'hg38', use.counts = FALSE)
+  motif.object <- CreateMotifObject(data = motif.matrix, pwm = pwm_set)
+  pbmc <- SetAssayData(pbmc, assay = 'ATAC', layer = 'motifs', new.data = motif.object)
+
+  # Build chromVAR input object from ATAC counts
+  peak_counts <- GetAssayData(pbmc, assay = "ATAC", layer = "counts")
+  chromvar_input <- SummarizedExperiment::SummarizedExperiment(
+    assays = list(counts = peak_counts),
+    rowRanges = granges(pbmc)
+  )
+  chromvar_input <- chromVAR::addGCBias(chromvar_input, genome = BSgenome.Hsapiens.UCSC.hg38)
+  motif_ix <- GetMotifData(pbmc, assay = "ATAC", slot = "data")
+  bg_peaks <- chromVAR::getBackgroundPeaks(chromvar_input)
+
+  # Note that this step can take 30-60 minutes
+  dev <- chromVAR::computeDeviations(
+    object = chromvar_input,
+    annotations = motif_ix,
+    background_peaks = bg_peaks
+  )
+  chromvar_scores <- chromVAR::deviationScores(dev)
+
+  # Store per-cell motif accessibility as a third assay
+  pbmc[["chromvar"]] <- CreateAssayObject(counts = )
+  pbmc <- SetAssayData(pbmc, assay = "chromvar", layer = "data", new.data = chromvar_scores)
+solution: |
+  library(chromVAR)
+  library(JASPAR2020)
+  library(TFBSTools)
+  library(motifmatchr)
+  library(BSgenome.Hsapiens.UCSC.hg38)
+  DefaultAssay(pbmc) <- "ATAC"
+  pwm_set <- getMatrixSet(x = JASPAR2020, opts = list(species = 9606, all_versions = FALSE))
+  motif.matrix <- CreateMotifMatrix(features = granges(pbmc), pwm = pwm_set, genome = 'hg38', use.counts = FALSE)
+  motif.object <- CreateMotifObject(data = motif.matrix, pwm = pwm_set)
+  pbmc <- SetAssayData(pbmc, assay = 'ATAC', layer = 'motifs', new.data = motif.object)
+  peak_counts <- GetAssayData(pbmc, assay = "ATAC", layer = "counts")
+  chromvar_input <- SummarizedExperiment::SummarizedExperiment(
+    assays = list(counts = peak_counts),
+    rowRanges = granges(pbmc)
+  )
+  chromvar_input <- chromVAR::addGCBias(chromvar_input, genome = BSgenome.Hsapiens.UCSC.hg38)
+  motif_ix <- GetMotifData(pbmc, assay = "ATAC", slot = "data")
+  bg_peaks <- chromVAR::getBackgroundPeaks(chromvar_input)
+  dev <- chromVAR::computeDeviations(
+    object = chromvar_input,
+    annotations = motif_ix,
+    background_peaks = bg_peaks
+  )
+  chromvar_scores <- chromVAR::deviationScores(dev)
+  pbmc[["chromvar"]] <- CreateAssayObject(counts = chromvar_scores)
+  pbmc <- SetAssayData(pbmc, assay = "chromvar", layer = "data", new.data = chromvar_scores)
+check: |
+  curelab_check({
+    obj <- curelab_obj("pbmc", "Seurat")
+    expect_true(!is.null(Motifs(obj[["ATAC"]])),
+      "Store the motif object in the ATAC assay: SetAssayData(pbmc, assay = 'ATAC', layer = 'motifs', new.data = motif.object).")
+    expect_true("chromvar" %in% Assays(obj),
+      "Add the deviation scores as a new assay: pbmc[[\"chromvar\"]] <- CreateAssayObject(counts = chromvar_scores).")
+    cv <- LayerData(obj, assay = "chromvar", layer = "data")
+    expect_equal_ref(dim(cv), "chromvar_dim",
+      "The chromvar assay should have one row per JASPAR 2020 human motif (species = 9606) and one column per cell.")
+    expect_equal_ref(round(as.numeric(as.matrix(cv[1:3, 1:3])), 3), "chromvar_corner",
+      "The chromVAR scores don't match the reference. Follow the task step by step, with the bench's seed.",
+      tolerance = 0.05, show = FALSE)
+  })
+expected:
+  chromvar_dim: dim(LayerData(pbmc, assay = "chromvar", layer = "data"))
+  chromvar_corner: round(as.numeric(as.matrix(LayerData(pbmc, assay = "chromvar", layer = "data")[1:3, 1:3])), 3)
+hints:
+  - Three stages - motifs (which peaks contain which motif), chromVAR input (counts + GC bias + background peaks), deviations (per-cell scores) stored as a new assay.
+  - "`species = 9606` is human; the deviations go into `CreateAssayObject(counts = chromvar_scores)` and again as the \"data\" layer."
+  - |
+    ```r
+    pwm_set <- getMatrixSet(x = JASPAR2020, opts = list(species = 9606, all_versions = FALSE))
+    # ... motif matrix, chromVAR input, background peaks, deviations (starter code) ...
+    pbmc[["chromvar"]] <- CreateAssayObject(counts = chromvar_scores)
+    pbmc <- SetAssayData(pbmc, assay = "chromvar", layer = "data", new.data = chromvar_scores)
+    ```
+notebook_pages: [s1-nb06-motifs]
+state: [pbmc]
+timeout: 5400
+wrong_solutions:
+  - why: never ran chromVAR
+    code: |
+      DefaultAssay(pbmc) <- "ATAC"

@@ -1,0 +1,83 @@
+id: s1-m09-links
+title: Which peaks control which genes?
+points: 8
+source:
+  vignette: pbmc_multiomic.Rmd
+  section: Linking peaks to genes
+  quote: >-
+    For each gene, we can find the set of peaks that may regulate the gene by
+    by computing the correlation between gene expression and accessibility at
+    nearby peaks, and correcting for bias due to GC content, overall
+    accessibility, and peak size.
+briefing: |
+  With RNA and chromatin from the same cells you can ask which open regions
+  rise and fall with a gene's expression: candidate enhancers. Signac's
+  LinkPeaks does this, correcting for each peak's GC content, which it first
+  reads from the hg38 genome sequence. The whole genome takes hours, so link
+  two marker genes: LYZ (monocytes) and MS4A1 (B cells).
+task:
+  - Make "ATAC" the default assay and add each peak's GC content from `BSgenome.Hsapiens.UCSC.hg38`.
+  - Link peaks to the genes LYZ and MS4A1, using the SCT expression.
+setup: |
+  curelab_libraries(c("Signac", "EnsDb.Hsapiens.v86", "ggplot2", "GenomeInfoDb", "BSgenome.Hsapiens.UCSC.hg38"))
+  load_checkpoint("s1-m07-annotate")
+starter_code: |
+  DefaultAssay(pbmc) <- "ATAC"
+
+  # first compute the GC content for each peak
+  pbmc <- RegionStats(pbmc, genome = )
+
+  # link peaks to genes
+  pbmc <- LinkPeaks(
+    object = pbmc,
+    peak.assay = "ATAC",
+    expression.assay = ,
+    genes.use = c("LYZ", "MS4A1")
+  )
+  Links(pbmc)
+solution: |
+  DefaultAssay(pbmc) <- "ATAC"
+  pbmc <- RegionStats(pbmc, genome = BSgenome.Hsapiens.UCSC.hg38)
+  pbmc <- LinkPeaks(
+    object = pbmc,
+    peak.assay = "ATAC",
+    expression.assay = "SCT",
+    genes.use = c("LYZ", "MS4A1")
+  )
+check: |
+  curelab_check({
+    obj <- curelab_obj("pbmc", "Seurat")
+    expect_true("GC.percent" %in% colnames(obj[["ATAC"]][[]]),
+      "Add each peak's GC content first: RegionStats(pbmc, genome = BSgenome.Hsapiens.UCSC.hg38).")
+    lk <- Links(obj[["ATAC"]])
+    expect_true(length(lk) > 0, "There are no peak-gene links yet. Run LinkPeaks() on the ATAC assay.")
+    expect_true(all(c("LYZ", "MS4A1") %in% lk$gene), "Link peaks for both genes: genes.use = c(\"LYZ\", \"MS4A1\").")
+    expect_true(all(lk$gene %in% c("LYZ", "MS4A1")), "Link only LYZ and MS4A1; the whole genome takes hours.")
+    expect_equal_ref(length(lk), "n_links",
+      "The number of links doesn't match the reference. Use the SCT expression: expression.assay = \"SCT\".",
+      tolerance = 0.2)
+  })
+expected:
+  n_links: length(Links(pbmc[["ATAC"]]))
+hints:
+  - LinkPeaks needs the GC content of every peak (RegionStats, from the genome sequence), then correlates peaks with the expression of the genes you name.
+  - "`RegionStats(pbmc, genome = BSgenome.Hsapiens.UCSC.hg38)`, then `LinkPeaks(..., expression.assay = \"SCT\", genes.use = c(\"LYZ\", \"MS4A1\"))`."
+  - |
+    ```r
+    DefaultAssay(pbmc) <- "ATAC"
+    pbmc <- RegionStats(pbmc, genome = BSgenome.Hsapiens.UCSC.hg38)
+    pbmc <- LinkPeaks(
+      object = pbmc,
+      peak.assay = "ATAC",
+      expression.assay = "SCT",
+      genes.use = c("LYZ", "MS4A1")
+    )
+    ```
+notebook_pages: [s1-nb05-coverage-links]
+state: [pbmc]
+timeout: 1800
+wrong_solutions:
+  - why: skipped the GC content
+    code: |
+      DefaultAssay(pbmc) <- "ATAC"
+      pbmc <- LinkPeaks(object = pbmc, peak.assay = "ATAC", expression.assay = "SCT", genes.use = c("LYZ", "MS4A1"))

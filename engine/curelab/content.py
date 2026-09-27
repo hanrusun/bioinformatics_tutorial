@@ -227,6 +227,9 @@ class Pack(_Model):
     kernel: str
     editor_mode: str = "r"
     source_pin: SourcePin
+    # Further pinned repositories a pack may cite, as "<key>:<document>"
+    # (e.g. "signac:pbmc_multiomic.Rmd"); plain names use `source_pin`.
+    source_pins: dict[str, SourcePin] = {}
     # Code run once in a fresh kernel before any mission setup. ``{pack_dir}``
     # is substituted with the absolute pack directory.
     init_code: str = ""
@@ -245,6 +248,28 @@ class Pack(_Model):
             if c.id == campaign_id:
                 return c
         raise KeyError(campaign_id)
+
+    def resolve_source(self, vignette: str) -> tuple[SourcePin, str]:
+        """The pinned repository and document name a citation points at."""
+        key, sep, document = vignette.partition(":")
+        if sep and key in self.source_pins:
+            return self.source_pins[key], document
+        return self.source_pin, vignette
+
+    def all_pins(self) -> list[SourcePin]:
+        return [self.source_pin, *self.source_pins.values()]
+
+    def sources(self):
+        """Every Source cited by the pack's campaigns."""
+        for c in self.campaigns:
+            for m in c.missions:
+                yield m.source
+            for q in c.quizzes:
+                yield q.source
+            for page in c.notebook:
+                for b in page.blocks:
+                    if b.source is not None:
+                        yield b.source
 
     def render_init(self) -> str:
         return self.init_code.replace("{pack_dir}", str(self.dir))
@@ -467,6 +492,10 @@ def load_pack(pack_dir: Path | str) -> Pack:
     for c in pack.campaigns:
         if c.unlock_after and c.unlock_after not in known:
             raise ContentError(f"campaign {c.id}: unlock_after refers to unknown campaign")
+    for src in pack.sources():
+        key, sep, _ = src.vignette.partition(":")
+        if sep and key not in pack.source_pins:
+            raise ContentError(f"{src.vignette}: no source pin called '{key}' in pack.yaml `source_pins`")
     return pack
 
 

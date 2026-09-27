@@ -68,10 +68,8 @@ def synthetic_campaign(illness_id: str, n_missions: int = 13, n_quizzes: int = 1
 
 
 def campaigns() -> list[Campaign]:
-    pack_dir = ROOT / "packs" / "seurat"
-    if (pack_dir / "pack.yaml").exists():
-        return load_pack(pack_dir).campaigns
-    return [synthetic_campaign("nsclc", 13), synthetic_campaign("neuroblastoma", 11)]
+    found = [c for manifest in sorted((ROOT / "packs").glob("*/pack.yaml")) for c in load_pack(manifest.parent).campaigns]
+    return found or [synthetic_campaign("nsclc", 13), synthetic_campaign("neuroblastoma", 11)]
 
 
 def poisson(rng: random.Random, lam: float) -> int:

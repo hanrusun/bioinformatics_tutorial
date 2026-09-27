@@ -1,0 +1,62 @@
+id: s1-m06-wnn
+title: Weighing the two modalities
+points: 9
+source:
+  vignette: seurat:weighted_nearest_neighbor_analysis.Rmd
+  section: WNN analysis of 10x Multiome, RNA + ATAC
+  quote: >-
+    We calculate a WNN graph, representing a weighted combination of RNA and
+    ATAC-seq modalities. We use this graph for UMAP visualization and
+    clustering.
+briefing: |
+  Weighted nearest neighbors (WNN) decides, cell by cell, how much to trust
+  the RNA and how much the chromatin, and builds one neighbor graph from
+  both. Cluster and embed on that graph.
+task:
+  - Build the WNN graph from the RNA "pca" (dims 1:50) and the ATAC "lsi" (dims 2:50).
+  - Run a UMAP on the weighted neighbors, saved as "wnn.umap" (key "wnnUMAP_").
+  - Cluster the "wsnn" graph with the SLM algorithm (`algorithm = 3`).
+setup: |
+  curelab_libraries(c("Signac", "EnsDb.Hsapiens.v86", "ggplot2", "GenomeInfoDb"))
+  load_checkpoint("s1-m05-lsi")
+starter_code: |
+  pbmc <- FindMultiModalNeighbors(pbmc, reduction.list = list("pca", "lsi"), dims.list = list( , ))
+  pbmc <- RunUMAP(pbmc, nn.name = "weighted.nn", reduction.name = "wnn.umap", reduction.key = "wnnUMAP_")
+  pbmc <- FindClusters(pbmc, graph.name = , algorithm = , verbose = FALSE)
+  DimPlot(pbmc, reduction = "wnn.umap", label = TRUE)
+solution: |
+  pbmc <- FindMultiModalNeighbors(pbmc, reduction.list = list("pca", "lsi"), dims.list = list(1:50, 2:50))
+  pbmc <- RunUMAP(pbmc, nn.name = "weighted.nn", reduction.name = "wnn.umap", reduction.key = "wnnUMAP_")
+  pbmc <- FindClusters(pbmc, graph.name = "wsnn", algorithm = 3, verbose = FALSE)
+check: |
+  curelab_check({
+    obj <- curelab_obj("pbmc", "Seurat")
+    expect_true("wsnn" %in% names(obj@graphs),
+      "Build the WNN graph: FindMultiModalNeighbors(pbmc, reduction.list = list(\"pca\", \"lsi\"), dims.list = list(1:50, 2:50)).")
+    expect_reduction(obj, "wnn.umap", "Save the WNN UMAP as reduction.name = \"wnn.umap\".")
+    expect_param(obj, "RunUMAP", "nn.name", "weighted.nn", "Embed the weighted neighbors: nn.name = \"weighted.nn\"")
+    expect_param(obj, "FindClusters", "graph.name", "wsnn", "Cluster the WNN graph: graph.name = \"wsnn\"")
+    expect_param(obj, "FindClusters", "algorithm", 3, "Use the SLM algorithm: algorithm = 3")
+    expect_equal_ref(nlevels(obj$seurat_clusters), "n_clusters",
+      "The clusters don't match the reference. Build the graph from pca dims 1:50 and lsi dims 2:50.")
+  })
+expected:
+  n_clusters: nlevels(pbmc$seurat_clusters)
+hints:
+  - FindMultiModalNeighbors takes one reduction per modality and the dimensions to use from each; the result is the "weighted.nn" neighbors and the "wsnn" graph.
+  - "`dims.list = list(1:50, 2:50)`, `nn.name = \"weighted.nn\"`, `graph.name = \"wsnn\"`, `algorithm = 3`."
+  - |
+    ```r
+    pbmc <- FindMultiModalNeighbors(pbmc, reduction.list = list("pca", "lsi"), dims.list = list(1:50, 2:50))
+    pbmc <- RunUMAP(pbmc, nn.name = "weighted.nn", reduction.name = "wnn.umap", reduction.key = "wnnUMAP_")
+    pbmc <- FindClusters(pbmc, graph.name = "wsnn", algorithm = 3, verbose = FALSE)
+    ```
+notebook_pages: [s1-nb04-wnn]
+state: [pbmc]
+timeout: 1800
+wrong_solutions:
+  - why: Louvain instead of SLM
+    code: |
+      pbmc <- FindMultiModalNeighbors(pbmc, reduction.list = list("pca", "lsi"), dims.list = list(1:50, 2:50))
+      pbmc <- RunUMAP(pbmc, nn.name = "weighted.nn", reduction.name = "wnn.umap", reduction.key = "wnnUMAP_")
+      pbmc <- FindClusters(pbmc, graph.name = "wsnn", algorithm = 1, verbose = FALSE)

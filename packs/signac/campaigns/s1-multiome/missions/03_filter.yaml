@@ -1,0 +1,75 @@
+id: s1-m03-filter
+title: Keep the good cells
+points: 5
+source:
+  vignette: seurat:weighted_nearest_neighbor_analysis.Rmd
+  section: WNN analysis of 10x Multiome, RNA + ATAC
+  quote: >-
+    We perform basic QC based on the number of detected molecules for each
+    modality as well as mitochondrial percentage.
+briefing: |
+  Filter on both modalities at once: too few molecules means an empty or
+  broken droplet, too many suggests a doublet, and a high mitochondrial
+  fraction marks a dying cell.
+task:
+  - Keep cells with 5,000 < nCount_ATAC < 70,000, 1,000 < nCount_RNA < 25,000 and percent.mt < 20.
+setup: |
+  curelab_libraries(c("Signac", "EnsDb.Hsapiens.v86", "ggplot2", "GenomeInfoDb"))
+  load_checkpoint("s1-m02-atac-qc")
+starter_code: |
+  VlnPlot(pbmc, features = c("nCount_ATAC", "nCount_RNA", "percent.mt"), ncol = 3,
+    log = TRUE, pt.size = 0) + NoLegend()
+
+  pbmc <- subset(
+    x = pbmc,
+    subset = nCount_ATAC <  &
+      nCount_ATAC >  &
+      nCount_RNA <  &
+      nCount_RNA >  &
+      percent.mt <
+  )
+  pbmc
+solution: |
+  VlnPlot(pbmc, features = c("nCount_ATAC", "nCount_RNA", "percent.mt"), ncol = 3,
+    log = TRUE, pt.size = 0) + NoLegend()
+  pbmc <- subset(
+    x = pbmc,
+    subset = nCount_ATAC < 7e4 &
+      nCount_ATAC > 5e3 &
+      nCount_RNA < 25000 &
+      nCount_RNA > 1000 &
+      percent.mt < 20
+  )
+check: |
+  curelab_check({
+    obj <- curelab_obj("pbmc", "Seurat")
+    expect_true(all(obj$nCount_ATAC < 7e4 & obj$nCount_ATAC > 5e3),
+      "Some cells have too few or too many ATAC counts. Keep 5e3 < nCount_ATAC < 7e4.")
+    expect_true(all(obj$nCount_RNA < 25000 & obj$nCount_RNA > 1000),
+      "Some cells have too few or too many RNA counts. Keep 1000 < nCount_RNA < 25000.")
+    expect_true(all(obj$percent.mt < 20), "Some cells have 20% or more mitochondrial reads. Keep percent.mt < 20.")
+    expect_equal_ref(ncol(obj), "n_cells",
+      "`pbmc` doesn't have the expected cells. Apply all five thresholds in one subset() call.")
+  })
+expected:
+  n_cells: ncol(pbmc)
+hints:
+  - subset() keeps the cells for which the whole condition is TRUE; combine the thresholds with `&`.
+  - "`nCount_ATAC < 7e4 & nCount_ATAC > 5e3 & nCount_RNA < 25000 & nCount_RNA > 1000 & percent.mt < 20`."
+  - |
+    ```r
+    pbmc <- subset(
+      x = pbmc,
+      subset = nCount_ATAC < 7e4 &
+        nCount_ATAC > 5e3 &
+        nCount_RNA < 25000 &
+        nCount_RNA > 1000 &
+        percent.mt < 20
+    )
+    ```
+notebook_pages: [s1-nb02-qc]
+state: [pbmc]
+wrong_solutions:
+  - why: forgot the mitochondrial filter
+    code: |
+      pbmc <- subset(x = pbmc, subset = nCount_ATAC < 7e4 & nCount_ATAC > 5e3 & nCount_RNA < 25000 & nCount_RNA > 1000)

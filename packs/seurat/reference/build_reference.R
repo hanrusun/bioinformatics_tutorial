@@ -25,6 +25,8 @@
 #   Rscript build_reference.R --mission <mission file>   one mission only
 #   Rscript build_reference.R --in-process    everything in this R process
 #                                             (also CURELAB_BUILD_IN_PROCESS=1)
+#   Rscript build_reference.R --pack ../../signac   build another pack (its
+#                                             r/helpers.R, prep/ and campaigns)
 #
 # Exits non-zero if any check misbehaves, so a broken mission fails the
 # Docker build instead of reaching a learner.
@@ -46,12 +48,15 @@ local({
     file_arg <- grep("^--file=", commandArgs(trailingOnly = FALSE), value = TRUE)
     if (length(file_arg)) normalizePath(sub("^--file=", "", file_arg[1])) else normalizePath("build_reference.R")
   })
-  pack_dir <- normalizePath(file.path(dirname(script_path), ".."))
+  pack_dir <- normalizePath(if (!is.null(arg_value("--pack"))) arg_value("--pack") else file.path(dirname(script_path), ".."))
   if (!nzchar(Sys.getenv("CURELAB_REFERENCE_DIR"))) {
     Sys.setenv(CURELAB_REFERENCE_DIR = file.path(pack_dir, "reference"))
   }
-  source(file.path(pack_dir, "r", "helpers.R"))
   if (!requireNamespace("yaml", quietly = TRUE)) install.packages("yaml", repos = "https://cloud.r-project.org")
+  # load the helpers exactly as the game's kernel does: the pack's init_code
+  init <- yaml::read_yaml(file.path(pack_dir, "pack.yaml"))$init_code
+  if (is.null(init) || !nzchar(trimws(init))) init <- sprintf('source("%s")', file.path(pack_dir, "r", "helpers.R"))
+  eval(parse(text = gsub("{pack_dir}", pack_dir, init, fixed = TRUE)), envir = globalenv())
 
   ref_dir <- Sys.getenv("CURELAB_REFERENCE_DIR")
   expected_path <- file.path(ref_dir, "expected.json")
@@ -236,7 +241,7 @@ local({
       if (flag == "--prep") run_prep(file) else run_mission(file)
       return(invisible())
     }
-    passthrough <- c(if (verify_only) "--verify-only", if (skip_wrong) "--skip-wrong")
+    passthrough <- c("--pack", shQuote(pack_dir), if (verify_only) "--verify-only", if (skip_wrong) "--skip-wrong")
     status <- system2(rscript, c(shQuote(script_path), flag, shQuote(file), passthrough))
     if (!identical(as.integer(status), 0L)) fail(label, " failed (details above)")
   }

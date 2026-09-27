@@ -27,6 +27,29 @@ def test_source_urls(pack):
     assert pin.site_url("introduction.rst") == "https://docs.python.org/3/tutorial/introduction.html"
 
 
+def test_pack_can_cite_several_pinned_repos(tmp_path):
+    pack_dir = tmp_path / "pack"
+    shutil.copytree(FIXTURE_PACK, pack_dir)
+    meta = yaml.safe_load((pack_dir / "pack.yaml").read_text())
+    meta["source_pins"] = {"lib": {"repo": "python/cpython", "ref": "v3.12.0", "path": "Doc/library"}}
+    (pack_dir / "pack.yaml").write_text(yaml.safe_dump(meta))
+    pack = load_pack(pack_dir)
+    pin, doc = pack.resolve_source("lib:functions.rst")
+    assert (pin.path, doc) == ("Doc/library", "functions.rst")
+    assert pin.raw_url(doc).endswith("/v3.12.0/Doc/library/functions.rst")
+    # plain names (and prefixes that are not pins) use the default pin
+    assert pack.resolve_source("introduction.rst") == (pack.source_pin, "introduction.rst")
+    assert [p.path for p in pack.all_pins()] == ["Doc/tutorial", "Doc/library"]
+
+    # a citation naming an unknown pin is a content error
+    mission = next((pack_dir / "campaigns" / "demo-one" / "missions").glob("*.yaml"))
+    data = yaml.safe_load(mission.read_text())
+    data["source"]["vignette"] = "nope:functions.rst"
+    mission.write_text(yaml.safe_dump(data))
+    with pytest.raises(ContentError, match="no source pin called 'nope'"):
+        load_pack(pack_dir)
+
+
 @pytest.mark.parametrize("illness_id", ["nsclc", "neuroblastoma"])
 def test_real_illnesses_load(illness_id):
     illness = load_illness(ILLNESSES, illness_id)

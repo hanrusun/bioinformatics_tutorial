@@ -1,0 +1,34 @@
+id: s1-nb04-wnn
+title: Weighted nearest neighbors and cell types
+rp: 2
+missions: [s1-m06-wnn, s1-m07-annotate]
+blocks:
+  - quote: >-
+      We calculate a WNN graph, representing a weighted combination of RNA and
+      ATAC-seq modalities. We use this graph for UMAP visualization and
+      clustering.
+    source: {vignette: "seurat:weighted_nearest_neighbor_analysis.Rmd", section: "WNN analysis of 10x Multiome, RNA + ATAC"}
+  - code: |
+      pbmc <- FindMultiModalNeighbors(pbmc, reduction.list = list("pca", "lsi"), dims.list = list(1:50, 2:50))
+      pbmc <- RunUMAP(pbmc, nn.name = "weighted.nn", reduction.name = "wnn.umap", reduction.key = "wnnUMAP_")
+      pbmc <- FindClusters(pbmc, graph.name = "wsnn", algorithm = 3, verbose = FALSE)
+    source: {vignette: "seurat:weighted_nearest_neighbor_analysis.Rmd", section: "WNN analysis of 10x Multiome, RNA + ATAC"}
+  - quote: We annotate the clusters below.
+    source: {vignette: "seurat:weighted_nearest_neighbor_analysis.Rmd", section: "WNN analysis of 10x Multiome, RNA + ATAC"}
+  - code: |
+      # perform sub-clustering on cluster 6 to find additional structure
+      pbmc <- FindSubCluster(pbmc, cluster = 6, graph.name = "wsnn", algorithm = 3)
+      Idents(pbmc) <- "sub.cluster"
+    source: {vignette: "seurat:weighted_nearest_neighbor_analysis.Rmd", section: "WNN analysis of 10x Multiome, RNA + ATAC"}
+  - code: |
+      # add annotations
+      pbmc <- RenameIdents(pbmc, '19' = 'pDC','20' = 'HSPC','15' = 'cDC')
+      pbmc <- RenameIdents(pbmc, '0' = 'CD14 Mono', '9' ='CD14 Mono', '5' = 'CD16 Mono')
+    source: {vignette: "seurat:weighted_nearest_neighbor_analysis.Rmd", section: "WNN analysis of 10x Multiome, RNA + ATAC"}
+  - quote: >-
+      We can visualize clustering based on gene expression, ATAC-seq, or WNN
+      analysis. The differences are more subtle than in the previous analysis
+      (you can explore the weights, which are more evenly split than in our
+      CITE-seq example), but we find that WNN provides the clearest separation
+      of cell states.
+    source: {vignette: "seurat:weighted_nearest_neighbor_analysis.Rmd", section: "WNN analysis of 10x Multiome, RNA + ATAC"}

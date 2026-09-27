@@ -33,6 +33,7 @@ export interface SourceRef {
   site_url: string;
   pinned_url: string;
   ref: string;
+  repo?: string;
 }
 
 export interface CampaignMeta {
@@ -60,6 +61,7 @@ export interface Meta {
     language: string;
     editor_mode: string;
     source_pin: { repo: string; ref: string; path: string; site: string };
+    sources?: { repo: string; ref: string; path: string; site: string }[];
   };
   campaigns: CampaignMeta[];
   difficulties: { id: string; label: string; description: string }[];

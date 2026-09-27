@@ -1,0 +1,137 @@
+id: s1-m01-build
+title: One cell, two readouts
+points: 11
+source:
+  vignette: seurat:weighted_nearest_neighbor_analysis.Rmd
+  section: WNN analysis of 10x Multiome, RNA + ATAC
+  quote: >-
+    We'll create a Seurat object based on the gene expression data, and then
+    add in the ATAC-seq data as a second assay.
+briefing: |
+  In a 10x multiome experiment every cell gives two readouts: its RNA, and
+  which parts of its DNA are open (ATAC). Open chromatin is where
+  transcription factors, like the fusion driving Tomás's tumor, can bind.
+
+  The 10x `.h5` file holds both count matrices. Build a Seurat object from
+  the RNA and add the ATAC peaks as a Signac `ChromatinAssay`, which also
+  knows each peak's genomic position, the gene annotation and the fragment
+  file (every sequenced DNA fragment, needed for coverage plots and QC).
+  The file paths are already filled in: they point at the data baked into
+  this lab image.
+task:
+  - Read the 10x `.h5` file and split it into `rna_counts` and `atac_counts`.
+  - Create `pbmc` from the RNA counts and add its mitochondrial percentage (`percent.mt`).
+  - Keep only peaks on standard chromosomes.
+  - Get hg38 gene annotations from `EnsDb.Hsapiens.v86` in UCSC style.
+  - Add the peaks as a `ChromatinAssay` called "ATAC" (genome hg38, the fragment file, peaks in at least 10 cells, the annotations).
+setup: |
+  curelab_libraries(c("Signac", "EnsDb.Hsapiens.v86", "ggplot2", "GenomeInfoDb"))
+starter_code: |
+  # the 10x hdf5 file contains both data types.
+  inputdata.10x <- Read10X_h5("/opt/curelab/datasets/pbmc_multiome_10k/pbmc_granulocyte_sorted_10k_filtered_feature_bc_matrix.h5")
+
+  # extract RNA and ATAC data
+  rna_counts <- inputdata.10x$`Gene Expression`
+  atac_counts <- inputdata.10x$Peaks
+
+  # Create Seurat object
+  pbmc <- CreateSeuratObject(counts = rna_counts)
+  pbmc[["percent.mt"]] <- PercentageFeatureSet(pbmc, pattern = )
+
+  # Now add in the ATAC-seq data
+  # we'll only use peaks in standard chromosomes
+  grange.counts <- StringToGRanges(rownames(atac_counts), sep = c(":", "-"))
+  grange.use <- seqnames(grange.counts) %in% standardChromosomes(grange.counts)
+  atac_counts <- atac_counts[as.vector(grange.use), ]
+  annotations <- GetGRangesFromEnsDb(ensdb = EnsDb.Hsapiens.v86)
+  seqlevelsStyle(annotations) <- 'UCSC'
+  genome(annotations) <- "hg38"
+
+  frag.file <- "/opt/curelab/datasets/pbmc_multiome_10k/pbmc_granulocyte_sorted_10k_atac_fragments.tsv.gz"
+  chrom_assay <- CreateChromatinAssay(
+     counts = atac_counts,
+     sep = c(":", "-"),
+     genome = ,
+     fragments = frag.file,
+     min.cells = ,
+     annotation = annotations
+   )
+  pbmc[["ATAC"]] <- chrom_assay
+  pbmc
+solution: |
+  inputdata.10x <- Read10X_h5("/opt/curelab/datasets/pbmc_multiome_10k/pbmc_granulocyte_sorted_10k_filtered_feature_bc_matrix.h5") # curelab: adapted
+  rna_counts <- inputdata.10x$`Gene Expression`
+  atac_counts <- inputdata.10x$Peaks
+  pbmc <- CreateSeuratObject(counts = rna_counts)
+  pbmc[["percent.mt"]] <- PercentageFeatureSet(pbmc, pattern = "^MT-")
+  grange.counts <- StringToGRanges(rownames(atac_counts), sep = c(":", "-"))
+  grange.use <- seqnames(grange.counts) %in% standardChromosomes(grange.counts)
+  atac_counts <- atac_counts[as.vector(grange.use), ]
+  annotations <- GetGRangesFromEnsDb(ensdb = EnsDb.Hsapiens.v86)
+  seqlevelsStyle(annotations) <- 'UCSC'
+  genome(annotations) <- "hg38"
+  frag.file <- "/opt/curelab/datasets/pbmc_multiome_10k/pbmc_granulocyte_sorted_10k_atac_fragments.tsv.gz" # curelab: adapted
+  chrom_assay <- CreateChromatinAssay(
+     counts = atac_counts,
+     sep = c(":", "-"),
+     genome = 'hg38',
+     fragments = frag.file,
+     min.cells = 10,
+     annotation = annotations
+   )
+  pbmc[["ATAC"]] <- chrom_assay
+check: |
+  curelab_check({
+    obj <- curelab_obj("pbmc", "Seurat")
+    expect_true(all(c("RNA", "ATAC") %in% Assays(obj)),
+      "`pbmc` needs an RNA assay and an ATAC assay: pbmc[[\"ATAC\"]] <- chrom_assay.")
+    expect_true(inherits(obj[["ATAC"]], "ChromatinAssay"),
+      "The ATAC assay should be a ChromatinAssay made with CreateChromatinAssay().")
+    expect_equal_ref(ncol(obj), "n_cells", "`pbmc` should hold every cell in the 10x file; don't filter yet.")
+    expect_true("percent.mt" %in% colnames(obj[[]]),
+      "Add the mitochondrial percentage: pbmc[[\"percent.mt\"]] <- PercentageFeatureSet(pbmc, pattern = \"^MT-\").")
+    expect_equal_ref(nrow(obj[["ATAC"]]), "n_peaks",
+      "The ATAC assay should keep only peaks on standard chromosomes that are open in at least 10 cells (min.cells = 10).")
+    expect_true(length(Fragments(obj[["ATAC"]])) > 0, "Attach the fragment file: fragments = frag.file.")
+    expect_true(!is.null(Annotation(obj[["ATAC"]])), "Attach the gene annotations: annotation = annotations.")
+  })
+expected:
+  n_cells: ncol(pbmc)
+  n_peaks: nrow(pbmc[["ATAC"]])
+hints:
+  - The `.h5` file is a list with two matrices; the ATAC matrix needs peak coordinates, annotations and the fragment file to become a ChromatinAssay.
+  - "`pattern = \"^MT-\"` for mitochondrial genes; `CreateChromatinAssay(counts = atac_counts, sep = c(\":\", \"-\"), genome = 'hg38', fragments = frag.file, min.cells = 10, annotation = annotations)`."
+  - |
+    ```r
+    pbmc[["percent.mt"]] <- PercentageFeatureSet(pbmc, pattern = "^MT-")
+    # ... keep standard chromosomes, get annotations (starter code) ...
+    chrom_assay <- CreateChromatinAssay(
+       counts = atac_counts,
+       sep = c(":", "-"),
+       genome = 'hg38',
+       fragments = frag.file,
+       min.cells = 10,
+       annotation = annotations
+     )
+    pbmc[["ATAC"]] <- chrom_assay
+    ```
+debug:
+  - pattern: "seqlevelsStyle|chromInfo|UCSC"
+    help: >-
+      Converting the annotation to UCSC style ("chr1" instead of "1") can
+      need an internet connection the first time. Check that the lab
+      container can reach the internet, then run the line again.
+notebook_pages: [s1-nb01-multiome]
+state: [pbmc]
+timeout: 1800
+wrong_solutions:
+  - why: kept peaks on non-standard chromosomes
+    code: |
+      inputdata.10x <- Read10X_h5(curelab_multiome("h5"))
+      pbmc <- CreateSeuratObject(counts = inputdata.10x$`Gene Expression`)
+      pbmc[["percent.mt"]] <- PercentageFeatureSet(pbmc, pattern = "^MT-")
+      annotations <- GetGRangesFromEnsDb(ensdb = EnsDb.Hsapiens.v86)
+      seqlevelsStyle(annotations) <- 'UCSC'
+      genome(annotations) <- "hg38"
+      pbmc[["ATAC"]] <- CreateChromatinAssay(counts = inputdata.10x$Peaks, sep = c(":", "-"), genome = 'hg38',
+        fragments = curelab_multiome("fragments"), min.cells = 10, annotation = annotations)

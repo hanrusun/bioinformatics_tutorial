@@ -18,7 +18,15 @@ sys.path.insert(0, str(ROOT / "engine"))
 from curelab.content import load_pack  # noqa: E402
 
 
-def main(pack_dir: str = str(ROOT / "packs" / "seurat")) -> None:
+def main(*pack_dirs: str) -> None:
+    dirs = pack_dirs or [str(p.parent) for p in sorted((ROOT / "packs").glob("*/pack.yaml"))]
+    snippets = []
+    for pack_dir in dirs:
+        snippets += pack_snippets(pack_dir)
+    json.dump(snippets, sys.stdout, indent=1)
+
+
+def pack_snippets(pack_dir: str) -> list[dict]:
     pack = load_pack(pack_dir)
     snippets = []
     for path in sorted(Path(pack_dir).rglob("*.R")):
@@ -39,8 +47,10 @@ def main(pack_dir: str = str(ROOT / "packs" / "seurat")) -> None:
             for i, b in enumerate(p.blocks):
                 if b.kind == "code":
                     snippets.append({"where": f"{p.id}.blocks[{i}]", "code": b.text})
-    json.dump(snippets, sys.stdout, indent=1)
+    for s in snippets:
+        s["where"] = f"{pack.id}: {s['where']}"
+    return snippets
 
 
 if __name__ == "__main__":
-    main(*sys.argv[1:])
+    main(*sys.argv[1:])  # no arguments: every pack under packs/

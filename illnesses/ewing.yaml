@@ -1,0 +1,319 @@
+# Ewing sarcoma — illness + patient for the Signac pack (single-cell chromatin
+# and multiome analysis). Ewing sarcoma is driven by a fusion transcription
+# factor, usually EWSR1-FLI1, that opens chromatin at GGAA microsatellites and
+# switches on new enhancers: a disease of rewired chromatin, which is what
+# scATAC-seq and motif analysis read out.
+#
+# The patient is fictional. Traits are drawn from well-established clinical
+# features of Ewing sarcoma; `source` points at the page to check them
+# against. These are game flavor, kept separate from the tutorial content
+# (which is verified verbatim against the Signac and Seurat vignettes).
+# Human review welcome.
+id: ewing
+name: Ewing sarcoma
+short: Ewing
+blurb: >-
+  A bone and soft-tissue cancer of teenagers and young adults, driven by a
+  fusion transcription factor that rewires the tumor cells' chromatin.
+  Single-cell ATAC-seq and multiome maps show which regulatory regions it
+  opens, and which transcription factors run the tumor.
+fictional_notice: Tomás Ferreira is a fictional patient. Any resemblance to a real person is coincidental.
+sources:
+  - https://www.cancer.gov/types/bone/patient/ewing-treatment-pdq
+  - https://www.cancer.gov/types/bone/hp/ewing-treatment-pdq
+
+patient:
+  id: tomas
+  name: Tomás Ferreira
+  first_name: Tomás
+  pronouns: {subj: he, obj: him, poss: his}
+  age: "19"
+  sex: male
+  background: >-
+    Second-year architecture student and goalkeeper for the university
+    soccer team. Lives with his mother, Lúcia, his grandmother and a very
+    large dog called Bolo.
+  presenting: >-
+    Two months of aching pain in his left thigh, worse at night, first put
+    down to a soccer knock. Then a firm swelling and evening fevers. A biopsy
+    of his femur confirmed Ewing sarcoma.
+  companion: his mother, Lúcia
+  baseline_vitals: {hr: 88, rr: 16, spo2: 98, sbp: 122, dbp: 76, temp: 37.3}
+  art: tomas
+
+admit_note: >-
+  Tomás Ferreira, 19, admitted with thigh pain, a swelling over his left femur
+  and evening fevers. Biopsy confirms Ewing sarcoma. The lab has single-cell
+  multiome data (RNA and chromatin from the same cells) and a question: which
+  transcription factors keep his tumor running?
+stage_notes:
+  symptomatic: Tomás is on crutches and bored out of his mind. His teammates visit in shifts.
+  serious: Tomás needs strong pain relief and sleeps most of the day. Lúcia has taken leave from work.
+  critical: Tomás is moved to intensive care. The lab is his best hope.
+progression_note: Tomás's sarcoma keeps progressing.
+cure_note: >-
+  The cure works. Tomás's scans come back clear, his leg heals, and by spring
+  he is back in goal, Lúcia and Bolo cheering from the sideline.
+loss_note: >-
+  Tomás died peacefully, with Lúcia and his grandmother beside him. His
+  family thanks the lab for fighting for him. The research goes on for the
+  next patient.
+
+traits:
+  # ---------------------------------------------------------------- tier 1
+  - id: bone_pain
+    name: Bone pain
+    category: symptom
+    tier: 1
+    severity: [1.0, 1.6]
+    vitals: {hr: 4}
+    overlay: wince
+    note: The ache in Tomás's thigh wakes him at night now, and painkillers only take the edge off.
+    source: https://www.cancer.gov/types/bone/patient/ewing-treatment-pdq
+  - id: swelling
+    name: Swelling over the tumor
+    category: symptom
+    tier: 1
+    severity: [0.8, 1.4]
+    note: The swelling over Tomás's left femur is warm and tender to the touch.
+    source: https://www.cancer.gov/types/bone/patient/ewing-treatment-pdq
+  - id: fever
+    name: Fever
+    category: symptom
+    tier: 1
+    severity: [0.8, 1.4]
+    vitals: {temp: 1.0, hr: 8}
+    overlay: flushed
+    note: Tomás runs a fever most evenings. No infection can be found; it is the tumor.
+    source: https://www.cancer.gov/types/bone/patient/ewing-treatment-pdq
+  - id: fatigue
+    name: Fatigue
+    category: symptom
+    tier: 1
+    severity: [0.8, 1.4]
+    vitals: {hr: 2}
+    overlay: tired
+    note: Tomás, who used to train twice a day, falls asleep in the middle of a video call.
+    source: https://www.cancer.gov/types/bone/patient/ewing-treatment-pdq
+  # ---------------------------------------------------------------- tier 2
+  - id: limp
+    name: Limp
+    category: symptom
+    tier: 2
+    requires: [bone_pain]
+    severity: [1.2, 1.8]
+    overlay: crutches
+    note: Tomás can't put weight on his left leg any more. He is on crutches.
+    source: https://www.cancer.gov/types/bone/patient/ewing-treatment-pdq
+  - id: weight_loss
+    name: Weight loss
+    category: symptom
+    tier: 2
+    requires: [fatigue]
+    severity: [1.2, 2.0]
+    overlay: thin
+    note: Tomás has lost six kilos. His team jersey hangs off him.
+    source: https://www.cancer.gov/types/bone/patient/ewing-treatment-pdq
+  - id: anemia
+    name: Anemia
+    category: symptom
+    tier: 2
+    requires: [fatigue]
+    severity: [1.2, 2.0]
+    vitals: {hr: 8, spo2: -1}
+    overlay: pale
+    note: Tomás is pale and breathless on the stairs. His red cell count has dropped.
+    source: https://www.cancer.gov/types/bone/hp/ewing-treatment-pdq
+  - id: ews_fli1
+    name: EWSR1-FLI1 fusion
+    category: mutation
+    tier: 2
+    excludes: [ews_erg]
+    severity: [1.4, 2.2]
+    note: >-
+      The tumor carries the classic Ewing fusion, EWSR1-FLI1: a new
+      transcription factor that did not exist before the chromosome break.
+    source: https://www.cancer.gov/types/bone/hp/ewing-treatment-pdq
+  - id: ews_erg
+    name: EWSR1-ERG fusion
+    category: mutation
+    tier: 2
+    excludes: [ews_fli1]
+    severity: [1.4, 2.2]
+    note: The tumor carries the second most common Ewing fusion, EWSR1-ERG.
+    source: https://www.cancer.gov/types/bone/hp/ewing-treatment-pdq
+  - id: stag2_loss
+    name: STAG2 loss
+    category: mutation
+    tier: 2
+    severity: [1.2, 2.0]
+    note: Sequencing finds that the tumor has lost STAG2, a cohesin gene whose loss is linked to more aggressive Ewing sarcoma.
+    source: https://www.cancer.gov/types/bone/hp/ewing-treatment-pdq
+  - id: cdkn2a_deletion
+    name: CDKN2A deletion
+    category: mutation
+    tier: 2
+    severity: [1.0, 1.8]
+    note: The tumor has deleted CDKN2A, removing one of the cell's brakes on division.
+    source: https://www.cancer.gov/types/bone/hp/ewing-treatment-pdq
+  # ---------------------------------------------------------------- tier 3
+  - id: fracture
+    name: Pathologic fracture
+    category: complication
+    tier: 3
+    requires: [limp]
+    severity: [1.8, 2.6]
+    vitals: {hr: 8}
+    overlay: wince
+    note: The weakened femur cracked when Tomás turned too fast on his crutches. He needs surgery to stabilize it.
+    source: https://www.cancer.gov/types/bone/patient/ewing-treatment-pdq
+  - id: lung_mets
+    name: Lung metastases
+    category: complication
+    tier: 3
+    requires: [weight_loss]
+    severity: [2.0, 3.0]
+    vitals: {rr: 4, spo2: -3}
+    overlay: cannula
+    note: A CT scan shows nodules in both lungs. Tomás needs oxygen when he walks.
+    source: https://www.cancer.gov/types/bone/patient/ewing-treatment-pdq
+  - id: pleural_effusion
+    name: Pleural effusion
+    category: complication
+    tier: 3
+    requires: [lung_mets]
+    severity: [1.8, 2.8]
+    vitals: {rr: 3, spo2: -3}
+    overlay: drain
+    note: Fluid has collected around Tomás's right lung; a chest drain goes in.
+    source: https://www.cancer.gov/types/bone/hp/ewing-treatment-pdq
+  - id: marrow_involvement
+    name: Bone marrow involvement
+    category: complication
+    tier: 3
+    requires: [anemia]
+    severity: [1.8, 2.6]
+    vitals: {hr: 6}
+    overlay: pale
+    note: Tumor cells have reached Tomás's bone marrow. He needs transfusions.
+    source: https://www.cancer.gov/types/bone/hp/ewing-treatment-pdq
+  - id: spinal_compression
+    name: Spinal cord compression
+    category: complication
+    tier: 3
+    requires: [bone_pain]
+    severity: [2.0, 3.0]
+    overlay: brace
+    note: A vertebral deposit is pressing on Tomás's spinal cord; his feet are tingling. He needs urgent radiotherapy.
+    source: https://www.cancer.gov/types/bone/hp/ewing-treatment-pdq
+  - id: tp53
+    name: TP53 mutation
+    category: mutation
+    tier: 3
+    severity: [1.8, 2.6]
+    note: A subclone with a TP53 mutation has appeared, a marker of poorer response to chemotherapy.
+    source: https://www.cancer.gov/types/bone/hp/ewing-treatment-pdq
+  - id: neo_enhancers
+    name: GGAA neo-enhancers
+    category: resistance
+    tier: 3
+    requires: [ews_fli1]
+    severity: [1.8, 2.8]
+    note: >-
+      EWSR1-FLI1 is binding GGAA microsatellite repeats across the genome,
+      opening chromatin there and switching on new enhancers that drive the
+      tumor's growth program.
+    source: https://doi.org/10.1016/j.ccell.2014.10.004
+  # ---------------------------------------------------------------- tier 4
+  - id: bone_mets
+    name: Bone metastases
+    category: complication
+    tier: 4
+    requires: [lung_mets]
+    severity: [2.4, 3.4]
+    vitals: {hr: 6}
+    overlay: wince
+    note: New deposits have appeared in Tomás's pelvis and spine. The pain is hard to control.
+    source: https://www.cancer.gov/types/bone/patient/ewing-treatment-pdq
+  - id: chemoresistance
+    name: Chemotherapy resistance
+    category: resistance
+    tier: 4
+    requires: [stag2_loss]
+    severity: [2.2, 3.2]
+    note: The tumor keeps growing through second-line chemotherapy.
+    source: https://www.cancer.gov/types/bone/hp/ewing-treatment-pdq
+  - id: relapse
+    name: Relapse
+    category: resistance
+    tier: 4
+    requires: [marrow_involvement]
+    severity: [2.4, 3.4]
+    vitals: {hr: 6}
+    overlay: pale
+    note: The sarcoma is back, in his marrow and his lungs.
+    source: https://www.cancer.gov/types/bone/patient/ewing-treatment-pdq
+
+  # ---------------------------------------------------------- ward events
+  # Non-disease things that happen to the patient instead of an evolved
+  # disease trait. Fewer than a quarter are neutral (severity [0, 0]).
+  - id: hallway_penalty
+    name: A penalty kick in the hallway
+    category: event
+    tier: 1
+    severity: [1.0, 1.6]
+    overlay: plaster
+    note: Tomás tried to show a younger patient how to take a penalty, lost his balance on his crutches and fell. Bruised, and back to strict bed rest.
+  - id: energy_drinks
+    name: Energy drinks under the bed
+    category: event
+    tier: 1
+    severity: [0.4, 0.8]
+    note: The nurses found a stash of energy drinks under Tomás's bed. His heart rate says he has been drinking them.
+  - id: gaming_all_night
+    name: Gaming until 4 a.m.
+    category: event
+    tier: 1
+    severity: [0.4, 0.8]
+    overlay: tired
+    note: Tomás played online with his teammates until four in the morning and slept through his physiotherapy.
+  - id: cousin_cold
+    name: Caught his cousin's cold
+    category: event
+    tier: 1
+    severity: [1.0, 1.6]
+    vitals: {temp: 0.8, hr: 6}
+    overlay: flushed
+    note: His cousin visited with a sniffle and a hug. Now Tomás, with almost no white cells after chemotherapy, has a fever.
+  - id: skipped_antiemetics
+    name: Skipped his anti-nausea pills
+    category: event
+    tier: 1
+    severity: [0.6, 1.0]
+    overlay: pills
+    note: Tomás decided he was "fine" and skipped his anti-nausea pills. He can't keep food down all day.
+  - id: drug_shortage
+    name: Chemotherapy shortage
+    category: event
+    tier: 1
+    severity: [0.8, 1.4]
+    note: A national shortage of one of his chemotherapy drugs delays his next cycle by a week.
+  - id: pulled_picc
+    name: Pulled out his PICC line
+    category: event
+    tier: 1
+    severity: [0.4, 0.8]
+    overlay: sticker
+    note: Tomás caught his PICC line on a crutch. It has to be replaced.
+  - id: grandma_feijoada
+    name: Grandma's feijoada
+    category: event
+    tier: 1
+    severity: [0, 0]
+    note: His grandmother arrived with a pot of feijoada for the whole ward. The dietitian checked it, approved it, and asked for the recipe.
+  - id: bolo_visit
+    name: Bolo came to visit
+    category: event
+    tier: 1
+    severity: [0, 0]
+    note: Bolo the dog visited through the garden window. Tomás smiled all afternoon.

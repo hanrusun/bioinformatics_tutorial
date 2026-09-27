@@ -1,0 +1,81 @@
+id: s1-m02-atac-qc
+title: Is the chromatin readout any good?
+points: 7
+source:
+  vignette: pbmc_multiomic.Rmd
+  section: Quality control
+  quote: >-
+    We can compute per-cell quality control metrics using the DNA
+    accessibility data and remove cells that are outliers for these metrics,
+    as well as cells with low or unusually high counts for either the RNA or
+    ATAC assay.
+briefing: |
+  Two chromatin-specific quality metrics come from the fragment file:
+
+  - **nucleosome signal**: good ATAC data shows the ~147 bp ladder of DNA
+    wrapped around nucleosomes, but not too much of it;
+  - **TSS enrichment**: in healthy cells, fragments pile up at transcription
+    start sites, where chromatin is most open.
+
+  Both read the fragment file, so this step takes a few minutes.
+task:
+  - Make "ATAC" the default assay of `pbmc`.
+  - Add the nucleosome signal and the TSS enrichment score of every cell.
+  - Plot them next to the RNA and ATAC counts.
+setup: |
+  curelab_libraries(c("Signac", "EnsDb.Hsapiens.v86", "ggplot2", "GenomeInfoDb"))
+  load_checkpoint("s1-m01-build")
+starter_code: |
+  DefaultAssay(pbmc) <-
+  pbmc <- NucleosomeSignal(pbmc)
+  pbmc <- TSSEnrichment(pbmc)
+
+  VlnPlot(
+    object = pbmc,
+    features = c("nCount_RNA", "nCount_ATAC", "TSS.enrichment", "nucleosome_signal"),
+    ncol = 4,
+    pt.size = 0
+  )
+solution: |
+  DefaultAssay(pbmc) <- "ATAC"
+  pbmc <- NucleosomeSignal(pbmc)
+  pbmc <- TSSEnrichment(pbmc)
+  VlnPlot(
+    object = pbmc,
+    features = c("nCount_RNA", "nCount_ATAC", "TSS.enrichment", "nucleosome_signal"),
+    ncol = 4,
+    pt.size = 0
+  )
+check: |
+  curelab_check({
+    obj <- curelab_obj("pbmc", "Seurat")
+    expect_true(DefaultAssay(obj) == "ATAC", "Switch to the chromatin data first: DefaultAssay(pbmc) <- \"ATAC\".")
+    expect_columns(obj[[]], c("nucleosome_signal", "TSS.enrichment"),
+      "The metadata of `pbmc` (run NucleosomeSignal() and TSSEnrichment())")
+    expect_equal_ref(round(unname(head(obj$nucleosome_signal, 5)), 4), "ns_first",
+      "The nucleosome signal doesn't match the reference. Run NucleosomeSignal(pbmc) on the ATAC assay.",
+      tolerance = 1e-3, show = FALSE)
+    expect_equal_ref(round(unname(head(obj$TSS.enrichment, 5)), 4), "tss_first",
+      "The TSS enrichment doesn't match the reference. Run TSSEnrichment(pbmc) with the defaults.",
+      tolerance = 1e-3, show = FALSE)
+  })
+expected:
+  ns_first: round(unname(head(pbmc$nucleosome_signal, 5)), 4)
+  tss_first: round(unname(head(pbmc$TSS.enrichment, 5)), 4)
+hints:
+  - Signac computes both metrics from the fragment file of the ATAC assay, so ATAC has to be the default assay.
+  - "`DefaultAssay(pbmc) <- \"ATAC\"`, then `NucleosomeSignal(pbmc)` and `TSSEnrichment(pbmc)`, assigning each result back to `pbmc`."
+  - |
+    ```r
+    DefaultAssay(pbmc) <- "ATAC"
+    pbmc <- NucleosomeSignal(pbmc)
+    pbmc <- TSSEnrichment(pbmc)
+    ```
+notebook_pages: [s1-nb02-qc]
+state: [pbmc]
+timeout: 1800
+wrong_solutions:
+  - why: only the nucleosome signal
+    code: |
+      DefaultAssay(pbmc) <- "ATAC"
+      pbmc <- NucleosomeSignal(pbmc)

@@ -1,0 +1,74 @@
+id: s1-m05-lsi
+title: The chromatin side
+points: 8
+source:
+  vignette: seurat:weighted_nearest_neighbor_analysis.Rmd
+  section: WNN analysis of 10x Multiome, RNA + ATAC
+  quote: >-
+    We next perform pre-processing and dimensional reduction on both assays
+    independently, using standard approaches for RNA and ATAC-seq data.
+briefing: |
+  ATAC counts are sparse and nearly binary, so they get their own recipe,
+  latent semantic indexing (LSI): TF-IDF normalization, then a singular value
+  decomposition (the chromatin counterpart of PCA). The first LSI component
+  mostly tracks how deeply each cell was sequenced, so the ATAC UMAP skips
+  it.
+task:
+  - Make "ATAC" the default assay.
+  - Normalize with TF-IDF, keep every peak as a top feature (`min.cutoff = 'q0'`) and run the SVD.
+  - Run a UMAP on LSI components 2 to 50, saved as "umap.atac" (key "atacUMAP_").
+setup: |
+  curelab_libraries(c("Signac", "EnsDb.Hsapiens.v86", "ggplot2", "GenomeInfoDb"))
+  load_checkpoint("s1-m04-rna")
+starter_code: |
+  # ATAC analysis
+  # We exclude the first dimension as this is typically correlated with sequencing depth
+  DefaultAssay(pbmc) <-
+  pbmc <- RunTFIDF(pbmc)
+  pbmc <- FindTopFeatures(pbmc, min.cutoff = )
+  pbmc <- RunSVD(pbmc)
+  pbmc <- RunUMAP(pbmc, reduction = , dims = , reduction.name = "umap.atac", reduction.key = "atacUMAP_")
+solution: |
+  DefaultAssay(pbmc) <- "ATAC"
+  pbmc <- RunTFIDF(pbmc)
+  pbmc <- FindTopFeatures(pbmc, min.cutoff = 'q0')
+  pbmc <- RunSVD(pbmc)
+  pbmc <- RunUMAP(pbmc, reduction = 'lsi', dims = 2:50, reduction.name = "umap.atac", reduction.key = "atacUMAP_")
+check: |
+  curelab_check({
+    obj <- curelab_obj("pbmc", "Seurat")
+    expect_equal_ref(round(sum(LayerData(obj, assay = "ATAC", layer = "data")[, 1]), 3), "tfidf_cell1",
+      "The ATAC data layer isn't TF-IDF normalized. Run RunTFIDF(pbmc) on the ATAC assay.", tolerance = 1e-4, show = FALSE)
+    expect_equal_ref(length(VariableFeatures(obj[["ATAC"]])), "n_top",
+      "Keep every peak as a top feature: FindTopFeatures(pbmc, min.cutoff = 'q0').")
+    expect_reduction(obj, "lsi", "Run RunSVD(pbmc) to get the 'lsi' reduction.")
+    expect_reduction(obj, "umap.atac", "Save the ATAC UMAP as reduction.name = \"umap.atac\".")
+    expect_param(obj, "RunUMAP", "reduction", "lsi", "Build the ATAC UMAP from the LSI: reduction = 'lsi'")
+    expect_param(obj, "RunUMAP", "dims", 2:50,
+      "Skip the first LSI component, which tracks sequencing depth: dims = 2:50")
+  })
+expected:
+  tfidf_cell1: round(sum(LayerData(pbmc, assay = "ATAC", layer = "data")[, 1]), 3)
+  n_top: length(VariableFeatures(pbmc[["ATAC"]]))
+hints:
+  - LSI = TF-IDF normalization + top features + singular value decomposition; the UMAP then uses the LSI components minus the first.
+  - "`RunTFIDF()`, `FindTopFeatures(min.cutoff = 'q0')`, `RunSVD()`, then `RunUMAP(pbmc, reduction = 'lsi', dims = 2:50, ...)`."
+  - |
+    ```r
+    DefaultAssay(pbmc) <- "ATAC"
+    pbmc <- RunTFIDF(pbmc)
+    pbmc <- FindTopFeatures(pbmc, min.cutoff = 'q0')
+    pbmc <- RunSVD(pbmc)
+    pbmc <- RunUMAP(pbmc, reduction = 'lsi', dims = 2:50, reduction.name = "umap.atac", reduction.key = "atacUMAP_")
+    ```
+notebook_pages: [s1-nb03-modalities]
+state: [pbmc]
+timeout: 1800
+wrong_solutions:
+  - why: kept the depth-driven first LSI component
+    code: |
+      DefaultAssay(pbmc) <- "ATAC"
+      pbmc <- RunTFIDF(pbmc)
+      pbmc <- FindTopFeatures(pbmc, min.cutoff = 'q0')
+      pbmc <- RunSVD(pbmc)
+      pbmc <- RunUMAP(pbmc, reduction = 'lsi', dims = 1:50, reduction.name = "umap.atac", reduction.key = "atacUMAP_")

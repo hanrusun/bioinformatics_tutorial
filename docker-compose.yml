@@ -1,9 +1,13 @@
-# One service per tool pack. Start the Seurat pack with:
-#   docker compose up --build seurat
-# then open http://localhost:8000
+# One service per tool pack.
 #
-# The port is bound to 127.0.0.1 on purpose: the game runs the code you type,
-# so it should only be reachable from your own machine.
+#   docker compose up --build seurat    then open http://localhost:8000
+#   docker compose up --build signac    then open http://localhost:8001
+#
+# The Signac image is built on top of the Seurat one (Compose builds that
+# first). It is optional: it only builds when you name it.
+#
+# The ports are bound to 127.0.0.1 on purpose: the game runs the code you
+# type, so it should only be reachable from your own machine.
 services:
   seurat:
     build:
@@ -15,9 +19,26 @@ services:
     volumes:
       - curelab-seurat-data:/data   # saves and lab notebooks survive restarts
     environment:
-      # Set to 1 to open Campaign 2 without winning Campaign 1 first.
+      # Set to 1 to open later campaigns without winning Campaign 1 first.
+      CURELAB_UNLOCK_ALL: "0"
+    restart: unless-stopped
+
+  signac:
+    profiles: [signac]             # only built/started when named
+    build:
+      context: .
+      dockerfile: packs/signac/Dockerfile
+      additional_contexts:
+        seurat: service:seurat     # FROM seurat = the image above
+    image: curelab-signac:latest
+    ports:
+      - "127.0.0.1:8001:8000"
+    volumes:
+      - curelab-signac-data:/data
+    environment:
       CURELAB_UNLOCK_ALL: "0"
     restart: unless-stopped
 
 volumes:
   curelab-seurat-data:
+  curelab-signac-data:

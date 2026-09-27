@@ -5,8 +5,8 @@ sicker, and your code is the cure. Work through real single-cell analyses in
 R. Every correct mission moves the cure forward, and every wrong answer lets
 the disease evolve.
 
-The first tool pack teaches **Seurat 5.5.1**. It has three campaigns, each
-with its own patient:
+There are two tool packs, each in its own Docker image. The **Seurat 5.5.1**
+pack has three campaigns, each with its own patient:
 
 | Campaign | Patient | What you learn | Source vignettes |
 |---|---|---|---|
@@ -14,10 +14,18 @@ with its own patient:
 | **Seurat for the Multiome Lab** (unlocks after Basics) | Mia Okoye, 2: neuroblastoma | Seurat v5 object anatomy and layers, subsetting, cell-cycle scoring and regression, split layers + Harmony integration, conserved markers, pseudobulk DESeq2, label transfer, merging for co-embedding | `essential_commands`, `cell_cycle_vignette`, `integration_introduction`, `seurat5_integration`, `de_vignette`, `integration_mapping`, `seurat5_atacseq_integration_vignette` |
 | **CRISPR Screens with Mixscape** (unlocks after Basics) | Anjali Rao, 38: acute myeloid leukemia | Pooled CRISPR screens read out in single cells (ECCITE-seq): CLR-normalized protein, confounders in RNA clustering, local perturbation signatures (`CalcPerturbSig`), knockout vs non-perturbed calls (`RunMixscape`), guide efficiency, PD-L1 validation, LDA of perturbation responses | `mixscape_vignette` |
 
+The optional **Signac 1.17.1** pack is built on top of the Seurat image, so
+you only download and build it if you want it:
+
+| Campaign | Patient | What you learn | Source vignettes |
+|---|---|---|---|
+| **Chromatin and Regulators** | Tomás Ferreira, 19: Ewing sarcoma | Human 10x multiome (RNA + ATAC in the same cells): a Signac `ChromatinAssay` with hg38 annotations, ATAC QC (nucleosome signal, TSS enrichment), SCTransform and LSI, weighted nearest neighbors, cell-type annotation, coverage plots, peak-to-gene links, JASPAR motifs and chromVAR, ranking the transcription factors of each cell type | Signac `pbmc_multiomic`; Seurat `weighted_nearest_neighbor_analysis` (multiome half) |
+
 Campaign 2 covers the Seurat side of the
 [NBL scMultiomics TRN pipeline](https://github.com/wbaopaul/NBL_scMultiomics_Paper/tree/main/TRN-analysis).
 [docs/NBL_TRN_READINESS.md](docs/NBL_TRN_READINESS.md) maps each call in those
-scripts to the mission that teaches it, and lists what is outside Seurat.
+scripts to the mission that teaches it, and what the Signac pack adds
+(chromatin processing, peak-to-gene links, motifs and chromVAR).
 
 ## Quick start
 
@@ -35,6 +43,18 @@ The first build downloads the datasets and runs every mission's reference
 solution once. On a 4-core machine it takes about 40 minutes and produces an
 image of about 9 GB (measured in CI). Later starts are instant. Your progress and lab notebook are kept in a
 Docker volume (`curelab-seurat-data`).
+
+For the Signac pack:
+
+```bash
+docker compose up --build signac
+```
+
+Then open <http://localhost:8001>. Compose builds the Seurat image first if
+you don't have it yet; the Signac image reuses all of its layers and only adds
+Signac, the hg38 genome and annotations, the 10x multiome data and its own
+reference checkpoints. It keeps its progress in its own volume
+(`curelab-signac-data`), so both games can run side by side.
 
 The port is bound to `127.0.0.1` on purpose: the game executes the code you
 type, so only your own machine can reach it. To skip the Campaign 1
@@ -58,6 +78,14 @@ runs in a virtual machine with its own memory limit: set **Settings →
 Resources → Memory** to at least 12 GB to build the image and play Campaign 3
 (6 GB is enough for Campaigns 1 and 2 once the image is built).
 
+The Signac image adds to these; its measured size, build time and memory
+are in [Signac pack requirements](#signac-pack-requirements) below.
+
+### Signac pack requirements
+
+Not measured yet: CI builds the Signac image on top of the Seurat one, and
+these numbers will be filled in from that run.
+
 ## How to play
 
 ![Walter's room, the lab and the cure/lethality/health bars](docs/img/game.png)
@@ -65,9 +93,9 @@ Resources → Memory** to at least 12 GB to build the image and play Campaign 3
 <sub>Screenshots are from the built-in Python demo pack, which exercises the
 same engine and UI without needing the R image.</sub>
 
-| Mia's symptoms evolve with every mistake | Anjali, sixteen mistakes in | Cure found |
-|---|---|---|
-| ![Mia](docs/img/mia.png) | ![Anjali](docs/img/anjali.png) | ![Win screen](docs/img/won.png) |
+| Mia's symptoms evolve with every mistake | Anjali, sixteen mistakes in | Tomás (Signac pack) | Cure found |
+|---|---|---|---|
+| ![Mia](docs/img/mia.png) | ![Anjali](docs/img/anjali.png) | ![Tomás](docs/img/tomas.png) | ![Win screen](docs/img/won.png) |
 
 - **Cure research**: each coding mission adds 5–11% by complexity, and each
   journal-club question adds 1%. Each campaign totals exactly 100%. Reach it
@@ -101,21 +129,24 @@ same engine and UI without needing the R image.</sub>
 
 ## Grounded in the official vignettes
 
-Every mission, quiz and notebook page cites a Seurat vignette pinned to the
-exact version installed in the image
-(`satijalab/seurat@v5.5.1`, [docs/SOURCES.md](docs/SOURCES.md)).
+Every mission, quiz and notebook page cites a vignette pinned to the exact
+version installed in the image: `satijalab/seurat@v5.5.1` for the Seurat pack
+([docs/SOURCES.md](docs/SOURCES.md)), and `stuart-lab/signac@1.17.1` plus the
+Seurat WNN vignette for the Signac pack
+([docs/SOURCES-signac.md](docs/SOURCES-signac.md)).
 `tools/verify_sources.py` checks, and CI enforces, that:
 
 - every quoted sentence appears **verbatim** in the cited vignette,
 - every cited section is a real heading, and
 - every line of each mission's reference solution is vignette code.
 
-Five lines are marked as adapted, and the verifier reports them: the local
-data path, the learner's own PC choice, and the `obj → ifnb` / `harmony`
-names in the Harmony missions.
+Five lines in the Seurat pack are marked as adapted, and the verifier
+reports them: the local data path, the learner's own PC choice, and the
+`obj → ifnb` / `harmony` names in the Harmony missions. The Signac pack
+adapts two: the paths to the multiome files in the image.
 
-The hidden checks never hard-code answers. When the image is built,
-`packs/seurat/reference/build_reference.R`:
+The hidden checks never hard-code answers. When an image is built,
+`packs/seurat/reference/build_reference.R` (which also builds the Signac pack):
 
 1. runs each verbatim solution,
 2. records the expected values,
@@ -133,13 +164,16 @@ web/               Preact + CodeMirror front end, patient art, vitals monitor
 illnesses/         illness + patient definitions (trait trees), one per campaign
 packs/seurat/      the Seurat tool pack: missions, quizzes, notebook pages,
                    R helpers, dataset fetcher, reference builder, Dockerfile
+packs/signac/      the Signac tool pack (image built FROM the Seurat one;
+                   reuses its helpers and reference builder)
 tools/             verify_sources.py, simulate_balance.py, rcheck (R code in webR)
 docs/              SOURCES (generated), NBL_TRN_READINESS, ADDING_A_TOOL, ART
 ```
 
 The engine never knows it is running R. It runs learner code in a Jupyter
-kernel (IRkernel here), so a future Scanpy or Signac pack swaps in a
-different kernel and brings its own illness and patient. See
+kernel (IRkernel here), so a future Scanpy pack swaps in a different kernel
+and brings its own illness and patient. A pack can cite several pinned
+source repositories (the Signac pack cites Signac's and Seurat's vignettes). See
 [docs/ADDING_A_TOOL.md](docs/ADDING_A_TOOL.md).
 
 ## Development
@@ -162,10 +196,12 @@ For UI work, run `cd web && npm run dev`. It serves on :5173 and proxies
 | Engine unit + API tests (real Jupyter kernel) | `pytest engine/tests` |
 | Balance targets | `python tools/simulate_balance.py --assert` |
 | Vignette grounding (+ regenerates docs/SOURCES.md) | `python tools/verify_sources.py` |
+| Same for the Signac pack (+ docs/SOURCES-signac.md) | `python tools/verify_sources.py --pack packs/signac` |
 | R code parses; checker helpers and the reference builder tested on a mock pack (webR, no R install needed) | `cd tools/rcheck && npm install && npm test` |
 | Web typecheck, unit tests, build | `cd web && npm run typecheck && npm test && npm run build` |
 | End-to-end (Playwright, demo pack) | `cd web && npx playwright install chromium && npm run e2e` |
 | Everything R, for real | `docker compose build seurat` (runs every solution and check) |
+| Everything R for the Signac pack | `docker compose --profile signac build signac` |
 
 ## Balance
 
@@ -189,9 +225,11 @@ stage and per symptom, without code changes; see [docs/ART.md](docs/ART.md).
 
 Tutorial text and code are quoted from the
 [Seurat vignettes](https://satijalab.org/seurat/) (© Satija Lab and
-collaborators), pinned to v5.5.1. The datasets come from 10x Genomics,
-SeuratData, Nestorowa et al. (2016) and Kang et al. (2018), fetched from the
-URLs the vignettes use. The patients are fictional, and the symptom trees
+collaborators), pinned to v5.5.1, and the
+[Signac vignettes](https://stuartlab.org/signac/) (© Stuart Lab), pinned to
+1.17.1. The datasets come from 10x Genomics, SeuratData, Nestorowa et al.
+(2016), Kang et al. (2018) and Papalexi et al. (2021), fetched from the URLs
+the vignettes use; motifs come from JASPAR 2020. The patients are fictional, and the symptom trees
 paraphrase public clinical descriptions (NCI PDQ); they are game flavor, not
 medical advice. The game mechanics are inspired by *Plague Inc.* (Ndemic
 Creations); this project is not affiliated with it.
