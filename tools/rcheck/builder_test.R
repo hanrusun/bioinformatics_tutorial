@@ -108,6 +108,8 @@ local({
 })
 
 setwd("/mock/reference")
+# the builder defaults to <pack>/reference only when this is unset
+Sys.unsetenv("CURELAB_REFERENCE_DIR")
 withCallingHandlers(
   source("/mock/reference/build_reference.R"),
   message = function(m) {

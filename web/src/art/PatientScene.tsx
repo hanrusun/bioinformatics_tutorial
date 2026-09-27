@@ -183,6 +183,19 @@ export function PatientScene({ art, stage, overlays, rr, hr, flash }: SceneProps
         </g>
       )}
 
+      {/* Kiara's drawing of a birthday cake */}
+      {look.prop === 'sourdough' && (
+        <g transform="translate(196 44) rotate(3)">
+          <rect width="58" height="44" fill="#fbfbf2" />
+          <rect x="22" y="-4" width="14" height="7" fill="#e7dca1" opacity="0.8" />
+          <rect x="14" y="22" width="30" height="16" rx="2" fill="#f4a7c1" stroke="#d9709a" stroke-width="1.5" />
+          <path d="M14 27 q4 4 7.5 0 t7.5 0 t7.5 0 t7.5 0" stroke="#fff" stroke-width="2" fill="none" />
+          <path d="M22 22 v-7 M29 22 v-7 M36 22 v-7" stroke="#3b82c4" stroke-width="2" />
+          <path d="M22 13 q-2 -3 0 -5 q2 2 0 5 M29 13 q-2 -3 0 -5 q2 2 0 5 M36 13 q-2 -3 0 -5 q2 2 0 5" fill="#f7c948" />
+          <path d="M4 40 h50" stroke="#58a55c" stroke-width="3" />
+        </g>
+      )}
+
       {ov.has('isolation') && (
         <g transform="translate(262 96)">
           <rect width="62" height="26" rx="3" fill="#f7d23e" stroke="#b8961a" />
@@ -221,6 +234,21 @@ export function PatientScene({ art, stage, overlays, rr, hr, flash }: SceneProps
             <rect x="0" y="6" width="26" height="26" rx="5" fill="#f2b233" stroke="#c98a12" stroke-width="1.5" />
             <rect x="-1" y="2" width="28" height="7" rx="2" fill="#6b4a2b" />
             <path d="M8 18 l5 -3 l5 3 v6 l-5 3 l-5 -3z" fill="#ffd66b" stroke="#c98a12" />
+          </g>
+        )}
+        {look.prop === 'sourdough' && stage !== 'deceased' && (
+          <g transform="translate(58 188)">
+            <rect x="0" y="6" width="26" height="34" rx="6" fill="#e9f3fb" opacity="0.9" stroke="#b7c8d6" stroke-width="1.5" />
+            <rect x="2" y="16" width="22" height="22" rx="4" fill="#f3e6c8" />
+            <circle cx="8" cy="22" r="1.4" fill="#fffaf0" />
+            <circle cx="16" cy="26" r="1.8" fill="#fffaf0" />
+            <circle cx="11" cy="31" r="1.2" fill="#fffaf0" />
+            <rect x="-1" y="2" width="28" height="6" rx="2" fill="#c98a5a" />
+            {/* Gerald's googly eyes */}
+            <circle cx="9" cy="12" r="2.6" fill="#fff" stroke="#8a8a8a" stroke-width="0.6" />
+            <circle cx="17" cy="12" r="2.6" fill="#fff" stroke="#8a8a8a" stroke-width="0.6" />
+            <circle cx="9.6" cy="12.6" r="1.1" fill="#2b211c" />
+            <circle cx="16.4" cy="12.4" r="1.1" fill="#2b211c" />
           </g>
         )}
         {ov.has('tissue') && (
@@ -321,6 +349,12 @@ export function PatientScene({ art, stage, overlays, rr, hr, flash }: SceneProps
               <circle cx={head.cx + 20} cy={head.cy - 24} r="4" fill="#e05d8f" transform="translate(-6 9)" />
             </g>
           )}
+          {look.hairStyle === 'bun' && (
+            <g fill={look.hair}>
+              <circle cx={head.cx - 10} cy={head.cy - head.r - 4} r="11" />
+              <path d={`M${head.cx - 18} ${head.cy - head.r} q8 -6 16 0`} stroke={look.hairShade} stroke-width="1.5" fill="none" />
+            </g>
+          )}
           <ellipse cx={head.cx} cy={head.cy} rx={head.r} ry={head.r + 2} fill={skin} />
           {/* ears */}
           <ellipse cx={head.cx - head.r + 1} cy={head.cy + 2} rx="4" ry="6" fill={shade} />
@@ -419,6 +453,9 @@ export function PatientScene({ art, stage, overlays, rr, hr, flash }: SceneProps
           ) : (
             <path d={`M${head.cx - 5} ${mouthY} q5 ${stage === 'stable' ? 3 : 1} 10 0`} stroke={look.lips} stroke-width="2" fill="none" stroke-linecap="round" />
           )}
+          {ov.has('bruises') && (
+            <ellipse cx={head.cx + 13} cy={head.cy + 19} rx="4" ry="2.8" fill="#6b4a86" opacity="0.4" />
+          )}
           {/* skin nodules */}
           {ov.has('spots') && (
             <g fill="#5c5ca8" opacity="0.8">
@@ -471,6 +508,13 @@ export function PatientScene({ art, stage, overlays, rr, hr, flash }: SceneProps
           <path d="M236 246 C246 247 256 248 268 248" stroke={skin} stroke-width="10" stroke-linecap="round" />
           <ellipse cx="274" cy="248" rx="7" ry="5.5" fill={skin} />
           <rect x="250" y="243" width="9" height="9" rx="1.5" fill="#f5f2e8" opacity="0.95" />
+          {ov.has('bruises') && (
+            <g>
+              <ellipse cx="245" cy="247" rx="4.5" ry="3" fill="#6b4a86" opacity="0.55" />
+              <ellipse cx="245" cy="247" rx="2.2" ry="1.4" fill="#4a2f63" opacity="0.5" />
+              <ellipse cx="266" cy="249" rx="3.2" ry="2.4" fill="#8a7a3e" opacity="0.45" />
+            </g>
+          )}
           {ov.has('spots') && (
             <g fill="#5c5ca8" opacity="0.8">
               <circle cx="240" cy="246" r="1.5" />

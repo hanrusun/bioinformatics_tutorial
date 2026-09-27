@@ -1,0 +1,15 @@
+id: c3-crispr
+title: CRISPR Screens with Mixscape
+subtitle: Which genes let a leukemia hide behind PD-L1?
+illness: aml
+order: 3
+unlock_after: c1-basics
+summary: >-
+  Anjali's leukemia is hiding from her immune system behind the PD-L1
+  checkpoint. Your lab reads out a pooled CRISPR screen in THP-1 leukemia
+  cells, one guide RNA per cell, to find the genes that control it. Learn to
+  see past confounders, compute local perturbation signatures, separate true
+  knockouts from cells that escaped editing with Mixscape, and visualize
+  perturbation responses with LDA.
+datasets:
+  - SeuratData thp1.eccite (ECCITE-seq CRISPR screen in THP-1 cells, Papalexi et al.)

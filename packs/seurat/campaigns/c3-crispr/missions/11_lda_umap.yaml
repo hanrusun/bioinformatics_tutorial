@@ -1,0 +1,105 @@
+id: c3-m11-lda-umap
+title: The perturbation map
+points: 5
+source:
+  vignette: mixscape_vignette.Rmd
+  section: Visualizing perturbation responses with Linear Discriminant Analysis (LDA)
+  quote: >-
+    LDA is trying to maximize the separability of known labels (mixscape
+    classes) using both gene expression and the labels as input.
+briefing: |
+  The last step turns the LDA into a map. LDA gives one fewer dimension than
+  there are labels, and the UMAP should use all of them. Then color the cells
+  by mixscape class, with the NT controls in grey. Knockouts that land
+  together hit the same pathway; for Anjali, the ones that cluster with the
+  IFN-gamma pathway are the PD-L1 targets.
+task:
+  - Run a UMAP of `sub` on every LDA dimension (reduction 'lda'), saved as "ldaumap" (key 'ldaumap').
+  - Set the identities of `sub` to `mixscape_class`, stored as a factor.
+  - "`p`: the labelled UMAP colored by mixscape class, NT in grey."
+setup: |
+  curelab_libraries(c("SeuratData", "ggplot2", "scales"))
+  load_checkpoint("c3-m10-lda")
+starter_code: |
+  ncol(Embeddings(sub, reduction = "lda"))  # the number of labels minus one
+
+  sub <- RunUMAP(
+    object = sub,
+    dims = ,
+    reduction = 'lda',
+    reduction.key = 'ldaumap',
+    reduction.name = 'ldaumap')
+
+  # Visualize UMAP clustering results.
+  Idents(sub) <- "mixscape_class"
+  sub$mixscape_class <- as.factor(sub$mixscape_class)
+
+  # Set colors for each perturbation.
+  col = setNames(object = hue_pal()(12),nm = levels(sub$mixscape_class))
+  names(col) <- c(names(col)[1:7], "NT", names(col)[9:12])
+  col[8] <- "grey39"
+
+  p <- DimPlot(object = sub,
+               reduction = "ldaumap",
+               repel = T,
+               label.size = 5,
+               label = T,
+               cols = col) + NoLegend()
+  p
+solution: |
+  sub <- RunUMAP(
+    object = sub,
+    dims = 1:11,
+    reduction = 'lda',
+    reduction.key = 'ldaumap',
+    reduction.name = 'ldaumap')
+  Idents(sub) <- "mixscape_class"
+  sub$mixscape_class <- as.factor(sub$mixscape_class)
+  col = setNames(object = hue_pal()(12),nm = levels(sub$mixscape_class))
+  names(col) <- c(names(col)[1:7], "NT", names(col)[9:12])
+  col[8] <- "grey39"
+  p <- DimPlot(object = sub,
+               reduction = "ldaumap",
+               repel = T,
+               label.size = 5,
+               label = T,
+               cols = col) + NoLegend()
+check: |
+  curelab_check({
+    sub <- curelab_obj("sub", "Seurat")
+    expect_reduction(sub, "ldaumap",
+      "There is no 'ldaumap' reduction. Run RunUMAP(object = sub, dims = ..., reduction = 'lda', reduction.key = 'ldaumap', reduction.name = 'ldaumap').")
+    expect_param(sub, "RunUMAP", "reduction", "lda", "Build the UMAP from the LDA: reduction = 'lda'")
+    n_lda <- ncol(Embeddings(sub, reduction = "lda"))
+    expect_param(sub, "RunUMAP", "dims", seq_len(n_lda),
+      sprintf("Use every LDA dimension, the number of labels minus one: dims = 1:%d", n_lda))
+    expect_true(is.factor(sub$mixscape_class), "Store mixscape_class as a factor: sub$mixscape_class <- as.factor(sub$mixscape_class).")
+    expect_true(identical(as.character(Idents(sub)), as.character(sub$mixscape_class)),
+      "Set the identities to the mixscape classes: Idents(sub) <- \"mixscape_class\".")
+    curelab_obj("p", "ggplot", hint = "Save the DimPlot() as p.")
+  })
+hints:
+  - Count the LDA dimensions first; the UMAP should use every one of them.
+  - "`RunUMAP(object = sub, dims = 1:11, reduction = 'lda', reduction.key = 'ldaumap', reduction.name = 'ldaumap')`: 12 labels (11 knockout classes plus NT) give 11 LDA dimensions."
+  - |
+    ```r
+    sub <- RunUMAP(
+      object = sub,
+      dims = 1:11,
+      reduction = 'lda',
+      reduction.key = 'ldaumap',
+      reduction.name = 'ldaumap')
+    Idents(sub) <- "mixscape_class"
+    sub$mixscape_class <- as.factor(sub$mixscape_class)
+    ```
+debug:
+  - pattern: "dims|subscript out of bounds"
+    help: The LDA has one dimension fewer than there are labels. Check `ncol(Embeddings(sub, reduction = "lda"))` and use `dims = 1:` that number.
+notebook_pages: [c3-nb07-lda]
+timeout: 1200
+wrong_solutions:
+  - why: UMAP on only two LDA dimensions
+    code: |
+      sub <- RunUMAP(object = sub, dims = 1:2, reduction = 'lda', reduction.key = 'ldaumap', reduction.name = 'ldaumap')
+      Idents(sub) <- "mixscape_class"
+      sub$mixscape_class <- as.factor(sub$mixscape_class)

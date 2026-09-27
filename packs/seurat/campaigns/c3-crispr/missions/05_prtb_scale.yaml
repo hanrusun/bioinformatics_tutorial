@@ -1,0 +1,58 @@
+id: c3-m05-prtb-scale
+title: Into perturbation space
+points: 7
+source:
+  vignette: mixscape_vignette.Rmd
+  section: Calculating local perturbation signatures mitigates confounding effects
+  quote: Normalize data, find variable features and center data.
+briefing: |
+  From now on you work in "perturbation space": the PRTB assay. It reuses
+  the RNA variable genes, and its signatures are already differences from the
+  controls, so they are only centered, not scaled to unit variance.
+task:
+  - Make "PRTB" the default assay of `eccite`.
+  - Give it the variable features of the RNA assay.
+  - Center (but don't scale) the PRTB data with ScaleData().
+setup: |
+  curelab_libraries(c("SeuratData", "ggplot2", "scales"))
+  load_checkpoint("c3-m04-prtb")
+starter_code: |
+  # Prepare PRTB assay for dimensionality reduction:
+  # Normalize data, find variable features and center data.
+  DefaultAssay(object = eccite) <-
+
+  # Use variable features from RNA assay.
+  VariableFeatures(object = eccite) <- VariableFeatures(object = eccite[[ ]])
+  eccite <- ScaleData(object = eccite, do.scale = , do.center = )
+solution: |
+  DefaultAssay(object = eccite) <- 'PRTB'
+  VariableFeatures(object = eccite) <- VariableFeatures(object = eccite[["RNA"]])
+  eccite <- ScaleData(object = eccite, do.scale = F, do.center = T)
+check: |
+  curelab_check({
+    obj <- curelab_obj("eccite", "Seurat")
+    expect_true(DefaultAssay(obj) == "PRTB", "Make PRTB the default assay: DefaultAssay(object = eccite) <- 'PRTB'.")
+    vf <- VariableFeatures(obj[["PRTB"]])
+    expect_true(length(vf) > 0 && setequal(vf, VariableFeatures(obj[["RNA"]])),
+      "Give the PRTB assay the RNA variable features: VariableFeatures(object = eccite) <- VariableFeatures(object = eccite[[\"RNA\"]]).")
+    expect_true("scale.data" %in% Layers(obj[["PRTB"]]), "Center the PRTB data with ScaleData().")
+    expect_param(obj, "ScaleData.PRTB", "do.scale", FALSE, "Only center the signatures, don't scale them: do.scale = F")
+    expect_param(obj, "ScaleData.PRTB", "do.center", TRUE, "Center the signatures: do.center = T")
+  })
+hints:
+  - The PRTB assay becomes the default for the next steps; its signatures are centered around zero but keep their natural scale.
+  - "`DefaultAssay(object = eccite) <- 'PRTB'`, copy `VariableFeatures(object = eccite[[\"RNA\"]])`, then `ScaleData(do.scale = F, do.center = T)`."
+  - |
+    ```r
+    DefaultAssay(object = eccite) <- 'PRTB'
+    VariableFeatures(object = eccite) <- VariableFeatures(object = eccite[["RNA"]])
+    eccite <- ScaleData(object = eccite, do.scale = F, do.center = T)
+    ```
+notebook_pages: [c3-nb04-prtb-space]
+state: [eccite]
+wrong_solutions:
+  - why: scaled as well as centered
+    code: |
+      DefaultAssay(object = eccite) <- 'PRTB'
+      VariableFeatures(object = eccite) <- VariableFeatures(object = eccite[["RNA"]])
+      eccite <- ScaleData(object = eccite)

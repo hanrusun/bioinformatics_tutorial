@@ -6,7 +6,8 @@ Each patient's scene is an original flat-vector SVG built from layers
 - **room**: the window sky follows the stage (day, dusk, night, sunny when
   cured) and a wall monitor shows a live ECG;
 - **furniture**: a bedside table with a personal prop (Walter's honey jar,
-  Mia's rabbit Clover and her brother's drawing), the IV pole, the bed;
+  Mia's rabbit Clover and her brother's drawing, Anjali's sourdough starter
+  Gerald and her daughter's cake drawing), the IV pole, the bed;
 - **patient**: skin tone drains toward pale as the stage worsens, and the
   eyes, brows and mouth change with the stage; breathing follows the
   respiratory rate and the eyes blink;
@@ -24,6 +25,7 @@ Each patient's scene is an original flat-vector SVG built from layers
   | `face_swelling` | puffy face | | `brace` | neck brace |
   | `headwrap` | head bandage | | `iv` | second IV bag, faster drip |
   | `jaundice` | yellow skin and eyes | | `haze` | smog outside the window |
+  | `bruises` | bruises on the arm and jaw | | | |
 
   and for patient events:
 

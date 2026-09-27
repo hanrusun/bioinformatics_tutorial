@@ -52,13 +52,15 @@ def seurat():
 
 
 def test_campaigns(seurat):
-    assert [c.id for c in seurat.campaigns] == ["c1-basics", "c2-multiome"]
+    assert [c.id for c in seurat.campaigns] == ["c1-basics", "c2-multiome", "c3-crispr"]
     assert seurat.campaign("c2-multiome").unlock_after == "c1-basics"
+    # Mixscape builds on the basics only, so it is playable without Campaign 2
+    assert seurat.campaign("c3-crispr").unlock_after == "c1-basics"
     for c in seurat.campaigns:
         load_illness(ILLNESSES, c.illness)
 
 
-@pytest.mark.parametrize("campaign_id", ["c1-basics", "c2-multiome"])
+@pytest.mark.parametrize("campaign_id", ["c1-basics", "c2-multiome", "c3-crispr"])
 def test_points_add_up_to_a_cure(seurat, campaign_id):
     c = seurat.campaign(campaign_id)
     assert c.total_points == 100
@@ -66,7 +68,7 @@ def test_points_add_up_to_a_cure(seurat, campaign_id):
     assert len(c.quizzes) == 15 and all(q.points == 1 for q in c.quizzes)
 
 
-@pytest.mark.parametrize("campaign_id", ["c1-basics", "c2-multiome"])
+@pytest.mark.parametrize("campaign_id", ["c1-basics", "c2-multiome", "c3-crispr"])
 def test_every_mission_is_complete(seurat, campaign_id):
     c = seurat.campaign(campaign_id)
     ids = [m.id for m in c.missions]

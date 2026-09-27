@@ -1,0 +1,37 @@
+id: c3-nb05-mixscape
+title: "Mixscape: knockout or non-perturbed?"
+rp: 2
+missions: [c3-m07-mixscape]
+blocks:
+  - quote: >-
+      Here, we are assuming each target gene class is a mixture of two Gaussian
+      distributions one representing the knockout (KO) and the other the
+      non-perturbed (NP) cells. We further assume that the distribution of the
+      NP cells is identical to that of cells expressing non-targeting gRNAs
+      (NT) and we try to estimate the distribution of KO cells using the
+      function normalmixEM() from the mixtools package.
+    source: {vignette: mixscape_vignette.Rmd, section: "Mixscape identifies cells with no detectable perturbation"}
+  - quote: >-
+      Next, we calculate the posterior probability that a cell belongs to the
+      KO distribution and classify cells with a probability higher than 0.5 as
+      KOs. Applying this method we identify KOs in 11 target gene classes and
+      detect variation in gRNA targeting efficiency within each class.
+    source: {vignette: mixscape_vignette.Rmd, section: "Mixscape identifies cells with no detectable perturbation"}
+  - code: |
+      # Run mixscape.
+      eccite <- RunMixscape(
+        object = eccite, 
+        assay = "PRTB", 
+        slot = "scale.data", 
+        labels = "gene", 
+        nt.class.name = "NT", 
+        min.de.genes = 5, 
+        iter.num = 10, 
+        de.assay = "RNA", 
+        verbose = F,
+        prtb.type = "KO")
+    source: {vignette: mixscape_vignette.Rmd, section: "Mixscape identifies cells with no detectable perturbation"}
+  - text: >-
+      RunMixscape() adds `mixscape_class` (e.g. "IFNGR2 KO", "IFNGR2 NP",
+      "NT"), `mixscape_class.global` (KO, NP or NT) and the KO posterior
+      probability `mixscape_class_p_ko` to the metadata.

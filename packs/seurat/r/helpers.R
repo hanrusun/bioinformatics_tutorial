@@ -98,6 +98,70 @@ local({
       obj
     }
 
+    # Large matrices are stored once, by content hash, in checkpoints/blobs/
+    # and replaced by a small stub. Consecutive checkpoints carry the same
+    # counts (and e.g. the same dense perturbation signature) forward, so
+    # this keeps the image from storing each of them once per mission.
+    CURELAB_BLOB_BYTES <- 8e6
+
+    curelab_hash <- function(x) {
+      if (requireNamespace("rlang", quietly = TRUE)) return(rlang::hash(x))
+      f <- tempfile(fileext = ".rds")
+      on.exit(unlink(f))
+      saveRDS(x, f, compress = FALSE)
+      unname(tools::md5sum(f))
+    }
+
+    blob_path <- function(key) file.path(CURELAB_REFERENCE_DIR, "checkpoints", "blobs", paste0(key, ".rds"))
+
+    to_blob <- function(m, min_bytes = CURELAB_BLOB_BYTES) {
+      if (length(dim(m)) != 2 || as.numeric(utils::object.size(m)) < min_bytes) return(m)
+      key <- curelab_hash(m)
+      path <- blob_path(key)
+      if (!file.exists(path)) {
+        dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
+        saveRDS(m, path)
+      }
+      # a 0 x 0 matrix is valid in every Seurat matrix slot
+      structure(matrix(numeric(0), 0, 0), curelab_blob = key)
+    }
+
+    from_blob <- function(m) {
+      key <- attr(m, "curelab_blob", exact = TRUE)
+      if (is.null(key)) return(m)
+      path <- blob_path(key)
+      if (!file.exists(path)) stop("Checkpoint data ", key, " is missing. Rebuild the image.")
+      readRDS(path)
+    }
+
+    # Apply f to every matrix held by a Seurat object's assays, touching the
+    # slots directly so the round trip is exact (no validity checks, no
+    # re-ordering of layers).
+    map_assay_matrices <- function(obj, f) {
+      for (a in names(obj@assays)) {
+        assay <- obj@assays[[a]]
+        if (methods::.hasSlot(assay, "layers")) { # Seurat v5 Assay5
+          for (l in names(assay@layers)) assay@layers[[l]] <- f(assay@layers[[l]])
+        } else { # v3 Assay
+          for (s in c("counts", "data", "scale.data")) {
+            if (methods::.hasSlot(assay, s)) methods::slot(assay, s, check = FALSE) <- f(methods::slot(assay, s))
+          }
+        }
+        obj@assays[[a]] <- assay
+      }
+      obj
+    }
+
+    pack_objects <- function(obj, min_bytes = CURELAB_BLOB_BYTES) {
+      if (inherits(obj, "Seurat")) return(map_assay_matrices(obj, function(m) to_blob(m, min_bytes)))
+      to_blob(obj, min_bytes)
+    }
+
+    unpack_objects <- function(obj) {
+      if (inherits(obj, "Seurat")) return(map_assay_matrices(obj, from_blob))
+      from_blob(obj)
+    }
+
     save_checkpoint <- function(id, names, envir = globalenv()) {
       objects <- mget(names, envir = envir)
       scale <- list()
@@ -107,6 +171,7 @@ local({
           objects[[nm]] <- stripped$object
           if (length(stripped$info)) scale[[nm]] <- stripped$info
         }
+        objects[[nm]] <- pack_objects(objects[[nm]])
       }
       path <- curelab_checkpoint_path(id)
       dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
@@ -121,7 +186,7 @@ local({
       }
       cp <- readRDS(path)
       for (nm in names(cp$objects)) {
-        obj <- cp$objects[[nm]]
+        obj <- unpack_objects(cp$objects[[nm]])
         if (!is.null(cp$scale[[nm]])) obj <- restore_scale_data(obj, cp$scale[[nm]])
         assign(nm, obj, envir = envir)
       }
@@ -195,6 +260,14 @@ local({
       if (is.null(diff)) return(FALSE)
       vals <- if (isS4(diff) && methods::.hasSlot(diff, "x")) diff@x else as.vector(as.matrix(diff))
       !length(vals) || isTRUE(max(abs(vals)) <= tolerance)
+    }
+
+    # Column names of the data behind a ggplot, including every panel of a
+    # patchwork (DimPlot and VlnPlot wrap their panels with patchwork).
+    plot_columns <- function(p) {
+      cols <- if (is.data.frame(p$data)) colnames(p$data) else character()
+      for (q in p$patches$plots) cols <- c(cols, plot_columns(q))
+      unique(cols)
     }
 
     expect_columns <- function(df, columns, what) {

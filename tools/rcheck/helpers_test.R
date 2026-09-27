@@ -7,6 +7,7 @@ fake_json <- function(x, auto_unbox = TRUE) {
   paste0('{"pass":', tolower(as.character(x$pass)), ',"message":"', gsub('"', '\\\\"', x$message), '"}')
 }
 src <- gsub("jsonlite::toJSON", "fake_json", src, fixed = TRUE)
+Sys.setenv(CURELAB_REFERENCE_DIR = "/tmp/curelab_reference")
 eval(parse(text = src))
 results <- character()
 ok <- function(cond, label) results <<- c(results, sprintf("%s %s", if (isTRUE(cond)) "PASS" else "FAIL", label))
@@ -85,6 +86,41 @@ ok(!same_matrix(a, 1:4), "same_matrix: not a matrix")
 ok(!same_matrix(data.frame(x = 1:2, y = 3:4), a), "same_matrix: data.frame vs matrix")
 ok(identical(curelab_describe(data.frame(x = 1:2700)), "a data.frame with 2,700 rows and 1 columns"), "describe a data.frame")
 ok(identical(curelab_describe(1:3), "an integer of length 3"), "describe a vector")
+
+# --- plot_columns walks patchwork panels
+fake_plot <- list(data = data.frame(umap_1 = 1, replicate = "a"),
+                  patches = list(plots = list(list(data = data.frame(Phase = "G1"), patches = NULL))))
+ok(setequal(plot_columns(fake_plot), c("umap_1", "replicate", "Phase")), "plot_columns includes patchwork panels")
+ok(identical(plot_columns(list(data = list())), character()), "plot_columns without data")
+
+# --- checkpoints: big matrices are stored once as blobs, round trip is exact
+setClass("Assay", representation(counts = "matrix", data = "matrix", scale.data = "matrix"))
+setClass("Assay5", representation(layers = "list"))
+setClass("Seurat", representation(assays = "list", commands = "list"))
+m1 <- matrix(rpois(60, 2), 6, dimnames = list(paste0("g", 1:6), paste0("c", 1:10)))
+m2 <- log1p(m1)
+s <- new("Seurat", commands = list(), assays = list(
+  RNA = new("Assay", counts = m1, data = m1, scale.data = matrix(numeric(0), 0, 0)),
+  PRTB = new("Assay5", layers = list(counts.A = m1, data = m2))
+))
+packed <- pack_objects(s, min_bytes = 0)
+ok(all(dim(packed@assays$RNA@counts) == 0) && all(dim(packed@assays$PRTB@layers$data) == 0),
+   "blobs replace v3 slots and v5 layers")
+ok(identical(unpack_objects(packed), s), "blob round trip is exact for v3 and v5 assays")
+ok(identical(pack_objects(s)@assays$RNA@counts, m1), "matrices under the size threshold stay inline")
+big <- matrix(runif(1100 * 1000), 1100)
+big0 <- big
+small <- 1:3
+save_checkpoint("blob-test", c("big", "small"))
+cp <- readRDS(curelab_checkpoint_path("blob-test"))
+ok(!is.null(attr(cp$objects$big, "curelab_blob")) && length(cp$objects$big) == 0, "save_checkpoint moves big matrices to blobs")
+ok(identical(cp$objects$small, 1:3), "small objects stay in the checkpoint")
+n_blobs <- length(list.files(dirname(blob_path("x"))))
+save_checkpoint("blob-test-2", "big")
+ok(length(list.files(dirname(blob_path("x")))) == n_blobs, "a matrix shared by two checkpoints is stored once")
+rm(big, small)
+load_checkpoint("blob-test-2")
+ok(identical(big, big0), "load_checkpoint restores blobs exactly")
 
 ok("curelab" %in% search() && !exists("curelab_check", envir = globalenv(), inherits = FALSE), "helpers attached, not in globalenv")
 cat(paste(results, collapse = "\n"), "\n")

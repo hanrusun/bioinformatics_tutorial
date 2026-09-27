@@ -1,0 +1,30 @@
+id: c3-nb04-prtb-space
+title: Working in perturbation space
+rp: 1
+missions: [c3-m05-prtb-scale, c3-m06-prtb-umap]
+blocks:
+  - code: |
+      # Prepare PRTB assay for dimensionality reduction: 
+      # Normalize data, find variable features and center data.
+      DefaultAssay(object = eccite) <- 'PRTB'
+
+      # Use variable features from RNA assay.
+      VariableFeatures(object = eccite) <- VariableFeatures(object = eccite[["RNA"]])
+      eccite <- ScaleData(object = eccite, do.scale = F, do.center = T)
+    source: {vignette: mixscape_vignette.Rmd, section: "Calculating local perturbation signatures mitigates confounding effects"}
+  - code: |
+      # Run PCA to reduce the dimensionality of the data.
+      eccite <- RunPCA(object = eccite, reduction.key = 'prtbpca', reduction.name = 'prtbpca')
+
+      # Run UMAP to visualize clustering in 2-D.
+      eccite <- RunUMAP(
+        object = eccite, 
+        dims = 1:40, 
+        reduction = 'prtbpca', 
+        reduction.key = 'prtbumap', 
+        reduction.name = 'prtbumap')
+    source: {vignette: mixscape_vignette.Rmd, section: "Calculating local perturbation signatures mitigates confounding effects"}
+  - quote: >-
+      Using the PRTB signature to cluster cells removes all technical variation
+      and reveals one additional perturbation-specific cluster.
+    source: {vignette: mixscape_vignette.Rmd, section: "Calculating local perturbation signatures mitigates confounding effects"}

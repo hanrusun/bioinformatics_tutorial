@@ -1,0 +1,92 @@
+id: c3-m10-lda
+title: Separating the knockouts
+points: 10
+source:
+  vignette: mixscape_vignette.Rmd
+  section: Visualizing perturbation responses with Linear Discriminant Analysis (LDA)
+  quote: >-
+    We use LDA as a dimensionality reduction method to visualize
+    perturbation-specific clusters.
+briefing: |
+  Which knockouts push the cells in the same direction? Linear discriminant
+  analysis (LDA) finds the axes that best separate known labels. Keep only the
+  true knockouts and the NT controls, drop the non-perturbed cells, and let
+  `MixscapeLDA()` separate the target genes.
+task:
+  - Set the identities of `eccite` to the global mixscape class.
+  - "`sub`: only the KO and NT cells of `eccite`."
+  - Run MixscapeLDA on `sub`, with DE genes from "RNA", PCs from "PRTB", target-gene labels from "gene", "NT" controls, 10 PCs per gene and a log fold-change threshold of 0.25.
+setup: |
+  curelab_libraries(c("SeuratData", "ggplot2", "scales"))
+  load_checkpoint("c3-m07-mixscape")
+starter_code: |
+  # Remove non-perturbed cells and run LDA to reduce the dimensionality of the data.
+  Idents(eccite) <-
+  sub <- subset(eccite, idents = )
+
+  # Run LDA.
+  sub <- MixscapeLDA(
+    object = sub,
+    assay = "RNA",
+    pc.assay = ,
+    labels = "gene",
+    nt.label = "NT",
+    npcs = 10,
+    logfc.threshold = 0.25,
+    verbose = F)
+  sub
+solution: |
+  Idents(eccite) <- "mixscape_class.global"
+  sub <- subset(eccite, idents = c("KO", "NT"))
+  sub <- MixscapeLDA(
+    object = sub,
+    assay = "RNA",
+    pc.assay = "PRTB",
+    labels = "gene",
+    nt.label = "NT",
+    npcs = 10,
+    logfc.threshold = 0.25,
+    verbose = F)
+check: |
+  curelab_check({
+    sub <- curelab_obj("sub", "Seurat", hint = "Subset eccite to the KO and NT cells: sub <- subset(eccite, idents = c(\"KO\", \"NT\")).")
+    expect_true(all(sub$mixscape_class.global %in% c("KO", "NT")),
+      "Keep only knockout and non-targeting cells; the non-perturbed (NP) cells have to go.")
+    expect_equal_ref(ncol(sub), "n_sub",
+      "`sub` should hold every KO and NT cell. Set Idents(eccite) <- \"mixscape_class.global\" before subsetting.")
+    expect_reduction(sub, "lda", "There is no 'lda' reduction yet. Run MixscapeLDA() on sub and assign the result back to sub.")
+    expect_equal_ref(ncol(Embeddings(sub, reduction = "lda")), "lda_dims",
+      "The LDA should separate the target genes of the KO cells: labels = \"gene\", nt.label = \"NT\", pc.assay = \"PRTB\".")
+  })
+expected:
+  n_sub: ncol(sub)
+  lda_dims: ncol(Embeddings(sub, reduction = "lda"))
+hints:
+  - Subset by identity to keep the KO and NT cells, then run the Mixscape version of LDA on the subset.
+  - "`Idents(eccite) <- \"mixscape_class.global\"`, `subset(eccite, idents = c(\"KO\", \"NT\"))`, then `MixscapeLDA(..., pc.assay = \"PRTB\", labels = \"gene\", nt.label = \"NT\", npcs = 10)`."
+  - |
+    ```r
+    Idents(eccite) <- "mixscape_class.global"
+    sub <- subset(eccite, idents = c("KO", "NT"))
+    sub <- MixscapeLDA(
+      object = sub,
+      assay = "RNA",
+      pc.assay = "PRTB",
+      labels = "gene",
+      nt.label = "NT",
+      npcs = 10,
+      logfc.threshold = 0.25,
+      verbose = F)
+    ```
+notebook_pages: [c3-nb07-lda]
+state: [sub]
+timeout: 1800
+wrong_solutions:
+  - why: kept the non-perturbed cells
+    code: |
+      Idents(eccite) <- "mixscape_class.global"
+      sub <- subset(eccite, idents = c("KO", "NT", "NP"))
+  - why: subset without running the LDA
+    code: |
+      Idents(eccite) <- "mixscape_class.global"
+      sub <- subset(eccite, idents = c("KO", "NT"))

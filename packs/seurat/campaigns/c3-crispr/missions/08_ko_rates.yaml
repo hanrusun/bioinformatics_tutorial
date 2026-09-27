@@ -1,0 +1,108 @@
+id: c3-m08-ko-rates
+title: How well did each guide work?
+points: 7
+source:
+  vignette: mixscape_vignette.Rmd
+  section: Mixscape identifies cells with no detectable perturbation
+  quote: >-
+    Applying this method we identify KOs in 11 target gene classes and detect
+    variation in gRNA targeting efficiency within each class.
+briefing: |
+  Each target gene was hit by several guides (the `NT` column holds the guide,
+  e.g. "IFNGR2g1"). Some guides cut efficiently and some mostly fail. Tabulate
+  what fraction of each guide's cells Mixscape called KO, NP or NT, rank the
+  guides by their KO fraction, and plot the result per target gene.
+task:
+  - "`df`: the proportion of each mixscape global class within each guide (`eccite$mixscape_class.global` against `eccite$NT`, proportions per column)."
+  - "`df2`: `df` melted into long format, with guides ordered by their KO fraction (`new.levels`) and split into `gene` and `guide_number`."
+  - "`df3`: `df2` without the non-targeting guides, and the bar plot `p1`."
+setup: |
+  curelab_libraries(c("SeuratData", "ggplot2", "scales"))
+  load_checkpoint("c3-m07-mixscape")
+starter_code: |
+  # Calculate percentage of KO cells for all target gene classes.
+  df <- prop.table(table(eccite$mixscape_class.global, eccite$NT), )
+
+  df2 <- reshape2::melt(df)
+  df2$Var2 <- as.character(df2$Var2)
+  test <- df2[which(df2$Var1 == "KO"),]
+  test <- test[order(test$value, decreasing = T),]
+  new.levels <- test$Var2
+  df2$Var2 <- factor(df2$Var2, levels = new.levels )
+  df2$Var1 <- factor(df2$Var1, levels = c("NT", "NP", "KO"))
+  df2$gene <- sapply(as.character(df2$Var2), function(x) strsplit(x, split = "g")[[1]][1])
+  df2$guide_number <- sapply(as.character(df2$Var2),
+                             function(x) strsplit(x, split = "g")[[1]][2])
+  df3 <- df2[-c(which(df2$gene == )),]
+
+  p1 <- ggplot(df3, aes(x = guide_number, y = value*100, fill= Var1)) +
+    geom_bar(stat= "identity") +
+    theme_classic()+
+    scale_fill_manual(values = c("grey49", "grey79","coral1")) +
+    ylab("% of cells") +
+    xlab("sgRNA")
+
+  p1 + facet_wrap(vars(gene),ncol = 5, scales = "free") +
+    labs(fill = "mixscape class")
+solution: |
+  df <- prop.table(table(eccite$mixscape_class.global, eccite$NT),2)
+  df2 <- reshape2::melt(df)
+  df2$Var2 <- as.character(df2$Var2)
+  test <- df2[which(df2$Var1 == "KO"),]
+  test <- test[order(test$value, decreasing = T),]
+  new.levels <- test$Var2
+  df2$Var2 <- factor(df2$Var2, levels = new.levels )
+  df2$Var1 <- factor(df2$Var1, levels = c("NT", "NP", "KO"))
+  df2$gene <- sapply(as.character(df2$Var2), function(x) strsplit(x, split = "g")[[1]][1])
+  df2$guide_number <- sapply(as.character(df2$Var2),
+                             function(x) strsplit(x, split = "g")[[1]][2])
+  df3 <- df2[-c(which(df2$gene == "NT")),]
+  p1 <- ggplot(df3, aes(x = guide_number, y = value*100, fill= Var1)) +
+    geom_bar(stat= "identity") +
+    theme_classic()+
+    scale_fill_manual(values = c("grey49", "grey79","coral1")) +
+    ylab("% of cells") +
+    xlab("sgRNA")
+check: |
+  curelab_check({
+    df <- curelab_obj("df", "table", hint = "Make it with prop.table(table(eccite$mixscape_class.global, eccite$NT), 2).")
+    expect_true("KO" %in% rownames(df),
+      "Tabulate the global mixscape class against the guide: table(eccite$mixscape_class.global, eccite$NT).")
+    expect_true(isTRUE(all(abs(colSums(df) - 1) < 1e-8)),
+      "Each guide's column should sum to 1. Use prop.table(..., 2) so the proportions are within each guide.")
+    expect_equal_ref(round(as.numeric(df["KO", ]), 6), "ko_by_guide",
+      "The KO proportions per guide don't match. Tabulate eccite$mixscape_class.global against eccite$NT.", show = FALSE)
+    nl <- curelab_obj("new.levels")
+    expect_equal_ref(head(as.character(nl), 5), "top_guides", "new.levels should list the guides from the highest KO fraction to the lowest.")
+    df3 <- curelab_obj("df3", "data.frame")
+    expect_columns(df3, c("Var1", "Var2", "value", "gene", "guide_number"), "`df3`")
+    expect_true(!any(df3$gene == "NT"), "Drop the non-targeting guides from df3: df2[-c(which(df2$gene == \"NT\")),].")
+    expect_equal_ref(nrow(df3), "n_df3", "df3 should keep one row per targeting guide and mixscape class.")
+    curelab_obj("p1", "ggplot", hint = "Save the bar plot as p1.")
+  })
+expected:
+  ko_by_guide: round(as.numeric(df["KO", ]), 6)
+  top_guides: head(as.character(new.levels), 5)
+  n_df3: nrow(df3)
+hints:
+  - prop.table() turns counts into proportions; its second argument says whether rows (1) or columns (2) should sum to one.
+  - "`df <- prop.table(table(eccite$mixscape_class.global, eccite$NT), 2)`; later, drop the rows whose gene is \"NT\" to get df3."
+  - |
+    ```r
+    df <- prop.table(table(eccite$mixscape_class.global, eccite$NT),2)
+    # ... the melt and ordering lines as in the starter code ...
+    df3 <- df2[-c(which(df2$gene == "NT")),]
+    ```
+notebook_pages: [c3-nb06-checks]
+wrong_solutions:
+  - why: proportions over the whole table instead of per guide
+    code: |
+      df <- prop.table(table(eccite$mixscape_class.global, eccite$NT))
+      df2 <- reshape2::melt(df)
+      df2$Var2 <- as.character(df2$Var2)
+      test <- df2[which(df2$Var1 == "KO"),]
+      test <- test[order(test$value, decreasing = T),]
+      new.levels <- test$Var2
+      df2$gene <- sapply(as.character(df2$Var2), function(x) strsplit(x, split = "g")[[1]][1])
+      df2$guide_number <- sapply(as.character(df2$Var2), function(x) strsplit(x, split = "g")[[1]][2])
+      df3 <- df2[-c(which(df2$gene == "NT")),]

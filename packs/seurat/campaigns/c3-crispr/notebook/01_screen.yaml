@@ -1,0 +1,36 @@
+id: c3-nb01-screen
+title: The screen and the data
+rp: 1
+missions: [c3-m01-load]
+blocks:
+  - quote: >-
+      This tutorial demonstrates how to use mixscape for the analyses of
+      single-cell pooled CRISPR screens.
+    source: {vignette: mixscape_vignette.Rmd, section: "Overview"}
+  - text: "Mixscape adds three things to the usual Seurat workflow:"
+  - quote: Calculating the perturbation-specific signature of every cell.
+    source: {vignette: mixscape_vignette.Rmd, section: "Overview"}
+  - quote: Identifying and removing cells that have 'escaped' CRISPR perturbation.
+    source: {vignette: mixscape_vignette.Rmd, section: "Overview"}
+  - quote: Visualizing similarities/differences across different perturbations.
+    source: {vignette: mixscape_vignette.Rmd, section: "Overview"}
+  - quote: >-
+      We use a 111 gRNA ECCITE-seq dataset generated from stimulated THP-1
+      cells that was recently published from our lab in bioRxiv Papalexi et
+      al. 2020.
+    source: {vignette: mixscape_vignette.Rmd, section: "Loading Seurat object containing ECCITE-seq dataset"}
+  - text: >-
+      ECCITE-seq measures RNA, surface proteins (the "ADT" assay) and the guide
+      RNA in the same cell. Proteins are normalized with the centered
+      log-ratio, computed across cells:
+  - code: |
+      # Load object.
+      eccite <- LoadData(ds = "thp1.eccite")
+
+      # Normalize protein.
+      eccite <- NormalizeData(
+        object = eccite, 
+        assay = "ADT", 
+        normalization.method = "CLR", 
+        margin = 2)
+    source: {vignette: mixscape_vignette.Rmd, section: "Loading Seurat object containing ECCITE-seq dataset"}

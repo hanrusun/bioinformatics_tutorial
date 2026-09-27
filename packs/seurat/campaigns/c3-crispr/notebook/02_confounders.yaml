@@ -1,0 +1,46 @@
+id: c3-nb02-confounders
+title: Why the RNA clusters mislead
+rp: 1
+missions: [c3-m02-rna, c3-m03-confounders]
+blocks:
+  - quote: >-
+      Here, we follow the standard Seurat workflow to cluster cells based on
+      their gene expression profiles. We expected to obtain
+      perturbation-specific clusters however we saw that clustering is
+      primarily driven by cell cycle phase and replicate ID. We only observed
+      one perturbation-specific cluster containing cells expression IFNgamma
+      pathway gRNAs.
+    source: {vignette: mixscape_vignette.Rmd, section: "RNA-based clustering is driven by confounding sources of variation"}
+  - code: |
+      # Prepare RNA assay for dimensionality reduction: 
+      # Normalize data, find variable features and scale data.
+      DefaultAssay(object = eccite) <- 'RNA'
+      eccite <- NormalizeData(object = eccite) %>% FindVariableFeatures() %>% ScaleData()
+
+      # Run Principle Component Analysis (PCA) to reduce the dimensionality of the data.
+      eccite <- RunPCA(object = eccite)
+
+      # Run Uniform Manifold Approximation and Projection (UMAP) to visualize clustering in 2-D.
+      eccite <- RunUMAP(object = eccite, dims = 1:40)
+    source: {vignette: mixscape_vignette.Rmd, section: "RNA-based clustering is driven by confounding sources of variation"}
+  - text: >-
+      To see what drives the structure, color the same UMAP by replicate,
+      by cell-cycle phase and by perturbation status. For example:
+  - code: |
+      p1 <- DimPlot(
+        object = eccite, 
+        group.by = 'replicate', 
+        label = F, 
+        pt.size = 0.2, 
+        reduction = "umap", cols = "Dark2", repel = T) +
+        scale_color_brewer(palette = "Dark2") +
+        ggtitle("Biological Replicate") +
+        xlab("UMAP 1") +
+        ylab("UMAP 2") +
+        custom_theme
+    source: {vignette: mixscape_vignette.Rmd, section: "RNA-based clustering is driven by confounding sources of variation"}
+  - text: "p2 uses `group.by = 'Phase'`; p3 uses `group.by = 'crispr'` with `split.by = \"crispr\"`. Then:"
+  - code: |
+      # Visualize plots.
+      ((p1 / p2 + plot_layout(guides = 'auto')) | p3 )
+    source: {vignette: mixscape_vignette.Rmd, section: "RNA-based clustering is driven by confounding sources of variation"}

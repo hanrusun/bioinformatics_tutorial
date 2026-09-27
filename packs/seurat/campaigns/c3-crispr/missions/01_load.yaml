@@ -1,0 +1,85 @@
+id: c3-m01-load
+title: The screen arrives
+points: 7
+source:
+  vignette: mixscape_vignette.Rmd
+  section: Loading Seurat object containing ECCITE-seq dataset
+  quote: >-
+    We use a 111 gRNA ECCITE-seq dataset generated from stimulated THP-1 cells
+briefing: |
+  THP-1 cells come from a monocytic leukemia, the same kind as Anjali's. In
+  this ECCITE-seq screen, every cell received one guide RNA that knocks out a
+  gene, and was then read out for RNA, for surface proteins (including PD-L1)
+  and for the guide it carries. If knocking out a gene lowers PD-L1, that gene
+  is a target: switching it off could unmask Anjali's leukemia to her own
+  T cells.
+
+  Load the screen and normalize the protein (ADT) counts. Proteins are
+  normalized with the centered log-ratio (CLR), computed across cells.
+task:
+  - Load the THP-1 ECCITE-seq dataset from SeuratData into `eccite`.
+  - Normalize the "ADT" assay of `eccite` with the "CLR" method across cells (`margin = 2`).
+setup: |
+  curelab_libraries(c("SeuratData", "ggplot2", "scales"))
+starter_code: |
+  # Load object.
+  eccite <- LoadData(ds = )
+
+  # Normalize protein.
+  eccite <- NormalizeData(
+    object = eccite,
+    assay = ,
+    normalization.method = ,
+    margin = )
+
+  eccite
+  Assays(eccite)
+  head(eccite[[]])
+solution: |
+  eccite <- LoadData(ds = "thp1.eccite")
+  eccite <- NormalizeData(
+    object = eccite,
+    assay = "ADT",
+    normalization.method = "CLR",
+    margin = 2)
+check: |
+  curelab_check({
+    obj <- curelab_obj("eccite", "Seurat", hint = "Load it with LoadData(ds = \"thp1.eccite\").")
+    expect_true(all(c("RNA", "ADT") %in% Assays(obj)),
+      "`eccite` should be the THP-1 ECCITE-seq object: LoadData(ds = \"thp1.eccite\").")
+    expect_equal_ref(ncol(obj), "n_cells",
+      "`eccite` should hold every cell of the screen. Load it with LoadData(ds = \"thp1.eccite\") and don't subset it.")
+    adt <- round(as.numeric(as.matrix(LayerData(obj, assay = "ADT", layer = "data")[, 1:5])), 6)
+    expect_equal_ref(adt, "adt_first_cells",
+      "The protein (ADT) values aren't CLR-normalized across cells. Use NormalizeData(object = eccite, assay = \"ADT\", normalization.method = \"CLR\", margin = 2).",
+      show = FALSE)
+  })
+expected:
+  n_cells: ncol(eccite)
+  adt_first_cells: round(as.numeric(as.matrix(LayerData(eccite, assay = "ADT", layer = "data")[, 1:5])), 6)
+hints:
+  - SeuratData datasets load with LoadData() by name; protein counts get their own normalization, the centered log-ratio.
+  - "`LoadData(ds = \"thp1.eccite\")`, then `NormalizeData()` with `assay = \"ADT\"`, `normalization.method = \"CLR\"` and `margin = 2` (across cells)."
+  - |
+    ```r
+    eccite <- LoadData(ds = "thp1.eccite")
+    eccite <- NormalizeData(
+      object = eccite,
+      assay = "ADT",
+      normalization.method = "CLR",
+      margin = 2)
+    ```
+debug:
+  - pattern: "thp1.eccite|dataset.*not (found|available|installed)"
+    help: The dataset name is `"thp1.eccite"` (lower case, with a dot). It is already installed in this lab image.
+notebook_pages: [c3-nb01-screen]
+state: [eccite]
+wrong_solutions:
+  - why: log-normalized the proteins like RNA
+    code: |
+      eccite <- LoadData(ds = "thp1.eccite")
+      eccite <- NormalizeData(object = eccite, assay = "ADT")
+  - why: CLR across features instead of across cells
+    code: |
+      eccite <- LoadData(ds = "thp1.eccite")
+      eccite <- NormalizeData(object = eccite, assay = "ADT", normalization.method = "CLR", margin = 1)

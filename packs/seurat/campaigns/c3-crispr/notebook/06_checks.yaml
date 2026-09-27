@@ -1,0 +1,44 @@
+id: c3-nb06-checks
+title: Knockout rates and sanity checks
+rp: 2
+missions: [c3-m08-ko-rates, c3-m09-inspect]
+blocks:
+  - text: "The fraction of KO, NP and NT cells per guide (the `NT` column holds the guide ID):"
+  - code: |
+      # Calculate percentage of KO cells for all target gene classes.
+      df <- prop.table(table(eccite$mixscape_class.global, eccite$NT),2)
+
+      df2 <- reshape2::melt(df)
+      df2$Var2 <- as.character(df2$Var2)
+      test <- df2[which(df2$Var1 == "KO"),]
+      test <- test[order(test$value, decreasing = T),]
+      new.levels <- test$Var2
+      df2$Var2 <- factor(df2$Var2, levels = new.levels )
+      df2$Var1 <- factor(df2$Var1, levels = c("NT", "NP", "KO"))
+    source: {vignette: mixscape_vignette.Rmd, section: "Mixscape identifies cells with no detectable perturbation"}
+  - quote: >-
+      To ensure mixscape is assigning the correct perturbation status to cells
+      we can use the functions below to look at the perturbation score
+      distributions and the posterior probabilities of cells within a target
+      gene class (for example IFNGR2) and compare it to those of the NT cells.
+      In addition, we can perform differential expression (DE) analyses and
+      show that only IFNGR2 KO cells have reduced expression of the
+      IFNG-pathway genes. Finally, as an independent check, we can look at the
+      PD-L1 protein expression values in NP and KO cells for target genes known
+      to be PD-L1 regulators.
+    source: {vignette: mixscape_vignette.Rmd, section: "Inspecting mixscape results"}
+  - code: |
+      # Explore the perturbation scores of cells.
+      PlotPerturbScore(object = eccite, 
+                       target.gene.ident = "IFNGR2", 
+                       mixscape.class = "mixscape_class", 
+                       col = "coral2") +labs(fill = "mixscape class")
+    source: {vignette: mixscape_vignette.Rmd, section: "Inspecting mixscape results"}
+  - code: |
+      # Run DE analysis and visualize results on a heatmap ordering cells by their posterior 
+      # probability values.
+      Idents(object = eccite) <- "gene"
+    source: {vignette: mixscape_vignette.Rmd, section: "Inspecting mixscape results"}
+  - code: |
+      p <- VlnPlot(object = eccite, features = "adt_PDL1", idents = c("NT","JAK2","STAT1","IFNGR1","IFNGR2", "IRF1"), group.by = "gene", pt.size = 0.2, sort = T, split.by = "mixscape_class.global", cols = c("coral3","grey79","grey39")) +ggtitle("PD-L1 protein") +theme(axis.text.x = element_text(angle = 0, hjust = 0.5))
+    source: {vignette: mixscape_vignette.Rmd, section: "Inspecting mixscape results"}

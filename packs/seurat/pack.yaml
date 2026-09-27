@@ -18,7 +18,7 @@ source_pin:
 init_code: |
   source("{pack_dir}/r/helpers.R")
 mission_prelude: curelab_set_mission("{mission_id}")
-campaigns: [c1-basics, c2-multiome]
+campaigns: [c1-basics, c2-multiome, c3-crispr]
 
 # Explanations for common R/Seurat errors. Matched (case-insensitively)
 # against the error text after every failed Run or Submit; mission files can
@@ -61,7 +61,10 @@ debug:
       R can't find that file or folder. Use the exact path given in the
       starter code; it points at the data baked into this lab image.
   - pattern: there is no package called
-    help: That package isn't installed in this lab image. The missions only need Seurat, dplyr, patchwork and SeuratData.
+    help: >-
+      That package isn't installed in this lab image. The missions only need
+      Seurat, dplyr, patchwork and SeuratData (plus ggplot2, scales, reshape2
+      and mixtools in the CRISPR campaign).
   - pattern: "(not found in this Seurat object|None of the requested features|Could not find|cannot find .* in this Seurat object)"
     help: >-
       Seurat couldn't find a gene, metadata column or reduction with that name.

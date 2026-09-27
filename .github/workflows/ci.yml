@@ -85,11 +85,16 @@ jobs:
           df -h /
       - name: Build (fails if any mission check misbehaves)
         run: docker build -f packs/seurat/Dockerfile -t curelab-seurat:ci .
+      - name: Image size
+        run: |
+          docker image ls curelab-seurat:ci
+          docker run --rm --entrypoint du curelab-seurat:ci -sh /opt/curelab/datasets /usr/local/lib/R/site-library \
+            /opt/curelab/reference/checkpoints /opt/curelab/reference/checkpoints/blobs
       - name: Smoke test the running game
         run: |
-          docker run -d --name curelab -p 127.0.0.1:8000:8000 curelab-seurat:ci
+          docker run -d --name curelab -e CURELAB_UNLOCK_ALL=1 -p 127.0.0.1:8000:8000 curelab-seurat:ci
           for i in $(seq 1 60); do curl -fsS http://127.0.0.1:8000/api/health && break; sleep 2; done
-          curl -fsS http://127.0.0.1:8000/api/meta | python3 -c "import sys, json; m = json.load(sys.stdin); assert [c['id'] for c in m['campaigns']] == ['c1-basics', 'c2-multiome']"
+          curl -fsS http://127.0.0.1:8000/api/meta | python3 -c "import sys, json; m = json.load(sys.stdin); assert [c['id'] for c in m['campaigns']] == ['c1-basics', 'c2-multiome', 'c3-crispr']"
           curl -fsS -X POST http://127.0.0.1:8000/api/game/start -H 'content-type: application/json' -d '{"campaign": "c1-basics", "difficulty": "normal", "seed": 1}' > /dev/null
           curl -fsS -X POST http://127.0.0.1:8000/api/missions/c1-m01-load/start | python3 -c "import sys, json; assert json.load(sys.stdin)['ok']"
           python3 - <<'EOF'
@@ -101,6 +106,19 @@ jobs:
           print(out["outcome"]["message"])
           assert out["outcome"]["passed"], out["outcome"]
           assert out["game"]["research"] == 6
+          EOF
+          # Campaign 3 (Mixscape): its first mission loads the THP-1 screen
+          curl -fsS -X POST http://127.0.0.1:8000/api/game/start -H 'content-type: application/json' -d '{"campaign": "c3-crispr", "difficulty": "normal", "seed": 1}' > /dev/null
+          curl -fsS -X POST http://127.0.0.1:8000/api/missions/c3-m01-load/start | python3 -c "import sys, json; assert json.load(sys.stdin)['ok']"
+          python3 - <<'EOF'
+          import json, urllib.request
+          sol = 'eccite <- LoadData(ds = "thp1.eccite")\neccite <- NormalizeData(object = eccite, assay = "ADT", normalization.method = "CLR", margin = 2)\n'
+          req = urllib.request.Request("http://127.0.0.1:8000/api/missions/c3-m01-load/submit",
+                                       data=json.dumps({"code": sol}).encode(), headers={"content-type": "application/json"})
+          out = json.load(urllib.request.urlopen(req, timeout=600))
+          print(out["outcome"]["message"])
+          assert out["outcome"]["passed"], out["outcome"]
+          assert out["game"]["research"] == 7
           EOF
       - if: always()
         run: docker logs curelab || true

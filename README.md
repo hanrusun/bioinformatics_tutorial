@@ -5,13 +5,14 @@ sicker, and your code is the cure. Work through real single-cell analyses in
 R. Every correct mission moves the cure forward, and every wrong answer lets
 the disease evolve.
 
-The first tool pack teaches **Seurat 5.5.1**. It has two campaigns, each with
-its own patient:
+The first tool pack teaches **Seurat 5.5.1**. It has three campaigns, each
+with its own patient:
 
 | Campaign | Patient | What you learn | Source vignettes |
 |---|---|---|---|
 | **Seurat Basics** | Walter Brandt, 64: non-small cell lung cancer | Raw 10x counts → QC → normalization → variable genes → scaling → PCA → dimensionality → clustering → UMAP → markers → annotation | `pbmc3k_tutorial` |
 | **Seurat for the Multiome Lab** (unlocks after Basics) | Mia Okoye, 2: neuroblastoma | Seurat v5 object anatomy and layers, subsetting, cell-cycle scoring and regression, split layers + Harmony integration, conserved markers, pseudobulk DESeq2, label transfer, merging for co-embedding | `essential_commands`, `cell_cycle_vignette`, `integration_introduction`, `seurat5_integration`, `de_vignette`, `integration_mapping`, `seurat5_atacseq_integration_vignette` |
+| **CRISPR Screens with Mixscape** (unlocks after Basics) | Anjali Rao, 38: acute myeloid leukemia | Pooled CRISPR screens read out in single cells (ECCITE-seq): CLR-normalized protein, confounders in RNA clustering, local perturbation signatures (`CalcPerturbSig`), knockout vs non-perturbed calls (`RunMixscape`), guide efficiency, PD-L1 validation, LDA of perturbation responses | `mixscape_vignette` |
 
 Campaign 2 covers the Seurat side of the
 [NBL scMultiomics TRN pipeline](https://github.com/wbaopaul/NBL_scMultiomics_Paper/tree/main/TRN-analysis).
@@ -31,7 +32,7 @@ docker compose up --build seurat
 Then open <http://localhost:8000>.
 
 The first build downloads the datasets and runs every mission's reference
-solution once. It takes about 30–40 minutes and produces an image of about
+solution once. It takes about 45–60 minutes and produces an image of about
 5 GB. Later starts are instant. Your progress and lab notebook are kept in a
 Docker volume (`curelab-seurat-data`).
 
@@ -46,9 +47,9 @@ requirement, set `CURELAB_UNLOCK_ALL: "1"` in `docker-compose.yml`.
 <sub>Screenshots are from the built-in Python demo pack, which exercises the
 same engine and UI without needing the R image.</sub>
 
-| Mia's symptoms evolve with every mistake | Cure found |
-|---|---|
-| ![Mia](docs/img/mia.png) | ![Win screen](docs/img/won.png) |
+| Mia's symptoms evolve with every mistake | Anjali, sixteen mistakes in | Cure found |
+|---|---|---|
+| ![Mia](docs/img/mia.png) | ![Anjali](docs/img/anjali.png) | ![Win screen](docs/img/won.png) |
 
 - **Cure research**: each coding mission adds 5–11% by complexity, and each
   journal-club question adds 1%. Each campaign totals exactly 100%. Reach it

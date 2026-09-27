@@ -1,0 +1,38 @@
+id: c3-nb07-lda
+title: LDA for perturbation clusters
+rp: 1
+missions: [c3-m10-lda, c3-m11-lda-umap]
+blocks:
+  - quote: >-
+      We use LDA as a dimensionality reduction method to visualize
+      perturbation-specific clusters. LDA is trying to maximize the
+      separability of known labels (mixscape classes) using both gene
+      expression and the labels as input.
+    source: {vignette: mixscape_vignette.Rmd, section: "Visualizing perturbation responses with Linear Discriminant Analysis (LDA)"}
+  - code: |
+      # Remove non-perturbed cells and run LDA to reduce the dimensionality of the data.
+      Idents(eccite) <- "mixscape_class.global"
+      sub <- subset(eccite, idents = c("KO", "NT"))
+
+      # Run LDA.
+      sub <- MixscapeLDA(
+        object = sub, 
+        assay = "RNA", 
+        pc.assay = "PRTB", 
+        labels = "gene", 
+        nt.label = "NT", 
+        npcs = 10, 
+        logfc.threshold = 0.25, 
+        verbose = F)
+    source: {vignette: mixscape_vignette.Rmd, section: "Visualizing perturbation responses with Linear Discriminant Analysis (LDA)"}
+  - code: |
+      # Use LDA results to run UMAP and visualize cells on 2-D. 
+      # Here, we note that the number of the dimensions to be used is equal to the number of 
+      # labels minus one (to account for NT cells).
+      sub <- RunUMAP(
+        object = sub,
+        dims = 1:11,
+        reduction = 'lda',
+        reduction.key = 'ldaumap',
+        reduction.name = 'ldaumap')
+    source: {vignette: mixscape_vignette.Rmd, section: "Visualizing perturbation responses with Linear Discriminant Analysis (LDA)"}

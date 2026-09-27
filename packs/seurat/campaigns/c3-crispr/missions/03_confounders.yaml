@@ -1,0 +1,139 @@
+id: c3-m03-confounders
+title: What really drives the clusters?
+points: 5
+source:
+  vignette: mixscape_vignette.Rmd
+  section: RNA-based clustering is driven by confounding sources of variation
+  quote: >-
+    We expected to obtain perturbation-specific clusters however we saw that
+    clustering is primarily driven by cell cycle phase and replicate ID.
+briefing: |
+  If knockouts changed these cells a lot, cells carrying the same guide would
+  cluster together. Color the UMAP three ways (biological replicate, cell-cycle
+  phase and perturbation status) and see which one the structure follows.
+
+  `custom_theme` is already defined for you, exactly as in the vignette.
+task:
+  - "`p1`: the UMAP colored by biological replicate (`group.by = 'replicate'`)."
+  - "`p2`: the UMAP colored by cell-cycle phase (`group.by = 'Phase'`)."
+  - "`p3`: the UMAP colored and split by perturbation status (`group.by = 'crispr'`, `split.by = \"crispr\"`)."
+  - Show the three plots side by side with patchwork.
+setup: |
+  curelab_libraries(c("SeuratData", "ggplot2", "scales"))
+  load_checkpoint("c3-m02-rna")
+  custom_theme <- theme(
+    plot.title = element_text(size=16, hjust = 0.5),
+    legend.key.size = unit(0.7, "cm"),
+    legend.text = element_text(size = 14))
+starter_code: |
+  p1 <- DimPlot(
+    object = eccite,
+    group.by = ,
+    label = F,
+    pt.size = 0.2,
+    reduction = "umap", cols = "Dark2", repel = T) +
+    scale_color_brewer(palette = "Dark2") +
+    ggtitle("Biological Replicate") +
+    xlab("UMAP 1") +
+    ylab("UMAP 2") +
+    custom_theme
+
+  p2 <- DimPlot(
+    object = eccite,
+    group.by = ,
+    label = F, pt.size = 0.2,
+    reduction = "umap", repel = T) +
+    ggtitle("Cell Cycle Phase") +
+    ylab("UMAP 2") +
+    xlab("UMAP 1") +
+    custom_theme
+
+  p3 <- DimPlot(
+    object = eccite,
+    group.by = ,
+    pt.size = 0.2,
+    reduction = "umap",
+    split.by = ,
+    ncol = 1,
+    cols = c("grey39","goldenrod3")) +
+    ggtitle("Perturbation Status") +
+    ylab("UMAP 2") +
+    xlab("UMAP 1") +
+    custom_theme
+
+  # Visualize plots.
+  ((p1 / p2 + plot_layout(guides = 'auto')) | p3 )
+solution: |
+  p1 <- DimPlot(
+    object = eccite,
+    group.by = 'replicate',
+    label = F,
+    pt.size = 0.2,
+    reduction = "umap", cols = "Dark2", repel = T) +
+    scale_color_brewer(palette = "Dark2") +
+    ggtitle("Biological Replicate") +
+    xlab("UMAP 1") +
+    ylab("UMAP 2") +
+    custom_theme
+  p2 <- DimPlot(
+    object = eccite,
+    group.by = 'Phase',
+    label = F, pt.size = 0.2,
+    reduction = "umap", repel = T) +
+    ggtitle("Cell Cycle Phase") +
+    ylab("UMAP 2") +
+    xlab("UMAP 1") +
+    custom_theme
+  p3 <- DimPlot(
+    object = eccite,
+    group.by = 'crispr',
+    pt.size = 0.2,
+    reduction = "umap",
+    split.by = "crispr",
+    ncol = 1,
+    cols = c("grey39","goldenrod3")) +
+    ggtitle("Perturbation Status") +
+    ylab("UMAP 2") +
+    xlab("UMAP 1") +
+    custom_theme
+  ((p1 / p2 + plot_layout(guides = 'auto')) | p3 )
+check: |
+  curelab_check({
+    p1 <- curelab_obj("p1", "ggplot", hint = "Make it with DimPlot(object = eccite, group.by = 'replicate', ...).")
+    expect_true("replicate" %in% plot_columns(p1),
+      "p1 should color the cells by biological replicate: group.by = 'replicate'.")
+    expect_true(any(grepl("umap", plot_columns(p1), ignore.case = TRUE)), "Plot the UMAP: reduction = \"umap\".")
+    p2 <- curelab_obj("p2", "ggplot", hint = "Make it with DimPlot(object = eccite, group.by = 'Phase', ...).")
+    expect_true("Phase" %in% plot_columns(p2),
+      "p2 should color the cells by cell-cycle phase: group.by = 'Phase'.")
+    p3 <- curelab_obj("p3", "ggplot", hint = "Make it with DimPlot(object = eccite, group.by = 'crispr', split.by = \"crispr\", ...).")
+    expect_true("crispr" %in% plot_columns(p3),
+      "p3 should show the perturbation status: group.by = 'crispr', split.by = \"crispr\".")
+  })
+hints:
+  - DimPlot() colors cells by any metadata column with `group.by`; `split.by` draws one panel per group.
+  - "`group.by = 'replicate'` for p1, `group.by = 'Phase'` for p2, and `group.by = 'crispr'` with `split.by = \"crispr\"` for p3."
+  - |
+    ```r
+    p1 <- DimPlot(object = eccite, group.by = 'replicate', label = F, pt.size = 0.2,
+      reduction = "umap", cols = "Dark2", repel = T) +
+      scale_color_brewer(palette = "Dark2") + ggtitle("Biological Replicate") +
+      xlab("UMAP 1") + ylab("UMAP 2") + custom_theme
+    p2 <- DimPlot(object = eccite, group.by = 'Phase', label = F, pt.size = 0.2,
+      reduction = "umap", repel = T) + ggtitle("Cell Cycle Phase") +
+      ylab("UMAP 2") + xlab("UMAP 1") + custom_theme
+    p3 <- DimPlot(object = eccite, group.by = 'crispr', pt.size = 0.2, reduction = "umap",
+      split.by = "crispr", ncol = 1, cols = c("grey39","goldenrod3")) +
+      ggtitle("Perturbation Status") + ylab("UMAP 2") + xlab("UMAP 1") + custom_theme
+    ((p1 / p2 + plot_layout(guides = 'auto')) | p3 )
+    ```
+debug:
+  - pattern: "custom_theme"
+    help: "`custom_theme` is created when the bench is set up. If you reset the bench it comes back; don't overwrite it."
+notebook_pages: [c3-nb02-confounders]
+wrong_solutions:
+  - why: every plot colored by phase
+    code: |
+      p1 <- DimPlot(object = eccite, group.by = 'Phase', reduction = "umap")
+      p2 <- DimPlot(object = eccite, group.by = 'Phase', reduction = "umap")
+      p3 <- DimPlot(object = eccite, group.by = 'Phase', reduction = "umap")

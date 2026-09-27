@@ -1,0 +1,104 @@
+id: c3-m04-prtb
+title: Local perturbation signatures
+points: 11
+source:
+  vignette: mixscape_vignette.Rmd
+  section: Calculating local perturbation signatures mitigates confounding effects
+  quote: >-
+    To calculate local perturbation signatures we set the number of
+    non-targeting Nearest Neighbors (NNs) equal to k=20 and we recommend that
+    the user picks a k from the following range: 20 < k < 30.
+briefing: |
+  Replicate and cell-cycle phase drown out the knockouts. The fix is to compare
+  every cell with its closest non-targeting (NT) control cells in the same
+  replicate: they share the confounders but not the knockout. Subtracting
+  their average expression leaves each cell's local perturbation signature.
+
+  `CalcPerturbSig()` does this and stores the signatures as a new assay,
+  "PRTB".
+task:
+  - Compute perturbation signatures from the RNA "data" slot, with cells grouped by target gene (the "gene" column) and "NT" as the non-targeting class.
+  - Find each cell's 20 nearest NT neighbors in the first 40 PCs, within each biological replicate.
+  - Store the result as a new assay called "PRTB".
+setup: |
+  curelab_libraries(c("SeuratData", "ggplot2", "scales"))
+  load_checkpoint("c3-m02-rna")
+starter_code: |
+  # Calculate perturbation signature (PRTB).
+  eccite <- CalcPerturbSig(
+    object = eccite,
+    assay = "RNA",
+    slot = "data",
+    gd.class = ,
+    nt.cell.class = ,
+    reduction = "pca",
+    ndims = ,
+    num.neighbors = ,
+    split.by = ,
+    new.assay.name = "PRTB")
+  eccite
+solution: |
+  eccite<- CalcPerturbSig(
+    object = eccite,
+    assay = "RNA",
+    slot = "data",
+    gd.class ="gene",
+    nt.cell.class = "NT",
+    reduction = "pca",
+    ndims = 40,
+    num.neighbors = 20,
+    split.by = "replicate",
+    new.assay.name = "PRTB")
+check: |
+  curelab_check({
+    obj <- curelab_obj("eccite", "Seurat")
+    expect_true("PRTB" %in% Assays(obj),
+      "There is no PRTB assay yet. Run CalcPerturbSig(..., new.assay.name = \"PRTB\") and assign the result back to eccite.")
+    expect_command(obj, "CalcPerturbSig", "Run CalcPerturbSig() on eccite.")
+    expect_param(obj, "CalcPerturbSig", "gd.class", "gene", "Group cells by their target gene: gd.class = \"gene\"")
+    expect_param(obj, "CalcPerturbSig", "nt.cell.class", "NT", "The non-targeting class is \"NT\": nt.cell.class = \"NT\"")
+    expect_param(obj, "CalcPerturbSig", "num.neighbors", 20, "Use k = 20 non-targeting neighbors: num.neighbors = 20")
+    expect_param(obj, "CalcPerturbSig", "ndims", 40, "Find neighbors in the first 40 PCs, as for the UMAP: ndims = 40")
+    expect_param(obj, "CalcPerturbSig", "split.by", "replicate",
+      "Find neighbors within each biological replicate: split.by = \"replicate\"")
+    expect_equal_ref(nrow(obj[["PRTB"]]), "n_prtb_features",
+      "The PRTB assay should cover the RNA variable features (leave `features` unset).")
+    corner <- round(as.numeric(as.matrix(LayerData(obj, assay = "PRTB", layer = "data")[1:5, 1:5])), 6)
+    expect_equal_ref(corner, "prtb_corner",
+      "The perturbation signatures don't match the reference. Compare your CalcPerturbSig() arguments with the task.",
+      tolerance = 1e-4, show = FALSE)
+  })
+expected:
+  n_prtb_features: nrow(eccite[["PRTB"]])
+  prtb_corner: round(as.numeric(as.matrix(LayerData(eccite, assay = "PRTB", layer = "data")[1:5, 1:5])), 6)
+hints:
+  - Each cell is compared with its k nearest non-targeting control cells from the same replicate, found in PCA space.
+  - "`CalcPerturbSig()` with `gd.class = \"gene\"`, `nt.cell.class = \"NT\"`, `ndims = 40`, `num.neighbors = 20` and `split.by = \"replicate\"`."
+  - |
+    ```r
+    eccite <- CalcPerturbSig(
+      object = eccite,
+      assay = "RNA",
+      slot = "data",
+      gd.class ="gene",
+      nt.cell.class = "NT",
+      reduction = "pca",
+      ndims = 40,
+      num.neighbors = 20,
+      split.by = "replicate",
+      new.assay.name = "PRTB")
+    ```
+debug:
+  - pattern: "Please specify number of nearest neighbors"
+    help: CalcPerturbSig() has no default k. Set `num.neighbors = 20`.
+  - pattern: "Please provide number of"
+    help: Say how many PCs to use for the neighbor search, e.g. `ndims = 40`.
+notebook_pages: [c3-nb03-prtb]
+state: [eccite]
+timeout: 1800
+wrong_solutions:
+  - why: only 5 neighbors
+    code: |
+      eccite <- CalcPerturbSig(object = eccite, assay = "RNA", slot = "data", gd.class = "gene",
+        nt.cell.class = "NT", reduction = "pca", ndims = 40, num.neighbors = 5,
+        split.by = "replicate", new.assay.name = "PRTB")

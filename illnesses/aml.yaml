@@ -1,0 +1,316 @@
+# Acute myeloid leukemia (AML), monocytic type — illness + patient for
+# Campaign 3 (CRISPR screens with Mixscape). The screen in that campaign uses
+# THP-1 cells, a human monocytic leukemia cell line, and asks which genes
+# control the PD-L1 immune checkpoint.
+#
+# The patient is fictional. Traits are drawn from well-established clinical
+# features of AML; `source` points at the page to check them against. These
+# are game flavor, kept separate from the tutorial content (which is verified
+# verbatim against the Seurat vignettes). Human review welcome.
+id: aml
+name: Acute myeloid leukemia
+short: AML
+blurb: >-
+  A fast-growing blood cancer of the bone marrow's myeloid cells. Single-cell
+  CRISPR screens are used to find the genes leukemia cells depend on, and the
+  ones they use to hide from the immune system.
+fictional_notice: Anjali Rao is a fictional patient. Any resemblance to a real person is coincidental.
+sources:
+  - https://www.cancer.gov/types/leukemia/patient/adult-aml-treatment-pdq
+  - https://www.cancer.gov/types/leukemia/hp/adult-aml-treatment-pdq
+
+patient:
+  id: anjali
+  name: Anjali Rao
+  first_name: Anjali
+  pronouns: {subj: she, obj: her, poss: her}
+  age: "38"
+  sex: female
+  background: >-
+    Pastry chef who runs a small neighborhood bakery with her husband, Dev.
+    Mom to Kiara, who is six. Keeps a ten-year-old sourdough starter called
+    Gerald and talks about him like a family pet.
+  presenting: >-
+    Three weeks of exhaustion, bruises she can't explain and gums that bleed
+    when she brushes her teeth. Blood tests and a bone marrow biopsy confirmed
+    acute myeloid leukemia of the monocytic type.
+  companion: her husband, Dev
+  baseline_vitals: {hr: 96, rr: 18, spo2: 97, sbp: 118, dbp: 74, temp: 37.4}
+  art: anjali
+
+admit_note: >-
+  Anjali Rao, 38, admitted with fatigue, easy bruising and bleeding gums. Bone
+  marrow biopsy confirms monocytic acute myeloid leukemia. Her leukemia cells
+  carry high levels of PD-L1, a brake on the immune system. The lab's CRISPR
+  screen is looking for the genes behind it.
+stage_notes:
+  symptomatic: Anjali naps between visits now. Kiara tapes a new drawing to the wall every day.
+  serious: Anjali needs transfusions every other day. Dev has moved a camp bed into her room.
+  critical: Anjali is moved to intensive care. The lab is her best hope.
+progression_note: Anjali's leukemia keeps progressing.
+cure_note: >-
+  The cure works. Anjali's marrow is clear, her blood counts recover, and two
+  weeks later she walks out of the ward with Kiara on her hip, already planning
+  the celebration cake.
+loss_note: >-
+  Anjali died peacefully, with Dev and Kiara beside her. Her family thanks the
+  lab for fighting for her. The research goes on for the next patient.
+
+traits:
+  # ---------------------------------------------------------------- tier 1
+  - id: fatigue
+    name: Fatigue
+    category: symptom
+    tier: 1
+    severity: [0.8, 1.4]
+    vitals: {hr: 3}
+    overlay: tired
+    note: Anjali, who used to start work at 4 a.m., now needs a nap after a shower.
+    source: https://www.cancer.gov/types/leukemia/patient/adult-aml-treatment-pdq
+  - id: easy_bruising
+    name: Easy bruising
+    category: symptom
+    tier: 1
+    severity: [1.0, 1.6]
+    overlay: bruises
+    note: Purple bruises bloom on Anjali's arms from the lightest bump. Her platelets are falling.
+    source: https://www.cancer.gov/types/leukemia/patient/adult-aml-treatment-pdq
+  - id: fever
+    name: Fever
+    category: symptom
+    tier: 1
+    severity: [0.8, 1.4]
+    vitals: {temp: 1.1, hr: 8}
+    overlay: flushed
+    note: Anjali is running a fever. With so few healthy white blood cells, the team starts antibiotics straight away.
+    source: https://www.cancer.gov/types/leukemia/patient/adult-aml-treatment-pdq
+  # ---------------------------------------------------------------- tier 2
+  - id: anemia
+    name: Severe anemia
+    category: symptom
+    tier: 2
+    requires: [fatigue]
+    severity: [1.2, 2.0]
+    vitals: {hr: 8, spo2: -1}
+    overlay: pale
+    note: Anjali is pale and gets breathless walking to the bathroom. She needs a red cell transfusion.
+    source: https://www.cancer.gov/types/leukemia/patient/adult-aml-treatment-pdq
+  - id: petechiae
+    name: Petechiae
+    category: symptom
+    tier: 2
+    requires: [easy_bruising]
+    severity: [1.2, 1.8]
+    overlay: spots
+    note: Tiny red pinpoint spots, petechiae, have appeared on Anjali's shins. She needs platelets.
+    source: https://www.cancer.gov/types/leukemia/patient/adult-aml-treatment-pdq
+  - id: nosebleeds
+    name: Nosebleeds
+    category: symptom
+    tier: 2
+    requires: [easy_bruising]
+    severity: [1.2, 2.0]
+    overlay: tissue
+    note: Anjali's nose bleeds for twenty minutes before the nurses can stop it.
+    source: https://www.cancer.gov/types/leukemia/patient/adult-aml-treatment-pdq
+  - id: gum_hypertrophy
+    name: Swollen gums
+    category: symptom
+    tier: 2
+    severity: [1.0, 1.6]
+    note: >-
+      Anjali's gums are swollen and tender, a sign typical of monocytic
+      leukemia: the leukemia cells are infiltrating the tissue. Eating anything
+      crunchy hurts.
+    source: https://www.cancer.gov/types/leukemia/hp/adult-aml-treatment-pdq
+  - id: neutropenic_infection
+    name: Neutropenic infection
+    category: complication
+    tier: 2
+    requires: [fever]
+    severity: [1.4, 2.2]
+    vitals: {temp: 0.7, hr: 6}
+    overlay: isolation
+    note: Anjali has almost no working white blood cells and has caught an infection. She is moved to an isolation room; visitors wear masks.
+    source: https://www.cancer.gov/types/leukemia/patient/adult-aml-treatment-pdq
+  - id: flt3_itd
+    name: FLT3-ITD mutation
+    category: mutation
+    tier: 2
+    severity: [1.4, 2.2]
+    note: Sequencing finds an internal tandem duplication in FLT3 in Anjali's leukemia cells, which makes them grow faster.
+    source: https://www.cancer.gov/types/leukemia/hp/adult-aml-treatment-pdq
+  - id: npm1
+    name: NPM1 mutation
+    category: mutation
+    tier: 2
+    excludes: [kmt2a_mllt3, tp53]
+    severity: [1.0, 1.6]
+    note: Anjali's leukemia carries an NPM1 mutation. It is one of the most common changes in AML.
+    source: https://www.cancer.gov/types/leukemia/hp/adult-aml-treatment-pdq
+  - id: kmt2a_mllt3
+    name: KMT2A-MLLT3 fusion
+    category: mutation
+    tier: 2
+    excludes: [npm1]
+    severity: [1.4, 2.2]
+    note: >-
+      A chromosome swap has fused KMT2A (MLL) to MLLT3 (AF9) in Anjali's
+      leukemia, the same fusion that THP-1 cells carry.
+    source: https://www.cancer.gov/types/leukemia/hp/adult-aml-treatment-pdq
+  # ---------------------------------------------------------------- tier 3
+  - id: leukostasis
+    name: Leukostasis
+    category: complication
+    tier: 3
+    requires: [anemia]
+    severity: [1.8, 2.8]
+    vitals: {rr: 4, spo2: -4}
+    overlay: cannula
+    note: Anjali's white cell count is so high that the blood is sludging in her lungs. She needs oxygen and urgent treatment to bring the count down.
+    source: https://www.cancer.gov/types/leukemia/hp/adult-aml-treatment-pdq
+  - id: dic
+    name: Disseminated intravascular coagulation
+    category: complication
+    tier: 3
+    requires: [petechiae]
+    severity: [1.8, 2.8]
+    vitals: {hr: 6, sbp: -8}
+    note: Anjali's clotting system is misfiring, clotting and bleeding at the same time (DIC). She needs plasma and platelets.
+    source: https://www.cancer.gov/types/leukemia/hp/adult-aml-treatment-pdq
+  - id: leukemia_cutis
+    name: Leukemia cutis
+    category: complication
+    tier: 3
+    requires: [gum_hypertrophy]
+    severity: [1.4, 2.2]
+    note: Firm, painless purple bumps have appeared on Anjali's skin. Monocytic leukemia cells have reached it.
+    source: https://www.cancer.gov/types/leukemia/hp/adult-aml-treatment-pdq
+  - id: cns_involvement
+    name: Leukemia in the central nervous system
+    category: complication
+    tier: 3
+    severity: [1.8, 2.6]
+    overlay: headwrap
+    note: Anjali has headaches and blurry vision. Leukemia cells are found in the fluid around her brain and spinal cord.
+    source: https://www.cancer.gov/types/leukemia/hp/adult-aml-treatment-pdq
+  - id: sepsis
+    name: Sepsis
+    category: complication
+    tier: 3
+    requires: [neutropenic_infection]
+    severity: [2.0, 3.0]
+    vitals: {hr: 12, sbp: -14, temp: 0.6}
+    overlay: iv
+    note: The infection has spread to Anjali's blood. She is on strong IV antibiotics and fluids to keep her blood pressure up.
+    source: https://www.cancer.gov/types/leukemia/patient/adult-aml-treatment-pdq
+  - id: tp53
+    name: TP53 mutation
+    category: mutation
+    tier: 3
+    excludes: [npm1]
+    severity: [1.8, 2.6]
+    note: A new subclone with a TP53 mutation has appeared. TP53-mutant AML responds poorly to standard chemotherapy.
+    source: https://www.cancer.gov/types/leukemia/hp/adult-aml-treatment-pdq
+  - id: pdl1_escape
+    name: PD-L1 immune escape
+    category: resistance
+    tier: 3
+    severity: [1.8, 2.8]
+    note: >-
+      Anjali's leukemia cells have turned PD-L1 up even further. The brake on
+      her T cells is jammed on, and her immune system can't touch them.
+    source: https://www.biorxiv.org/content/10.1101/2020.06.28.175596v1
+  # ---------------------------------------------------------------- tier 4
+  - id: flt3_resistance
+    name: FLT3 inhibitor resistance
+    category: resistance
+    tier: 4
+    requires: [flt3_itd]
+    severity: [2.2, 3.2]
+    note: The FLT3 inhibitor has stopped working. A second FLT3 mutation lets the leukemia grow around the drug.
+    source: https://www.cancer.gov/types/leukemia/hp/adult-aml-treatment-pdq
+  - id: venetoclax_resistance
+    name: Venetoclax resistance
+    category: resistance
+    tier: 4
+    requires: [gum_hypertrophy]
+    severity: [2.4, 3.4]
+    note: >-
+      The monocytic leukemia cells have stopped responding to venetoclax.
+      Monocytic subclones are known to escape this drug.
+    source: https://doi.org/10.1158/2159-8290.CD-19-0710
+  - id: relapse
+    name: Relapse
+    category: resistance
+    tier: 4
+    requires: [anemia]
+    severity: [2.4, 3.4]
+    vitals: {hr: 6}
+    overlay: pale
+    note: The leukemia is back in Anjali's marrow. Her blood counts are falling again.
+    source: https://www.cancer.gov/types/leukemia/patient/adult-aml-treatment-pdq
+
+  # ---------------------------------------------------------- ward events
+  # Non-disease things that happen to the patient instead of an evolved
+  # disease trait. Fewer than a quarter are neutral (severity [0, 0]).
+  - id: kitchen_baking
+    name: Anjali baked in the family kitchen
+    category: event
+    tier: 1
+    severity: [0.8, 1.2]
+    overlay: plaster
+    note: Anjali snuck into the family-room kitchen to bake scones for the nurses and nicked her finger. With her platelets this low, it takes an hour to stop the bleeding.
+  - id: sushi
+    name: Sushi smuggled in
+    category: event
+    tier: 1
+    severity: [0.8, 1.4]
+    note: A friend brought sushi, which is off the menu for someone with almost no white cells. Anjali has a queasy night and a new fever to rule out.
+  - id: kiara_cold
+    name: Kiara brought home a cold
+    category: event
+    tier: 1
+    severity: [1.0, 1.6]
+    vitals: {temp: 0.8, hr: 6}
+    overlay: flushed
+    note: Kiara brought a cold home from school and gave her mom a goodnight hug. Now Anjali has it too.
+  - id: skipped_prophylaxis
+    name: Skipped her antifungal pills
+    category: event
+    tier: 1
+    severity: [0.6, 1.0]
+    overlay: pills
+    note: The antifungal pills make Anjali nauseous, so she quietly skipped two days of them.
+  - id: blood_shortage
+    name: Blood bank shortage
+    category: event
+    tier: 1
+    severity: [0.8, 1.4]
+    note: A regional blood shortage delays Anjali's platelet transfusion by a day.
+  - id: pulled_line
+    name: Pulled out her IV line
+    category: event
+    tier: 1
+    severity: [0.4, 0.8]
+    overlay: sticker
+    note: Anjali caught her IV line on the bed rail reaching for her phone. It has to be replaced.
+  - id: doomscrolling
+    name: Up all night reading statistics
+    category: event
+    tier: 1
+    severity: [0.4, 0.8]
+    overlay: tired
+    note: Anjali spent the night reading survival statistics on her phone. She is exhausted and frightened this morning.
+  - id: gerald_starter
+    name: Gerald the sourdough starter
+    category: event
+    tier: 1
+    severity: [0, 0]
+    note: Dev forgot to feed Gerald, the sourdough starter, for three days. Anjali talks him through a rescue over video call. Gerald pulls through.
+  - id: lilies
+    name: A bouquet of lilies
+    category: event
+    tier: 1
+    severity: [0, 0]
+    note: A huge bouquet of lilies arrives from the bakery regulars. Flowers aren't allowed on the ward, so the nurses take them to the lobby, where everyone admires them.

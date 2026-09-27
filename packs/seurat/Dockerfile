@@ -36,7 +36,7 @@ RUN apt-get update \
  && rm -rf /var/lib/apt/lists/* \
  && python3 -m venv /opt/curelab/venv \
  && /opt/curelab/venv/bin/pip install --no-cache-dir "jupyter_client>=8.6" "jupyter_core>=5" \
- && Rscript -e "pak::pkg_install(c('IRkernel', 'yaml'))" \
+ && Rscript -e "pak::pkg_install(c('IRkernel', 'yaml', 'mixtools', 'reshape2'))" \
  && Rscript -e "IRkernel::installspec(name = 'ir', displayname = 'R', user = FALSE, prefix = '/opt/curelab/venv')" \
  && rm -rf /root/.cache/R /tmp/*
 

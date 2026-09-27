@@ -1,0 +1,127 @@
+id: c3-m09-inspect
+title: Trust, but verify
+points: 8
+source:
+  vignette: mixscape_vignette.Rmd
+  section: Inspecting mixscape results
+  quote: >-
+    Finally, as an independent check, we can look at the PD-L1 protein
+    expression values in NP and KO cells for target genes known to be PD-L1
+    regulators.
+briefing: |
+  Before anyone treats Anjali based on this screen, check that the knockout
+  calls make sense, with IFNGR2 (a receptor for interferon gamma) as the
+  example:
+
+  - the perturbation scores of IFNGR2 KO cells should be shifted away from
+    the NT controls, and their posterior probabilities should be high;
+  - a heatmap of the genes that differ between NT and IFNGR2 cells, ordered by
+    posterior probability, should show the KO cells losing interferon
+    response genes;
+  - the independent check is PD-L1 protein: KOs of the IFN-gamma pathway
+    should have less of it, and their NP cells should not.
+
+  Save each plot so the lab can review it.
+task:
+  - "`ps`: the perturbation-score plot for IFNGR2."
+  - "`pk`: violins of the KO posterior probability for NT, IFNGR2 KO and IFNGR2 NP cells."
+  - Set the identities of `eccite` to the target gene, then save the NT vs IFNGR2 Mixscape heatmap as `hm`.
+  - "`p`: violins of PD-L1 protein (`adt_PDL1`) for NT and the IFN-gamma pathway genes, split by global mixscape class."
+setup: |
+  curelab_libraries(c("SeuratData", "ggplot2", "scales"))
+  load_checkpoint("c3-m07-mixscape")
+starter_code: |
+  # Explore the perturbation scores of cells.
+  ps <- PlotPerturbScore(object = eccite,
+                   target.gene.ident = "IFNGR2",
+                   mixscape.class = "mixscape_class",
+                   col = "coral2") +labs(fill = "mixscape class")
+
+  # Inspect the posterior probability values in NP and KO cells.
+  pk <- VlnPlot(eccite, "mixscape_class_p_ko", idents = c("NT", "IFNGR2 KO", "IFNGR2 NP")) +
+    NoLegend() +
+    ggtitle("mixscape posterior probabilities")
+
+  # Run DE analysis and visualize results on a heatmap ordering cells by their posterior
+  # probability values.
+  Idents(object = eccite) <-
+  hm <- MixscapeHeatmap(object = eccite,
+                  ident.1 = "NT",
+                  ident.2 = "IFNGR2",
+                  balanced = F,
+                  assay = "RNA",
+                  max.genes = 20, angle = 0,
+                  group.by = "mixscape_class",
+                  max.cells.group = 300,
+                  size=6.5) + NoLegend()
+
+  # Show that only IFNG pathway KO cells have a reduction in PD-L1 protein expression.
+  p <- VlnPlot(object = eccite, features = "adt_PDL1", idents = c("NT","JAK2","STAT1","IFNGR1","IFNGR2", "IRF1"),
+    group.by = "gene", pt.size = 0.2, sort = T, split.by = , cols = c("coral3","grey79","grey39")) +
+    ggtitle("PD-L1 protein")
+  p
+solution: |
+  ps <- PlotPerturbScore(object = eccite,
+                   target.gene.ident = "IFNGR2",
+                   mixscape.class = "mixscape_class",
+                   col = "coral2") +labs(fill = "mixscape class")
+  pk <- VlnPlot(eccite, "mixscape_class_p_ko", idents = c("NT", "IFNGR2 KO", "IFNGR2 NP")) +
+    theme(axis.text.x = element_text(angle = 0, hjust = 0.5),axis.text = element_text(size = 16) ,plot.title = element_text(size = 20)) +
+    NoLegend() +
+    ggtitle("mixscape posterior probabilities")
+  Idents(object = eccite) <- "gene"
+  hm <- MixscapeHeatmap(object = eccite,
+                  ident.1 = "NT",
+                  ident.2 = "IFNGR2",
+                  balanced = F,
+                  assay = "RNA",
+                  max.genes = 20, angle = 0,
+                  group.by = "mixscape_class",
+                  max.cells.group = 300,
+                  size=6.5) + NoLegend() +theme(axis.text.y = element_text(size = 16))
+  p <- VlnPlot(object = eccite, features = "adt_PDL1", idents = c("NT","JAK2","STAT1","IFNGR1","IFNGR2", "IRF1"), group.by = "gene", pt.size = 0.2, sort = T, split.by = "mixscape_class.global", cols = c("coral3","grey79","grey39")) +ggtitle("PD-L1 protein") +theme(axis.text.x = element_text(angle = 0, hjust = 0.5))
+check: |
+  curelab_check({
+    curelab_obj("ps", "ggplot", hint = "Save the PlotPerturbScore() plot as ps.")
+    pk <- curelab_obj("pk", "ggplot", hint = "Save the posterior-probability VlnPlot() as pk.")
+    expect_true("mixscape_class_p_ko" %in% plot_columns(pk),
+      "pk should show the KO posterior probabilities: VlnPlot(eccite, \"mixscape_class_p_ko\", idents = c(\"NT\", \"IFNGR2 KO\", \"IFNGR2 NP\")).")
+    obj <- curelab_obj("eccite", "Seurat")
+    expect_true(identical(as.character(Idents(obj)), as.character(obj$gene)),
+      "Set the identities to the target gene before the heatmap: Idents(object = eccite) <- \"gene\".")
+    curelab_obj("hm", "ggplot", hint = "Save the MixscapeHeatmap() as hm.")
+    p <- curelab_obj("p", "ggplot", hint = "Save the PD-L1 VlnPlot() as p.")
+    cols <- plot_columns(p)
+    expect_true(any(grepl("PDL1", cols)), "p should show the PD-L1 protein: features = \"adt_PDL1\".")
+    expect_true("split" %in% cols, "Split the PD-L1 violins by global mixscape class: split.by = \"mixscape_class.global\".")
+  })
+hints:
+  - Mixscape has its own plotting helpers (PlotPerturbScore, MixscapeHeatmap); VlnPlot shows the posterior probabilities and the protein.
+  - "Idents must be `\"gene\"` for the heatmap (`ident.1 = \"NT\"`, `ident.2 = \"IFNGR2\"`); the PD-L1 violins use `features = \"adt_PDL1\"` and `split.by = \"mixscape_class.global\"`."
+  - |
+    ```r
+    Idents(object = eccite) <- "gene"
+    hm <- MixscapeHeatmap(object = eccite, ident.1 = "NT", ident.2 = "IFNGR2",
+      balanced = F, assay = "RNA", max.genes = 20, angle = 0,
+      group.by = "mixscape_class", max.cells.group = 300, size = 6.5) + NoLegend()
+    p <- VlnPlot(object = eccite, features = "adt_PDL1",
+      idents = c("NT","JAK2","STAT1","IFNGR1","IFNGR2", "IRF1"), group.by = "gene",
+      pt.size = 0.2, sort = T, split.by = "mixscape_class.global",
+      cols = c("coral3","grey79","grey39")) + ggtitle("PD-L1 protein")
+    ```
+debug:
+  - pattern: "Cannot find the following identities|not found in object|idents"
+    help: >-
+      The identities must match what you ask for. RunMixscape() leaves them as
+      the mixscape classes (e.g. "IFNGR2 KO"), which pk needs; the heatmap
+      needs `Idents(object = eccite) <- "gene"` first.
+notebook_pages: [c3-nb06-checks]
+wrong_solutions:
+  - why: PD-L1 violins not split by mixscape class
+    code: |
+      ps <- PlotPerturbScore(object = eccite, target.gene.ident = "IFNGR2", mixscape.class = "mixscape_class", col = "coral2")
+      pk <- VlnPlot(eccite, "mixscape_class_p_ko", idents = c("NT", "IFNGR2 KO", "IFNGR2 NP"))
+      Idents(object = eccite) <- "gene"
+      hm <- MixscapeHeatmap(object = eccite, ident.1 = "NT", ident.2 = "IFNGR2", balanced = F, assay = "RNA",
+        max.genes = 20, angle = 0, group.by = "mixscape_class", max.cells.group = 300, size = 6.5)
+      p <- VlnPlot(object = eccite, features = "adt_PDL1", idents = c("NT","JAK2","STAT1","IFNGR1","IFNGR2", "IRF1"), group.by = "gene")

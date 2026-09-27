@@ -57,9 +57,9 @@ base <- "https://raw.githubusercontent.com/yelabucsf/demuxlet_paper_code/master/
 for (f in c("ye1.ctrl.8.10.sm.best", "ye2.stim.8.10.sm.best")) fetch(paste0(base, f), file.path(dm_dir, f))
 
 # 4. SeuratData datasets (essential_commands, integration_introduction,
-#    de_vignette and integration_mapping vignettes)
+#    de_vignette, integration_mapping and mixscape vignettes)
 suppressPackageStartupMessages(library(SeuratData))
-for (ds in c("pbmc3k", "ifnb", "panc8")) {
+for (ds in c("pbmc3k", "ifnb", "panc8", "thp1.eccite")) {
   suppressWarnings(InstallData(ds))
 }
 message("All datasets ready in ", dest)

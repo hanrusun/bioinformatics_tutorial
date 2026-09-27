@@ -1,0 +1,181 @@
+# Journal-club questions for Campaign 3. Each quote is checked verbatim
+# against the cited vignette at satijalab/seurat@v5.5.1.
+- id: c3-q01-purpose
+  after: c3-m01-load
+  question: What kind of experiment is mixscape built to analyze?
+  choices: ["Bulk RNA-seq time courses", "Single-cell pooled CRISPR screens", "Spatial transcriptomics", "Single-cell ATAC-seq"]
+  answer: 1
+  explanation: Mixscape reads out pooled CRISPR screens where each cell carries one guide RNA.
+  source:
+    vignette: mixscape_vignette.Rmd
+    section: Overview
+    quote: >-
+      This tutorial demonstrates how to use mixscape for the analyses of
+      single-cell pooled CRISPR screens.
+- id: c3-q02-cells
+  after: c3-m01-load
+  question: Which cells were screened in the vignette's ECCITE-seq dataset?
+  choices: ["Human PBMCs", "Stimulated THP-1 cells", "Mouse bone marrow", "HEK293T cells"]
+  answer: 1
+  explanation: THP-1 is a human monocytic leukemia cell line; the screen used 111 guide RNAs.
+  source:
+    vignette: mixscape_vignette.Rmd
+    section: Loading Seurat object containing ECCITE-seq dataset
+    quote: We use a 111 gRNA ECCITE-seq dataset generated from stimulated THP-1 cells
+- id: c3-q03-escaped
+  after: c3-m01-load
+  question: Besides computing perturbation signatures, what does mixscape do with cells that "escaped" CRISPR perturbation?
+  choices: ["Counts them as knockouts", "Identifies and removes them", "Re-edits them", "Ignores the guide they carry"]
+  answer: 1
+  explanation: Cells whose guide did not produce a detectable perturbation are called non-perturbed (NP) and can be removed.
+  source:
+    vignette: mixscape_vignette.Rmd
+    section: Overview
+    quote: Identifying and removing cells that have 'escaped' CRISPR perturbation.
+- id: c3-q04-confounders
+  after: c3-m02-rna
+  question: In the standard RNA workflow, what mainly drove the clustering of the THP-1 cells?
+  choices: ["The CRISPR perturbation", "Cell cycle phase and replicate ID", "Surface protein levels", "Mitochondrial content"]
+  answer: 1
+  explanation: Confounders dominate the RNA clustering, which is why mixscape computes local perturbation signatures.
+  source:
+    vignette: mixscape_vignette.Rmd
+    section: RNA-based clustering is driven by confounding sources of variation
+    quote: >-
+      We expected to obtain perturbation-specific clusters however we saw that
+      clustering is primarily driven by cell cycle phase and replicate ID.
+- id: c3-q05-one-cluster
+  after: c3-m03-confounders
+  question: How many perturbation-specific clusters did the RNA-based clustering show?
+  choices: ["None", "One, with cells expressing IFNgamma pathway gRNAs", "Eleven, one per knocked-out gene", "One per guide RNA"]
+  answer: 1
+  explanation: Only the IFN-gamma pathway knockouts separated on their own.
+  source:
+    vignette: mixscape_vignette.Rmd
+    section: RNA-based clustering is driven by confounding sources of variation
+    quote: >-
+      We only observed one perturbation-specific cluster containing cells
+      expression IFNgamma pathway gRNAs.
+- id: c3-q06-k
+  after: c3-m04-prtb
+  question: How many non-targeting nearest neighbors (k) does the vignette use for the local perturbation signatures?
+  choices: ["5", "10", "20", "50"]
+  answer: 2
+  explanation: k = 20, and the vignette recommends 20 < k < 30.
+  source:
+    vignette: mixscape_vignette.Rmd
+    section: Calculating local perturbation signatures mitigates confounding effects
+    quote: >-
+      To calculate local perturbation signatures we set the number of
+      non-targeting Nearest Neighbors (NNs) equal to k=20 and we recommend that
+      the user picks a k from the following range: 20 < k < 30.
+- id: c3-q07-k-extremes
+  after: c3-m04-prtb
+  question: Why shouldn't k be very small or very large?
+  choices: ["It makes CalcPerturbSig too slow", "It will most likely not remove the technical variation", "Mixscape then finds no knockouts", "It changes the number of PCs"]
+  answer: 1
+  explanation: The neighbors have to share the confounders with the cell; too few or too many won't cancel the technical variation.
+  source:
+    vignette: mixscape_vignette.Rmd
+    section: Calculating local perturbation signatures mitigates confounding effects
+    quote: >-
+      Intuitively, the user does not want to set k to a very small or large
+      number as this will most likely not remove the technical variation from
+      the dataset.
+- id: c3-q08-center
+  after: c3-m05-prtb-scale
+  question: How is the PRTB assay prepared before its PCA?
+  choices: ["Log-normalized", "Scaled and centered", "Centered only", "Neither scaled nor centered"]
+  answer: 2
+  explanation: ScaleData(do.scale = F, do.center = T) centers the signatures without scaling them.
+  source:
+    vignette: mixscape_vignette.Rmd
+    section: Calculating local perturbation signatures mitigates confounding effects
+    quote: Normalize data, find variable features and center data.
+- id: c3-q09-prtb-clusters
+  after: c3-m06-prtb-umap
+  question: What happens when the cells are clustered on the PRTB signature instead of RNA?
+  choices: ["Replicate effects get stronger", "Technical variation is removed and one more perturbation-specific cluster appears", "All cells merge into one cluster", "Cell cycle becomes the main axis"]
+  answer: 1
+  explanation: The signatures cancel the confounders, revealing a second perturbation-specific cluster.
+  source:
+    vignette: mixscape_vignette.Rmd
+    section: Calculating local perturbation signatures mitigates confounding effects
+    quote: >-
+      Using the PRTB signature to cluster cells removes all technical variation
+      and reveals one additional perturbation-specific cluster.
+- id: c3-q10-mixture
+  after: c3-m07-mixscape
+  question: Mixscape models each target gene class as a mixture of two Gaussians. Which two?
+  choices: ["Knockout (KO) and non-targeting (NT)", "Knockout (KO) and non-perturbed (NP)", "G1 and S phase", "The two biological replicates"]
+  answer: 1
+  explanation: KO cells are truly perturbed; NP cells carry the guide but show no detectable perturbation.
+  source:
+    vignette: mixscape_vignette.Rmd
+    section: Mixscape identifies cells with no detectable perturbation
+    quote: >-
+      Here, we are assuming each target gene class is a mixture of two Gaussian
+      distributions one representing the knockout (KO) and the other the
+      non-perturbed (NP) cells.
+- id: c3-q11-np
+  after: c3-m07-mixscape
+  question: Mixscape assumes the distribution of the non-perturbed (NP) cells is identical to that of which cells?
+  choices: ["The knockout cells", "Cells expressing non-targeting gRNAs (NT)", "Doublets", "Unstimulated THP-1 cells"]
+  answer: 1
+  explanation: The NT controls define the NP distribution, so only the KO distribution has to be estimated.
+  source:
+    vignette: mixscape_vignette.Rmd
+    section: Mixscape identifies cells with no detectable perturbation
+    quote: >-
+      We further assume that the distribution of the NP cells is identical to
+      that of cells expressing non-targeting gRNAs (NT)
+- id: c3-q12-posterior
+  after: c3-m07-mixscape
+  question: Above which posterior probability is a cell classified as a knockout?
+  choices: ["0.05", "0.25", "0.5", "0.95"]
+  answer: 2
+  explanation: Cells more likely to belong to the KO distribution than to the NP one are called KO.
+  source:
+    vignette: mixscape_vignette.Rmd
+    section: Mixscape identifies cells with no detectable perturbation
+    quote: >-
+      Next, we calculate the posterior probability that a cell belongs to the
+      KO distribution and classify cells with a probability higher than 0.5 as
+      KOs.
+- id: c3-q13-classes
+  after: c3-m08-ko-rates
+  question: In how many target gene classes did the vignette identify knockouts?
+  choices: ["3", "11", "26", "111"]
+  answer: 1
+  explanation: KOs were found in 11 target gene classes, with guide efficiency varying within each class.
+  source:
+    vignette: mixscape_vignette.Rmd
+    section: Mixscape identifies cells with no detectable perturbation
+    quote: >-
+      Applying this method we identify KOs in 11 target gene classes and detect
+      variation in gRNA targeting efficiency within each class.
+- id: c3-q14-de-check
+  after: c3-m09-inspect
+  question: What does the differential expression check show for IFNGR2?
+  choices: ["All guides reduce IFNG-pathway genes", "Only IFNGR2 KO cells have reduced expression of IFNG-pathway genes", "IFNGR2 NP cells lose PD-L1", "IFNGR2 has no DE genes"]
+  answer: 1
+  explanation: The NP cells look like the controls; only true knockouts lose the pathway response.
+  source:
+    vignette: mixscape_vignette.Rmd
+    section: Inspecting mixscape results
+    quote: >-
+      In addition, we can perform differential expression (DE) analyses and
+      show that only IFNGR2 KO cells have reduced expression of the
+      IFNG-pathway genes.
+- id: c3-q15-lda
+  after: c3-m10-lda
+  question: What is LDA trying to maximize here?
+  choices: ["The variance explained", "The separability of known labels (mixscape classes)", "The number of clusters", "The library size"]
+  answer: 1
+  explanation: Unlike PCA, LDA is supervised; it uses the labels to find the most separating axes.
+  source:
+    vignette: mixscape_vignette.Rmd
+    section: Visualizing perturbation responses with Linear Discriminant Analysis (LDA)
+    quote: >-
+      LDA is trying to maximize the separability of known labels (mixscape
+      classes) using both gene expression and the labels as input.

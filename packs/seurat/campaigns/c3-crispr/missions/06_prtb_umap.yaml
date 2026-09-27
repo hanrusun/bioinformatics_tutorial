@@ -1,0 +1,78 @@
+id: c3-m06-prtb-umap
+title: A cleaner map
+points: 6
+source:
+  vignette: mixscape_vignette.Rmd
+  section: Calculating local perturbation signatures mitigates confounding effects
+  quote: >-
+    Using the PRTB signature to cluster cells removes all technical variation
+    and reveals one additional perturbation-specific cluster.
+briefing: |
+  Run a PCA and a UMAP on the perturbation signatures. Give both new names
+  ("prtbpca", "prtbumap") so they don't overwrite the RNA versions: you'll want
+  to compare the two maps.
+task:
+  - Run a PCA on the PRTB assay, saved as the reduction "prtbpca" (key 'prtbpca').
+  - Run a UMAP on the first 40 PRTB PCs, saved as "prtbumap" (key 'prtbumap').
+setup: |
+  curelab_libraries(c("SeuratData", "ggplot2", "scales"))
+  load_checkpoint("c3-m05-prtb-scale")
+starter_code: |
+  # Run PCA to reduce the dimensionality of the data.
+  eccite <- RunPCA(object = eccite, reduction.key = 'prtbpca', reduction.name = )
+
+  # Run UMAP to visualize clustering in 2-D.
+  eccite <- RunUMAP(
+    object = eccite,
+    dims = 1:40,
+    reduction = ,
+    reduction.key = 'prtbumap',
+    reduction.name = 'prtbumap')
+
+  DimPlot(object = eccite, group.by = 'crispr', reduction = 'prtbumap')
+solution: |
+  eccite <- RunPCA(object = eccite, reduction.key = 'prtbpca', reduction.name = 'prtbpca')
+  eccite <- RunUMAP(
+    object = eccite,
+    dims = 1:40,
+    reduction = 'prtbpca',
+    reduction.key = 'prtbumap',
+    reduction.name = 'prtbumap')
+check: |
+  curelab_check({
+    obj <- curelab_obj("eccite", "Seurat")
+    expect_reduction(obj, "prtbpca",
+      "There is no 'prtbpca' reduction. Run RunPCA(object = eccite, reduction.key = 'prtbpca', reduction.name = 'prtbpca').")
+    expect_true(DefaultAssay(obj[["prtbpca"]]) == "PRTB", "Run the PCA on the PRTB assay (it should be the default assay).")
+    expect_equal_ref(round(Stdev(obj, reduction = "prtbpca")[1:5], 4), "prtbpca_sdev",
+      "The PRTB PCA doesn't match the reference. Run it on the centered PRTB data with the defaults.",
+      tolerance = 1e-3, show = FALSE)
+    expect_reduction(obj, "prtbumap",
+      "There is no 'prtbumap' reduction. Run RunUMAP(..., reduction = 'prtbpca', reduction.name = 'prtbumap').")
+    expect_param(obj, "RunUMAP", "reduction", "prtbpca", "Build the UMAP from the PRTB PCA: reduction = 'prtbpca'")
+    expect_param(obj, "RunUMAP", "dims", 1:40, "Use the first 40 PRTB PCs: dims = 1:40")
+  })
+expected:
+  prtbpca_sdev: round(Stdev(eccite, reduction = "prtbpca")[1:5], 4)
+hints:
+  - Name the new reductions so the RNA pca and umap stay available for comparison.
+  - "`RunPCA(reduction.key = 'prtbpca', reduction.name = 'prtbpca')`, then `RunUMAP(dims = 1:40, reduction = 'prtbpca', reduction.key = 'prtbumap', reduction.name = 'prtbumap')`."
+  - |
+    ```r
+    eccite <- RunPCA(object = eccite, reduction.key = 'prtbpca', reduction.name = 'prtbpca')
+    eccite <- RunUMAP(
+      object = eccite,
+      dims = 1:40,
+      reduction = 'prtbpca',
+      reduction.key = 'prtbumap',
+      reduction.name = 'prtbumap')
+    ```
+notebook_pages: [c3-nb04-prtb-space]
+state: [eccite]
+timeout: 1200
+wrong_solutions:
+  - why: UMAP built from the RNA PCA
+    code: |
+      eccite <- RunPCA(object = eccite, reduction.key = 'prtbpca', reduction.name = 'prtbpca')
+      eccite <- RunUMAP(object = eccite, dims = 1:40, reduction = 'pca',
+        reduction.key = 'prtbumap', reduction.name = 'prtbumap')

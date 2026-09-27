@@ -1,0 +1,31 @@
+id: c3-nb03-prtb
+title: Local perturbation signatures
+rp: 2
+missions: [c3-m04-prtb]
+blocks:
+  - quote: >-
+      To calculate local perturbation signatures we set the number of
+      non-targeting Nearest Neighbors (NNs) equal to k=20 and we recommend that
+      the user picks a k from the following range: 20 < k < 30. Intuitively,
+      the user does not want to set k to a very small or large number as this
+      will most likely not remove the technical variation from the dataset.
+    source: {vignette: mixscape_vignette.Rmd, section: "Calculating local perturbation signatures mitigates confounding effects"}
+  - text: >-
+      Each cell's signature is its expression minus the average of its k
+      nearest non-targeting (NT) cells. The neighbors are found in PCA space,
+      within the cell's own replicate (`split.by`), so they share its
+      confounders but not its knockout.
+  - code: |
+      # Calculate perturbation signature (PRTB).
+      eccite<- CalcPerturbSig(
+        object = eccite, 
+        assay = "RNA", 
+        slot = "data", 
+        gd.class ="gene", 
+        nt.cell.class = "NT", 
+        reduction = "pca", 
+        ndims = 40, 
+        num.neighbors = 20, 
+        split.by = "replicate", 
+        new.assay.name = "PRTB")
+    source: {vignette: mixscape_vignette.Rmd, section: "Calculating local perturbation signatures mitigates confounding effects"}

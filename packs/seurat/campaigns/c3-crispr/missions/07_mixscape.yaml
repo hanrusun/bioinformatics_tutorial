@@ -1,0 +1,102 @@
+id: c3-m07-mixscape
+title: Knockout or escaped?
+points: 11
+source:
+  vignette: mixscape_vignette.Rmd
+  section: Mixscape identifies cells with no detectable perturbation
+  quote: >-
+    Here, we are assuming each target gene class is a mixture of two Gaussian
+    distributions one representing the knockout (KO) and the other the
+    non-perturbed (NP) cells.
+briefing: |
+  Not every cell that received a guide lost the gene: some edits fail or
+  leave the protein intact. Mixscape tells them apart. For each target gene it
+  fits two Gaussians to the cells' perturbation scores, one for true knockouts
+  (KO) and one for non-perturbed cells (NP) that look like the NT controls,
+  and assigns each cell to the more likely one.
+
+  The result is three new metadata columns: `mixscape_class` (e.g.
+  "IFNGR2 KO"), `mixscape_class.global` (KO, NP or NT) and the posterior
+  probability `mixscape_class_p_ko`. This step takes a few minutes.
+task:
+  - Run Mixscape on the centered PRTB signatures ("scale.data" slot) with target-gene labels from the "gene" column and "NT" as the non-targeting class.
+  - Require at least 5 DE genes per target, run at most 10 iterations, find DE genes on the "RNA" assay, and call knockouts ("KO").
+setup: |
+  curelab_libraries(c("SeuratData", "ggplot2", "scales"))
+  load_checkpoint("c3-m06-prtb-umap")
+starter_code: |
+  # Run mixscape.
+  eccite <- RunMixscape(
+    object = eccite,
+    assay = ,
+    slot = ,
+    labels = "gene",
+    nt.class.name = "NT",
+    min.de.genes = 5,
+    iter.num = 10,
+    de.assay = ,
+    verbose = F,
+    prtb.type = "KO")
+
+  table(eccite$mixscape_class.global)
+solution: |
+  eccite <- RunMixscape(
+    object = eccite,
+    assay = "PRTB",
+    slot = "scale.data",
+    labels = "gene",
+    nt.class.name = "NT",
+    min.de.genes = 5,
+    iter.num = 10,
+    de.assay = "RNA",
+    verbose = F,
+    prtb.type = "KO")
+check: |
+  curelab_check({
+    obj <- curelab_obj("eccite", "Seurat")
+    expect_columns(obj[[]], c("mixscape_class", "mixscape_class.global", "mixscape_class_p_ko"),
+      "The metadata of `eccite` (run RunMixscape() and assign the result back to eccite)")
+    expect_true(all(obj$mixscape_class.global %in% c("KO", "NP", "NT")),
+      "mixscape_class.global should only contain KO, NP and NT. Call knockouts with prtb.type = \"KO\".")
+    expect_true(all(obj$mixscape_class.global[obj$gene == "NT"] == "NT"),
+      "Non-targeting cells should stay NT: labels = \"gene\", nt.class.name = \"NT\".")
+    frac <- tapply(obj$mixscape_class.global == "KO", as.character(obj$gene), mean)
+    expect_equal_ref(names(frac), "ko_genes", "Classify cells by their target gene: labels = \"gene\".", show = FALSE)
+    # the Gaussian mixture fit starts from random weights, so allow some wobble
+    expect_equal_ref(round(as.numeric(frac), 4), "ko_frac",
+      "The knockout rates per target gene are far from the reference. Run RunMixscape() on the centered PRTB signatures (assay = \"PRTB\", slot = \"scale.data\") with DE genes from the RNA assay (de.assay = \"RNA\").",
+      tolerance = 0.1, show = FALSE)
+    expect_true(isTRUE(unname(frac["IFNGR2"]) > 0), "Mixscape should find IFNGR2 knockouts. Compare your RunMixscape() arguments with the task.")
+  })
+expected:
+  ko_genes: names(tapply(eccite$mixscape_class.global == "KO", as.character(eccite$gene), mean))
+  ko_frac: round(as.numeric(tapply(eccite$mixscape_class.global == "KO", as.character(eccite$gene), mean)), 4)
+hints:
+  - Mixscape works on the perturbation signatures you just centered, but looks for differentially expressed genes in the RNA data.
+  - "`assay = \"PRTB\"`, `slot = \"scale.data\"`, `de.assay = \"RNA\"`; keep `labels = \"gene\"`, `nt.class.name = \"NT\"`, `min.de.genes = 5`, `iter.num = 10` and `prtb.type = \"KO\"`."
+  - |
+    ```r
+    eccite <- RunMixscape(
+      object = eccite,
+      assay = "PRTB",
+      slot = "scale.data",
+      labels = "gene",
+      nt.class.name = "NT",
+      min.de.genes = 5,
+      iter.num = 10,
+      de.assay = "RNA",
+      verbose = F,
+      prtb.type = "KO")
+    ```
+debug:
+  - pattern: "mixtools"
+    help: RunMixscape() needs the mixtools package, which is installed in this lab image. If you see this, rebuild the image.
+notebook_pages: [c3-nb05-mixscape]
+state: [eccite]
+timeout: 2400
+wrong_solutions:
+  - why: called every targeted cell a knockout without Mixscape
+    code: |
+      eccite$mixscape_class <- eccite$gene
+      eccite$mixscape_class.global <- ifelse(eccite$gene == "NT", "NT", "KO")
+      eccite$mixscape_class_p_ko <- 1

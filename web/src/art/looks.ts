@@ -9,12 +9,12 @@ export interface Look {
   lips: string;
   hair: string;
   hairShade: string;
-  hairStyle: 'short' | 'puffs';
+  hairStyle: 'short' | 'puffs' | 'bun';
   gown: string;
   gownDots: string;
   blanket: string;
   blanketShade: string;
-  prop: 'honey' | 'rabbit';
+  prop: 'honey' | 'rabbit' | 'sourdough';
 }
 
 export const LOOKS: Record<string, Look> = {
@@ -47,6 +47,21 @@ export const LOOKS: Record<string, Look> = {
     blanket: '#fff3c9',
     blanketShade: '#ecd89a',
     prop: 'rabbit',
+  },
+  anjali: {
+    id: 'anjali',
+    child: false,
+    skin: '#b27a52',
+    skinShade: '#95613d',
+    lips: '#8a4b3f',
+    hair: '#1f1714',
+    hairShade: '#3a2a22',
+    hairStyle: 'bun',
+    gown: '#b9d9c6',
+    gownDots: '#8fc2a4',
+    blanket: '#f6e7d8',
+    blanketShade: '#e2cdb6',
+    prop: 'sourdough',
   },
 };
 

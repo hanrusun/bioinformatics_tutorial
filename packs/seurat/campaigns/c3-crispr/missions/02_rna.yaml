@@ -1,0 +1,85 @@
+id: c3-m02-rna
+title: The usual workflow
+points: 8
+source:
+  vignette: mixscape_vignette.Rmd
+  section: RNA-based clustering is driven by confounding sources of variation
+  quote: >-
+    Here, we follow the standard Seurat workflow to cluster cells based on
+    their gene expression profiles.
+briefing: |
+  Before anything CRISPR-specific, run the standard Seurat RNA workflow you
+  know from Campaign 1: normalize, find variable features, scale, PCA and a
+  UMAP. The vignette chains the first three steps with the `%>%` pipe.
+
+  The next mission uses this UMAP to see what actually drives the structure
+  in the data.
+task:
+  - Make "RNA" the default assay of `eccite`.
+  - Normalize, find variable features and scale the RNA data (one piped line).
+  - Run a PCA, then a UMAP on the first 40 PCs.
+setup: |
+  curelab_libraries(c("SeuratData", "ggplot2", "scales"))
+  load_checkpoint("c3-m01-load")
+starter_code: |
+  # Prepare RNA assay for dimensionality reduction:
+  # Normalize data, find variable features and scale data.
+  DefaultAssay(object = eccite) <-
+  eccite <- NormalizeData(object = eccite) %>%  %>%
+
+  # Run Principle Component Analysis (PCA) to reduce the dimensionality of the data.
+  eccite <- RunPCA(object = eccite)
+
+  # Run Uniform Manifold Approximation and Projection (UMAP) to visualize clustering in 2-D.
+  eccite <- RunUMAP(object = eccite, dims = )
+solution: |
+  DefaultAssay(object = eccite) <- 'RNA'
+  eccite <- NormalizeData(object = eccite) %>% FindVariableFeatures() %>% ScaleData()
+  eccite <- RunPCA(object = eccite)
+  eccite <- RunUMAP(object = eccite, dims = 1:40)
+check: |
+  curelab_check({
+    obj <- curelab_obj("eccite", "Seurat")
+    expect_true(DefaultAssay(obj) == "RNA",
+      "Make RNA the default assay first: DefaultAssay(object = eccite) <- 'RNA'.")
+    expect_equal_ref(sum(LayerData(obj, assay = "RNA", layer = "data")[, 1]), "data_cell1",
+      "The RNA data layer isn't log-normalized. Run NormalizeData(object = eccite) on the RNA assay.", show = FALSE)
+    expect_equal_ref(length(VariableFeatures(obj[["RNA"]])), "n_hvg",
+      "Find the variable features with FindVariableFeatures() (the default 2000).")
+    expect_true("scale.data" %in% Layers(obj[["RNA"]]), "Scale the RNA data with ScaleData().")
+    expect_reduction(obj, "pca", "Run RunPCA(object = eccite).")
+    expect_equal_ref(round(Stdev(obj, reduction = "pca")[1:5], 4), "pca_sdev",
+      "The PCA doesn't match the reference. Run it on the scaled RNA data with the defaults: RunPCA(object = eccite).",
+      tolerance = 1e-3, show = FALSE)
+    expect_reduction(obj, "umap", "Run RunUMAP(object = eccite, dims = 1:40).")
+    expect_param(obj, "RunUMAP", "dims", 1:40, "Embed the first 40 PCs: dims = 1:40")
+  })
+expected:
+  data_cell1: sum(LayerData(eccite, assay = "RNA", layer = "data")[, 1])
+  n_hvg: length(VariableFeatures(eccite[["RNA"]]))
+  pca_sdev: round(Stdev(eccite, reduction = "pca")[1:5], 4)
+hints:
+  - Same steps as in Campaign 1, run on the RNA assay; the pipe passes each result on to the next function.
+  - "`DefaultAssay(object = eccite) <- 'RNA'`, then `NormalizeData() %>% FindVariableFeatures() %>% ScaleData()`, `RunPCA()` and `RunUMAP(dims = 1:40)`."
+  - |
+    ```r
+    DefaultAssay(object = eccite) <- 'RNA'
+    eccite <- NormalizeData(object = eccite) %>% FindVariableFeatures() %>% ScaleData()
+    eccite <- RunPCA(object = eccite)
+    eccite <- RunUMAP(object = eccite, dims = 1:40)
+    ```
+notebook_pages: [c3-nb02-confounders]
+state: [eccite]
+timeout: 1200
+wrong_solutions:
+  - why: PCA before scaling
+    code: |
+      DefaultAssay(object = eccite) <- 'RNA'
+      eccite <- NormalizeData(object = eccite) %>% FindVariableFeatures()
+      eccite <- RunPCA(object = eccite)
+  - why: UMAP on only 10 PCs
+    code: |
+      DefaultAssay(object = eccite) <- 'RNA'
+      eccite <- NormalizeData(object = eccite) %>% FindVariableFeatures() %>% ScaleData()
+      eccite <- RunPCA(object = eccite)
+      eccite <- RunUMAP(object = eccite, dims = 1:10)
