@@ -20,8 +20,12 @@ USER root
 # multiome half of Seurat's WNN vignette (hg38 genome and gene annotations,
 # chromVAR motif analysis), and hdf5r to read 10x .h5 files. presto is
 # already in the Seurat image.
-RUN Rscript -e "pak::pkg_install(c('stuart-lab/signac@1.17.1', 'hdf5r', 'bioc::GenomeInfoDb', 'bioc::EnsDb.Hsapiens.v86', 'bioc::BSgenome.Hsapiens.UCSC.hg38', 'bioc::chromVAR', 'bioc::JASPAR2020', 'bioc::TFBSTools', 'bioc::motifmatchr', 'bioc::glmGamPoi'))" \
- && rm -rf /root/.cache/R /tmp/*
+# chromVAR (and motifmatchr) ask for C++11, but the RcppArmadillo in the base
+# image needs C++14 or later, so those builds use C++17 instead.
+RUN mkdir -p /root/.R \
+ && printf 'CXX11STD = -std=gnu++17\nCXX11FLAGS += -std=gnu++17\n' > /root/.R/Makevars \
+ && Rscript -e "pak::pkg_install(c('stuart-lab/signac@1.17.1', 'hdf5r', 'bioc::GenomeInfoDb', 'bioc::EnsDb.Hsapiens.v86', 'bioc::BSgenome.Hsapiens.UCSC.hg38', 'bioc::chromVAR', 'bioc::JASPAR2020', 'bioc::TFBSTools', 'bioc::motifmatchr', 'bioc::glmGamPoi'))" \
+ && rm -rf /root/.R /root/.cache/R /tmp/*
 
 ENV CURELAB_PACK_DIR=/opt/curelab/app/packs/signac \
     CURELAB_REFERENCE_DIR=/opt/curelab/reference-signac

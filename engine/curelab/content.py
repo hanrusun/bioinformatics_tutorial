@@ -106,6 +106,10 @@ class Mission(_Model):
     expected: dict[str, str] = {}
     # Deliberately wrong code that the check must reject (tested at build time).
     wrong_solutions: list[WrongSolution] = []
+    # Code run after the reference solution at build time only; what it prints
+    # goes to the build log (e.g. which markers each cluster expresses), so a
+    # failed build shows what the data looked like. Never shown to learners.
+    build_report: str = ""
     timeout: int = Field(default=900, ge=5)
     # Extra quotes/code that must be verified against the source (e.g. the
     # solution is verbatim vignette code).

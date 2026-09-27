@@ -181,6 +181,12 @@ local({
     })
     if (!ok) return(invisible(FALSE))
 
+    # build report: printed to the build log only (see Mission.build_report)
+    if (!is.null(m$build_report) && nzchar(trimws(m$build_report))) {
+      message("   build report:")
+      tryCatch(run_code(m$build_report), error = function(e) message("   (build report failed: ", conditionMessage(e), ")"))
+    }
+
     # 4: expected values
     if (!verify_only && length(m$expected)) {
       values <- list()

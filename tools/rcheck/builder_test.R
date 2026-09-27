@@ -38,6 +38,7 @@ evalq({
       id = "demo-02-sort",
       setup = 'load_checkpoint("demo-01-sum")',
       solution = "ranked <- sort(numbers)",
+      build_report = 'message("report: ranked ", paste(ranked, collapse = " "))',
       expected = list(ranked = "ranked"),
       state = list("ranked"),
       check = paste0(
@@ -132,6 +133,7 @@ local({
   ok(identical(expected[["demo-02-sort"]][["ranked"]], c(1, 1, 3, 4, 5)), "records vector expected values")
   ok(setequal(names(readRDS("/mock/reference/checkpoints/demo-01-sum.rds")$objects), c("numbers", "total")), "saves the mission state")
   ok(grepl("demo-01-sum", log) && !any(grepl("demo-01-sum", fails)), "solution that tramples builder names is harmless")
+  ok(grepl("report: ranked 1 1 3 4 5", log, fixed = TRUE), "runs the build report after the solution")
   ok(grepl("rejects 'drops the first value'", log, fixed = TRUE), "check rejects a wrong solution")
   ok(grepl("wrong solution 'typo' errors", log, fixed = TRUE), "erroring wrong solution is noted")
   ok(!any(grepl("demo-02-sort", fails)), "each mission starts from an empty globalenv plus its checkpoint")

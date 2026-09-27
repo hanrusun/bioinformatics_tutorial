@@ -74,6 +74,7 @@ notebook_pages: [c1-nb02-qc]
 state: [adata]                  # objects saved as the checkpoint for the next mission
 expected: {n_cells: "adata.n_obs"}      # evaluated after the solution at build time
 wrong_solutions: [{why: ..., code: ...}] # the check must reject these (tested at build)
+build_report: |                 # optional, build time only: printed to the build log
 ```
 
 The check protocol is one line on stdout:

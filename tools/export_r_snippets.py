@@ -34,7 +34,7 @@ def pack_snippets(pack_dir: str) -> list[dict]:
     snippets.append({"where": "pack init_code", "code": pack.render_init()})
     for c in pack.campaigns:
         for m in c.missions:
-            for field in ("setup", "solution", "check"):
+            for field in ("setup", "solution", "check", "build_report"):
                 snippets.append({"where": f"{m.id}.{field}", "code": getattr(m, field)})
             for key, expr in m.expected.items():
                 snippets.append({"where": f"{m.id}.expected.{key}", "code": expr})

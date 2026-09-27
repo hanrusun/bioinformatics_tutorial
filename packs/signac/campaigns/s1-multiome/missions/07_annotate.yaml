@@ -66,6 +66,21 @@ check: |
   })
 expected:
   celltypes: sort(unique(as.character(pbmc$celltype)))
+# Build log only: the vignette's RenameIdents() lines name clusters by number,
+# so print what each (sub)cluster actually expresses in this build.
+build_report: |
+  panel <- c("CD14", "LYZ", "FCGR3A", "MS4A1", "TCL1A", "IGHD", "CD27", "JCHAIN", "MZB1",
+    "LILRA4", "CLEC4C", "FCER1A", "CD1C", "CD34", "NKG7", "GNLY", "KLRF1", "CD3E", "CD4",
+    "CD8A", "CCR7", "SELL", "IL7R", "GZMK", "GZMH", "FOXP3", "SLC4A10", "TRDC", "PPBP", "HBB")
+  panel <- intersect(panel, rownames(pbmc[["SCT"]]))
+  x <- LayerData(pbmc, assay = "SCT", layer = "data")[panel, ]
+  groups <- split(seq_len(ncol(pbmc)), pbmc$sub.cluster)
+  avg <- sapply(groups, function(i) Matrix::rowMeans(x[, i, drop = FALSE]))
+  z <- t(scale(t(avg)))
+  top <- apply(z, 2, function(v) paste(names(sort(v, decreasing = TRUE))[1:4], collapse = " "))
+  label <- sapply(groups, function(i) as.character(pbmc$celltype[i[1]]))
+  ord <- names(groups)[order(suppressWarnings(as.numeric(sub("_", ".", names(groups)))))]
+  print(data.frame(cluster = ord, cells = lengths(groups)[ord], label = label[ord], top_markers = top[ord]), row.names = FALSE)
 hints:
   - FindSubCluster adds a `sub.cluster` column; make it the identities, then rename cluster numbers to cell types.
   - "The starter code already has every `RenameIdents()` line from the vignette; add the sub-clustering and end with `pbmc$celltype <- Idents(pbmc)`."
