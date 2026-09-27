@@ -19,7 +19,8 @@ briefing: |
   is a transcription factor, and chromVAR is how you'd see its footprint.
 
   The vignette warns this step can take 30-60 minutes. The bench uses every
-  CPU core to speed it up, and the hospital clock is paused while it runs.
+  CPU core to speed it up (it took about 20 minutes on 4 cores when this lab
+  was built), and the hospital clock is paused while it runs.
 task:
   - Load chromVAR, JASPAR2020, TFBSTools, motifmatchr and the hg38 genome.
   - Scan every ATAC peak for the JASPAR 2020 human motifs (species 9606) and store the motif object in the ATAC assay.

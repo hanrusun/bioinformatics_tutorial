@@ -11,9 +11,18 @@ briefing: |
   split cluster 6, which mixes several T-cell states, into sub-clusters, then
   rename every cluster and sub-cluster. Store the names in a `celltype`
   column; every later mission uses it.
+
+  A vignette's cluster numbers only hold for its own run: they shift with
+  package versions (Signac 1.17, for one, computes the LSI with a different
+  SVD routine than earlier releases). In this lab's build, clusters 8, 9 and
+  11 came out in a different order than in the vignette: 8 expresses CD14
+  and LYZ (monocytes), 9 expresses MS4A1, IGHD and TCL1A (B cells) and 11
+  expresses CCR7, CD3E and CD8A (naive CD8 T cells). The starter code's
+  RenameIdents() lines are adapted for those three; everything else is the
+  vignette's. Check each cluster's markers before you trust a name.
 task:
   - Sub-cluster cluster 6 on the "wsnn" graph (SLM, `algorithm = 3`) and use the sub-clusters as identities.
-  - Rename every cluster with the vignette's cell-type labels.
+  - Rename every cluster with the vignette's cell-type labels (clusters 8, 9 and 11 adapted to this build).
   - Save the identities as `pbmc$celltype`.
 setup: |
   curelab_libraries(c("Signac", "EnsDb.Hsapiens.v86", "ggplot2", "GenomeInfoDb"))
@@ -25,11 +34,12 @@ starter_code: |
 
   # add annotations
   pbmc <- RenameIdents(pbmc, '19' = 'pDC','20' = 'HSPC','15' = 'cDC')
-  pbmc <- RenameIdents(pbmc, '0' = 'CD14 Mono', '9' ='CD14 Mono', '5' = 'CD16 Mono')
-  pbmc <- RenameIdents(pbmc, '10' = 'Naive B', '11' = 'Intermediate B', '17' = 'Memory B', '21' = 'Plasma')
+  # clusters 8, 9 and 11 adapted to this build's numbering (see the briefing)
+  pbmc <- RenameIdents(pbmc, '0' = 'CD14 Mono', '8' ='CD14 Mono', '5' = 'CD16 Mono')
+  pbmc <- RenameIdents(pbmc, '10' = 'Naive B', '9' = 'Intermediate B', '17' = 'Memory B', '21' = 'Plasma')
   pbmc <- RenameIdents(pbmc, '7' = 'NK')
   pbmc <- RenameIdents(pbmc, '4' = 'CD4 TCM', '13'= "CD4 TEM", '3' = "CD4 TCM", '16' ="Treg", '1' ="CD4 Naive", '14' = "CD4 Naive")
-  pbmc <- RenameIdents(pbmc, '2' = 'CD8 Naive', '8'= "CD8 Naive", '12' = 'CD8 TEM_1', '6_0' = 'CD8 TEM_2', '6_1' ='CD8 TEM_2', '6_4' ='CD8 TEM_2')
+  pbmc <- RenameIdents(pbmc, '2' = 'CD8 Naive', '11'= "CD8 Naive", '12' = 'CD8 TEM_1', '6_0' = 'CD8 TEM_2', '6_1' ='CD8 TEM_2', '6_4' ='CD8 TEM_2')
   pbmc <- RenameIdents(pbmc, '18' = 'MAIT')
   pbmc <- RenameIdents(pbmc, '6_2' ='gdT', '6_3' = 'gdT')
   pbmc$celltype <-
@@ -39,33 +49,45 @@ solution: |
   pbmc <- FindSubCluster(pbmc, cluster = 6, graph.name = "wsnn", algorithm = 3)
   Idents(pbmc) <- "sub.cluster"
   pbmc <- RenameIdents(pbmc, '19' = 'pDC','20' = 'HSPC','15' = 'cDC')
-  pbmc <- RenameIdents(pbmc, '0' = 'CD14 Mono', '9' ='CD14 Mono', '5' = 'CD16 Mono')
-  pbmc <- RenameIdents(pbmc, '10' = 'Naive B', '11' = 'Intermediate B', '17' = 'Memory B', '21' = 'Plasma')
+  pbmc <- RenameIdents(pbmc, '0' = 'CD14 Mono', '8' ='CD14 Mono', '5' = 'CD16 Mono') # curelab: adapted
+  pbmc <- RenameIdents(pbmc, '10' = 'Naive B', '9' = 'Intermediate B', '17' = 'Memory B', '21' = 'Plasma') # curelab: adapted
   pbmc <- RenameIdents(pbmc, '7' = 'NK')
   pbmc <- RenameIdents(pbmc, '4' = 'CD4 TCM', '13'= "CD4 TEM", '3' = "CD4 TCM", '16' ="Treg", '1' ="CD4 Naive", '14' = "CD4 Naive")
-  pbmc <- RenameIdents(pbmc, '2' = 'CD8 Naive', '8'= "CD8 Naive", '12' = 'CD8 TEM_1', '6_0' = 'CD8 TEM_2', '6_1' ='CD8 TEM_2', '6_4' ='CD8 TEM_2')
+  pbmc <- RenameIdents(pbmc, '2' = 'CD8 Naive', '11'= "CD8 Naive", '12' = 'CD8 TEM_1', '6_0' = 'CD8 TEM_2', '6_1' ='CD8 TEM_2', '6_4' ='CD8 TEM_2') # curelab: adapted
   pbmc <- RenameIdents(pbmc, '18' = 'MAIT')
   pbmc <- RenameIdents(pbmc, '6_2' ='gdT', '6_3' = 'gdT')
   pbmc$celltype <- Idents(pbmc)
 check: |
   curelab_check({
     obj <- curelab_obj("pbmc", "Seurat")
+    expect_true("sub.cluster" %in% colnames(obj[[]]),
+      "Split cluster 6 first: FindSubCluster(pbmc, cluster = 6, graph.name = \"wsnn\", algorithm = 3).")
     expect_true("celltype" %in% colnames(obj[[]]), "Store the labels: pbmc$celltype <- Idents(pbmc).")
     expect_true(identical(as.character(obj$celltype), as.character(Idents(obj))),
       "`celltype` should hold the renamed identities: pbmc$celltype <- Idents(pbmc).")
     expect_equal_ref(sort(unique(as.character(obj$celltype))), "celltypes",
       "The cell-type labels don't match the reference annotation. Run every RenameIdents() line.", show = FALSE)
-    # the labels have to make biological sense, not just match
-    top_group <- function(gene) {
-      x <- LayerData(obj, assay = "SCT", layer = "data")[gene, ]
-      names(which.max(tapply(x, as.character(obj$celltype), mean)))
-    }
-    expect_true(top_group("CD14") == "CD14 Mono", "CD14 should be highest in the cells labelled 'CD14 Mono'.")
-    expect_true(top_group("MS4A1") %in% c("Naive B", "Intermediate B", "Memory B"), "MS4A1 should be highest in a B-cell label.")
-    expect_true(top_group("LILRA4") == "pDC", "LILRA4 should be highest in the cells labelled 'pDC'.")
+    lab <- tapply(as.character(obj$celltype), obj$sub.cluster, function(v) v[1])
+    expect_equal_ref(paste(names(lab), lab, sep = "="), "cluster_labels",
+      "Some clusters got a different name than in the reference annotation. Run every RenameIdents() line as given (clusters 8, 9 and 11 are adapted to this build).",
+      show = FALSE)
+    # every cluster's name has to fit what its cells express, not just match
+    lineages <- list(
+      myeloid = list(labels = c("CD14 Mono", "CD16 Mono", "cDC"), genes = c("LYZ", "CD14")),
+      B = list(labels = c("Naive B", "Intermediate B", "Memory B"), genes = c("MS4A1", "IGHD")),
+      "T or NK" = list(labels = c("CD4 Naive", "CD4 TCM", "CD4 TEM", "Treg", "CD8 Naive", "CD8 TEM_1",
+        "CD8 TEM_2", "MAIT", "gdT", "NK"), genes = c("CD3E", "IL7R", "NKG7", "GNLY")),
+      pDC = list(labels = "pDC", genes = c("LILRA4", "CLEC4C")),
+      plasma = list(labels = "Plasma", genes = c("JCHAIN", "MZB1")),
+      HSPC = list(labels = "HSPC", genes = "CD34")
+    )
+    fit <- curelab_label_fit(LayerData(obj, assay = "SCT", layer = "data"), obj$sub.cluster, obj$celltype, lineages)
+    expect_true(!nrow(fit), paste0("Some names don't fit what the cells express: ",
+      paste0("cluster ", fit$cluster, " is called '", fit$label, "' but looks like ", fit$looks_like, collapse = "; "), "."))
   })
 expected:
   celltypes: sort(unique(as.character(pbmc$celltype)))
+  cluster_labels: local({ lab <- tapply(as.character(pbmc$celltype), pbmc$sub.cluster, function(v) v[1]); paste(names(lab), lab, sep = "=") })
 # Build log only: the vignette's RenameIdents() lines name clusters by number,
 # so print what each (sub)cluster actually expresses in this build.
 build_report: |
@@ -83,7 +105,7 @@ build_report: |
   print(data.frame(cluster = ord, cells = lengths(groups)[ord], label = label[ord], top_markers = top[ord]), row.names = FALSE)
 hints:
   - FindSubCluster adds a `sub.cluster` column; make it the identities, then rename cluster numbers to cell types.
-  - "The starter code already has every `RenameIdents()` line from the vignette; add the sub-clustering and end with `pbmc$celltype <- Idents(pbmc)`."
+  - "The starter code already has every `RenameIdents()` line (the vignette's, with clusters 8, 9 and 11 adapted to this build); add the sub-clustering and end with `pbmc$celltype <- Idents(pbmc)`."
   - |
     ```r
     pbmc <- FindSubCluster(pbmc, cluster = 6, graph.name = "wsnn", algorithm = 3)
@@ -98,6 +120,19 @@ notebook_pages: [s1-nb04-wnn]
 state: [pbmc]
 timeout: 1200
 wrong_solutions:
+  - why: the vignette's cluster numbers, not adapted to this build
+    code: |
+      pbmc <- FindSubCluster(pbmc, cluster = 6, graph.name = "wsnn", algorithm = 3)
+      Idents(pbmc) <- "sub.cluster"
+      pbmc <- RenameIdents(pbmc, '19' = 'pDC','20' = 'HSPC','15' = 'cDC')
+      pbmc <- RenameIdents(pbmc, '0' = 'CD14 Mono', '9' ='CD14 Mono', '5' = 'CD16 Mono')
+      pbmc <- RenameIdents(pbmc, '10' = 'Naive B', '11' = 'Intermediate B', '17' = 'Memory B', '21' = 'Plasma')
+      pbmc <- RenameIdents(pbmc, '7' = 'NK')
+      pbmc <- RenameIdents(pbmc, '4' = 'CD4 TCM', '13'= "CD4 TEM", '3' = "CD4 TCM", '16' ="Treg", '1' ="CD4 Naive", '14' = "CD4 Naive")
+      pbmc <- RenameIdents(pbmc, '2' = 'CD8 Naive', '8'= "CD8 Naive", '12' = 'CD8 TEM_1', '6_0' = 'CD8 TEM_2', '6_1' ='CD8 TEM_2', '6_4' ='CD8 TEM_2')
+      pbmc <- RenameIdents(pbmc, '18' = 'MAIT')
+      pbmc <- RenameIdents(pbmc, '6_2' ='gdT', '6_3' = 'gdT')
+      pbmc$celltype <- Idents(pbmc)
   - why: renamed only the monocytes
     code: |
       pbmc <- FindSubCluster(pbmc, cluster = 6, graph.name = "wsnn", algorithm = 3)

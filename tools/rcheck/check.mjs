@@ -33,10 +33,13 @@ await webR.FS.mkdir('/src');
 await webR.FS.writeFile('/src/helpers.R', readFileSync(path.join(root, 'packs/seurat/r/helpers.R')));
 await webR.FS.writeFile('/src/build_reference.R', readFileSync(path.join(root, 'packs/seurat/reference/build_reference.R')));
 await webR.FS.writeFile('/builder_test.R', readFileSync(path.join(here, 'builder_test.R')));
+await webR.FS.writeFile('/signac_helpers.R', readFileSync(path.join(root, 'packs/signac/r/helpers.R')));
+await webR.FS.writeFile('/signac_helpers_test.R', readFileSync(path.join(here, 'signac_helpers_test.R')));
 const shelter = await new webR.Shelter();
 for (const [name, script] of [
   ['helper', '/helpers_test.R'],
   ['builder', '/builder_test.R'],
+  ['signac', '/signac_helpers_test.R'],
 ]) {
   const res = await shelter.captureR(`source("${script}")`);
   // stdout/stderr lines are strings; R warnings and messages arrive as condition objects

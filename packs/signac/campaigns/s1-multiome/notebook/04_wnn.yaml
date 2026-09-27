@@ -25,6 +25,13 @@ blocks:
       pbmc <- RenameIdents(pbmc, '19' = 'pDC','20' = 'HSPC','15' = 'cDC')
       pbmc <- RenameIdents(pbmc, '0' = 'CD14 Mono', '9' ='CD14 Mono', '5' = 'CD16 Mono')
     source: {vignette: "seurat:weighted_nearest_neighbor_analysis.Rmd", section: "WNN analysis of 10x Multiome, RNA + ATAC"}
+  - text: >-
+      Cluster numbers are only stable for one run of one set of package
+      versions. In this lab's build, clusters 8, 9 and 11 came out in a
+      different order than in the vignette: 8 expresses CD14 and LYZ
+      (monocytes), 9 MS4A1, IGHD and TCL1A (B cells), and 11 CCR7, CD3E and
+      CD8A (naive CD8 T cells). The mission adapts those three names; always
+      look at each cluster's markers before you copy someone's labels.
   - quote: >-
       We can visualize clustering based on gene expression, ATAC-seq, or WNN
       analysis. The differences are more subtle than in the previous analysis

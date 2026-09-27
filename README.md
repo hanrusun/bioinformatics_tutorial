@@ -78,13 +78,24 @@ runs in a virtual machine with its own memory limit: set **Settings →
 Resources → Memory** to at least 12 GB to build the image and play Campaign 3
 (6 GB is enough for Campaigns 1 and 2 once the image is built).
 
-The Signac image adds to these; its measured size, build time and memory
-are in [Signac pack requirements](#signac-pack-requirements) below.
+The Signac image needs more; see
+[Signac pack requirements](#signac-pack-requirements) below.
 
 ### Signac pack requirements
 
-Not measured yet: CI builds the Signac image on top of the Seurat one, and
-these numbers will be filled in from that run.
+Measured in the same CI run, building the Signac image on top of the Seurat
+one:
+
+| | Needs |
+|---|---|
+| Disk | a 14.8 GB image, but 8.9 GB of it are the Seurat image's layers, so about 6 GB more: Signac and the hg38 genome and annotations (1.3 GB), the 10x multiome data (2.2 GB) and the reference checkpoints (2.3 GB) |
+| Build time | about 50 minutes after the Seurat image; the chromVAR mission alone takes 20 |
+| RAM to build and play | about 12.7 GB for R at the heaviest mission (SCTransform on 10,412 cells), plus about 1 GB for the game. ATAC quality control peaks at 9.6 GB; the other missions at 5 to 8 GB |
+
+The chromVAR mission runs on every CPU core, and its worker processes (not
+included above) share most of their memory with the main R process. Give
+Docker Desktop at least 14 GB of memory for the Signac pack, which in
+practice means a machine with 16 GB of RAM or more (32 GB is comfortable).
 
 ## How to play
 
@@ -143,7 +154,11 @@ Seurat WNN vignette for the Signac pack
 Five lines in the Seurat pack are marked as adapted, and the verifier
 reports them: the local data path, the learner's own PC choice, and the
 `obj → ifnb` / `harmony` names in the Harmony missions. The Signac pack
-adapts two: the paths to the multiome files in the image.
+adapts five: the paths to the multiome files in the image, and three cluster
+numbers in the annotation mission. In this build, clusters 8, 9 and 11 come
+out in a different order than in the vignette's own run, so its labels
+would call monocytes "CD8 Naive". The annotation check therefore also tests
+every cluster's label against its marker genes.
 
 The hidden checks never hard-code answers. When an image is built,
 `packs/seurat/reference/build_reference.R` (which also builds the Signac pack):
