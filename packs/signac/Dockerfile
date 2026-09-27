@@ -18,13 +18,14 @@ USER root
 # Signac, pinned to the release whose vignettes the pack is verified against,
 # and the Bioconductor packages used by the Signac multiome vignette and the
 # multiome half of Seurat's WNN vignette (hg38 genome and gene annotations,
-# chromVAR motif analysis), and hdf5r to read 10x .h5 files. presto is
-# already in the Seurat image.
+# chromVAR motif analysis), hdf5r to read 10x .h5 files, and two packages
+# Signac only suggests: biovizBase (GetGRangesFromEnsDb) and ggforce (peak-gene
+# links in coverage plots). presto is already in the Seurat image.
 # chromVAR (and motifmatchr) ask for C++11, but the RcppArmadillo in the base
 # image needs C++14 or later, so those builds use C++17 instead.
 RUN mkdir -p /root/.R \
  && printf 'CXX11STD = -std=gnu++17\nCXX11FLAGS += -std=gnu++17\n' > /root/.R/Makevars \
- && Rscript -e "pak::pkg_install(c('stuart-lab/signac@1.17.1', 'hdf5r', 'bioc::GenomeInfoDb', 'bioc::EnsDb.Hsapiens.v86', 'bioc::BSgenome.Hsapiens.UCSC.hg38', 'bioc::chromVAR', 'bioc::JASPAR2020', 'bioc::TFBSTools', 'bioc::motifmatchr', 'bioc::glmGamPoi'))" \
+ && Rscript -e "pak::pkg_install(c('stuart-lab/signac@1.17.1', 'hdf5r', 'bioc::GenomeInfoDb', 'bioc::EnsDb.Hsapiens.v86', 'bioc::BSgenome.Hsapiens.UCSC.hg38', 'bioc::chromVAR', 'bioc::JASPAR2020', 'bioc::TFBSTools', 'bioc::motifmatchr', 'bioc::glmGamPoi', 'bioc::biovizBase', 'ggforce'))" \
  && rm -rf /root/.R /root/.cache/R /tmp/*
 
 ENV CURELAB_PACK_DIR=/opt/curelab/app/packs/signac \
