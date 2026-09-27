@@ -12,6 +12,11 @@ briefing: |
   SCTransform (a regularized negative binomial model that replaces
   normalization, variable features and scaling), then PCA and a UMAP of the
   RNA alone, named so it won't be overwritten later.
+
+  SCTransform hands the count matrix to its workers through the `future`
+  package, which by default refuses anything over 500 MB. The bench raises
+  that limit for you; in your own R session you would run
+  `options(future.globals.maxSize = 8 * 1024^3)` first.
 task:
   - Make "RNA" the default assay.
   - Run SCTransform, PCA and a UMAP on the first 50 PCs saved as "umap.rna" (key 'rnaUMAP_'), in one piped line.

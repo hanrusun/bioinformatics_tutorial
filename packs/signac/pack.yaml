@@ -41,6 +41,12 @@ debug:
     help: >-
       That is a GenomicRanges / GenomeInfoDb function. Run
       `library(GenomeInfoDb)`; Signac loads GenomicRanges for you.
+  - pattern: "future.globals.maxSize|maxSizeOfObjects"
+    help: >-
+      SCTransform sends the whole count matrix to its parallel workers, and
+      the future package refuses anything over 500 MB by default. Raise the
+      limit with `options(future.globals.maxSize = 8 * 1024^3)` (the bench
+      does this at start-up; run it again if you changed it), then retry.
   - pattern: 'could not find function "%>%"'
     help: The pipe `%>%` comes from dplyr. Run `library(dplyr)` first.
   - pattern: could not find function

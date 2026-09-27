@@ -5,6 +5,10 @@
 # first, then this file, which adds a few for the 10x multiome data baked
 # into the image.
 
+# SCTransform sends the whole count matrix to its workers through the future
+# package, which refuses more than 500 MB by default; this dataset needs more.
+options(future.globals.maxSize = 8 * 1024^3)
+
 local({
   if ("curelab_signac" %in% search()) detach("curelab_signac", character.only = TRUE)
   env <- new.env()

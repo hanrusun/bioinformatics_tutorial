@@ -18,6 +18,10 @@ briefing: |
     start sites, where chromatin is most open.
 
   Both read the fragment file, so this step takes a few minutes.
+
+  Signac 1.17 marks both functions as deprecated in favor of `ATACqc()`,
+  which needs an external tool (fragtk). The vignette still uses them, so a
+  deprecation warning is expected here.
 task:
   - Make "ATAC" the default assay of `pbmc`.
   - Add the nucleosome signal and the TSS enrichment score of every cell.
