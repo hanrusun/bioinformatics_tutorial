@@ -527,24 +527,26 @@ export function PatientScene({ art, stage, overlays, rr, hr, flash }: SceneProps
           <ellipse cx={bodyEnd - 14} cy="244" rx="14" ry="10" fill={look.blanket} stroke={look.blanketShade} />
         </g>
 
-        {/* arm on top of the blanket with the IV: the sleeve starts inside the
-            shoulder, so it reads as one limb over the blanket's edge */}
+        {/* arm on top of the blanket with the IV. The sleeve starts inside the
+            shoulder and is drawn over the start of the forearm, so the arm runs
+            out of the shoulder and the hand comes out of the cuff. */}
         <g>
-          <path d={`M${head.cx + 22} 231 C${head.cx + 44} 236 ${head.cx + 68} 245 262 248`} stroke={look.gown} stroke-width="13" stroke-linecap="round" fill="none" />
-          <path d="M236 246 C246 247 256 248 268 248" stroke={skin} stroke-width="10" stroke-linecap="round" />
+          <path d="M228 246.5 C241 247 254 248 268 248" stroke={skin} stroke-width="10" stroke-linecap="round" />
           <ellipse cx="274" cy="248" rx="7" ry="5.5" fill={skin} />
-          <rect x="250" y="243" width="9" height="9" rx="1.5" fill="#f5f2e8" opacity="0.95" />
+          <path d={`M${head.cx + 22} 231 C${head.cx + 36} 234 ${head.cx + 48} 244 234 246.5`} stroke={look.gown} stroke-width="13" stroke-linecap="round" fill="none" />
+          <path d="M234.5 240 A6.5 6.5 0 0 1 234.5 253" stroke={look.gownDots} stroke-width="1.2" fill="none" opacity="0.6" />
+          <rect x="254" y="243" width="9" height="9" rx="1.5" fill="#f5f2e8" opacity="0.95" />
           {ov.has('bruises') && (
             <g>
-              <ellipse cx="245" cy="247" rx="4.5" ry="3" fill="#6b4a86" opacity="0.55" />
-              <ellipse cx="245" cy="247" rx="2.2" ry="1.4" fill="#4a2f63" opacity="0.5" />
-              <ellipse cx="266" cy="249" rx="3.2" ry="2.4" fill="#8a7a3e" opacity="0.45" />
+              <ellipse cx="266.5" cy="249.5" rx="3.4" ry="2.4" fill="#6b4a86" opacity="0.55" />
+              <ellipse cx="266.5" cy="249.5" rx="1.7" ry="1.1" fill="#4a2f63" opacity="0.5" />
+              <ellipse cx="277" cy="246.5" rx="2.6" ry="1.9" fill="#8a7a3e" opacity="0.45" />
             </g>
           )}
           {ov.has('spots') && (
             <g fill="#5c5ca8" opacity="0.8">
-              <circle cx="240" cy="246" r="1.5" />
-              <circle cx="264" cy="250" r="1.2" />
+              <circle cx="266" cy="246.5" r="1.4" />
+              <circle cx="276" cy="250" r="1.1" />
             </g>
           )}
         </g>
