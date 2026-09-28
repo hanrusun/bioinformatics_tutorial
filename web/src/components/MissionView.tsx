@@ -13,6 +13,8 @@ interface Props {
   language: string;
   onSnapshot: (s: Snapshot) => void;
   onOpenPage: (pageId: string) => void;
+  /** open the "consult another doctor" chat about this mission */
+  onConsult: () => void;
   onNotice: (text: string, tone?: 'info' | 'bad') => void;
 }
 
@@ -21,7 +23,7 @@ type NewEntry = ConsoleEntry extends infer E ? (E extends ConsoleEntry ? Omit<E,
 
 let entryId = 1;
 
-export function MissionView({ missionId, game, cursor, language, onSnapshot, onOpenPage, onNotice }: Props) {
+export function MissionView({ missionId, game, cursor, language, onSnapshot, onOpenPage, onConsult, onNotice }: Props) {
   const [detail, setDetail] = useState<MissionDetail | null>(null);
   const [code, setCode] = useState('');
   const [codeVersion, setCodeVersion] = useState(0);
@@ -205,6 +207,9 @@ export function MissionView({ missionId, game, cursor, language, onSnapshot, onO
             </button>
             <button class="btn" onClick={explain} disabled={!!busy} title="Explain the last error (free)">
               🩺 Explain error
+            </button>
+            <button class="btn" onClick={onConsult} title="Ask a chatbot colleague about this mission, at any point" data-testid="open-consult">
+              💬 Consult another doctor
             </button>
             <span class="toolbar__spacer" />
             <button class="btn btn--ghost" onClick={resetCode} disabled={!!busy} title="Restore the starter code">

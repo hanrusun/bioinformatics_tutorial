@@ -1,4 +1,5 @@
 import type {
+  ConsultData,
   Execution,
   Meta,
   MissionDetail,
@@ -68,4 +69,67 @@ export const api = {
     }),
   deleteNote: (id: string) => call<{ ok: boolean }>(`/api/notebook/notes/${id}`, { method: 'DELETE' }),
   exportUrl: (scope: 'all' | 'mine') => `/api/notebook/export?scope=${scope}`,
+  scriptUrl: () => '/api/notebook/script',
+
+  consultHistory: () => call<ConsultData>('/api/consult'),
+  consultClear: () => post<ConsultData>('/api/consult/clear'),
+  /** Save one exchange (the index of either of its messages) or, with no index, the whole conversation. */
+  consultSave: (index: number | null, since: number) =>
+    post<Snapshot & { note: Note }>('/api/consult/notebook', { index, since }),
 };
+
+export interface ConsultQuestion {
+  message: string;
+  mission_id: string | null;
+  code: string;
+  include_code: boolean;
+}
+
+/**
+ * Ask the consulting doctor. The answer streams back as server-sent events;
+ * onDelta gets each piece, and the promise resolves with the saved
+ * conversation (or rejects with the server's message).
+ */
+export async function consultAsk(q: ConsultQuestion, onDelta: (text: string) => void): Promise<ConsultData> {
+  const res = await fetch('/api/consult', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(q),
+  });
+  if (!res.ok || !res.body) {
+    let message = res.statusText;
+    try {
+      const body = await res.json();
+      message = typeof body.detail === 'string' ? body.detail : message;
+    } catch {
+      /* not JSON */
+    }
+    throw new ApiError(res.status, message);
+  }
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let done: ConsultData | null = null;
+  for (;;) {
+    const { value, done: finished } = await reader.read();
+    if (value) buffer += decoder.decode(value, { stream: true });
+    let cut: number;
+    while ((cut = buffer.indexOf('\n\n')) >= 0) {
+      const block = buffer.slice(0, cut);
+      buffer = buffer.slice(cut + 2);
+      let event = 'message';
+      let data = '';
+      for (const line of block.split('\n')) {
+        if (line.startsWith('event: ')) event = line.slice(7);
+        else if (line.startsWith('data: ')) data += line.slice(6);
+      }
+      const payload = data ? JSON.parse(data) : {};
+      if (event === 'delta') onDelta(payload.text ?? '');
+      else if (event === 'error') throw new ApiError(502, payload.detail ?? 'The consultation failed.');
+      else if (event === 'done') done = payload as ConsultData;
+    }
+    if (finished) break;
+  }
+  if (!done) throw new ApiError(502, 'The consultation was interrupted.');
+  return done;
+}

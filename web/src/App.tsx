@@ -10,11 +10,12 @@ import { MissionList } from './components/MissionList';
 import { MissionView } from './components/MissionView';
 import { QuizPanel } from './components/QuizPanel';
 import { NotebookPanel } from './components/NotebookPanel';
+import { ConsultPanel } from './components/ConsultPanel';
 import { DiseasePanel } from './components/DiseasePanel';
 import { EndScreen } from './components/EndScreen';
 import { TraitPopup, Toasts, type Notice } from './components/Events';
 
-type Tab = 'missions' | 'journal' | 'notebook' | 'disease';
+type Tab = 'missions' | 'journal' | 'notebook' | 'disease' | 'consult';
 let noticeId = 1;
 
 export function App() {
@@ -179,6 +180,7 @@ export function App() {
                     ['journal', `Journal club${openQuizzes ? ` (${openQuizzes})` : ''}`],
                     ['notebook', 'Lab notebook'],
                     ['disease', 'Disease'],
+                    ['consult', 'Consult'],
                   ] as [Tab, string][]
                 ).map(([id, label]) => (
                   <button role="tab" aria-selected={tab === id} class={`tab${tab === id ? ' is-active' : ''}`} onClick={() => setTab(id)} data-tab={id}>
@@ -202,6 +204,7 @@ export function App() {
                           setFocusPage(id);
                           setTab('notebook');
                         }}
+                        onConsult={() => setTab('consult')}
                         onNotice={notify}
                       />
                     )}
@@ -219,6 +222,16 @@ export function App() {
                   />
                 )}
                 {tab === 'disease' && <DiseasePanel game={game} patient={patient} />}
+                {tab === 'consult' && (
+                  <ConsultPanel
+                    game={game}
+                    status={meta.consult}
+                    missionId={mission}
+                    cursor={() => cursor.current}
+                    onSnapshot={(s) => apply(s)}
+                    onNotice={notify}
+                  />
+                )}
               </div>
             </section>
           </div>

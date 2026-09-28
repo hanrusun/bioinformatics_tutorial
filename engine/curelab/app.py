@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import os
 import secrets
 import time
@@ -12,15 +13,25 @@ from pathlib import Path
 from typing import Any, Optional
 
 from fastapi import FastAPI, HTTPException, Query
-from fastapi.responses import JSONResponse, PlainTextResponse
+from fastapi.responses import JSONResponse, PlainTextResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from .balance import Balance, load_balance
+from .consult import (
+    HISTORY_LIMIT,
+    SYSTEM_PROMPT,
+    ConsultConfig,
+    ConsultError,
+    build_context,
+    make_consultant,
+    question_prompt,
+    transcript_markdown,
+)
 from .content import Campaign, Illness, Pack, load_illnesses_for, load_pack
-from .game import Game, RuleError
+from .game import ConsultMessage, Game, RuleError
 from .grader import Grader, debug_help
-from .notebook import Note, _now, export_markdown, qualifying_notes, word_count
+from .notebook import Note, _now, export_markdown, export_script, qualifying_notes, script_filename, word_count
 from .runner import KernelRunner
 from .store import Profile, Store
 
@@ -36,6 +47,8 @@ class Settings:
     kernel: Optional[str] = None
     unlock_all: bool = False
     balance_path: Optional[Path] = None
+    # "consult another doctor": off unless an API key is in the environment
+    consult: ConsultConfig = field(default_factory=ConsultConfig.from_env)
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -67,6 +80,12 @@ class AppState:
     last_beat: Optional[float] = None
     last_save: float = 0.0
     read_tokens: dict[str, tuple[str, float]] = field(default_factory=dict)
+    consultant: Any = None  # created on first use (see consult.make_consultant)
+
+    def get_consultant(self) -> Any:
+        if self.consultant is None:
+            self.consultant = make_consultant(self.settings.consult)
+        return self.consultant
 
     # ------------------------------------------------------------------ #
 
@@ -276,6 +295,18 @@ class ReadBody(BaseModel):
     since: int = 0
 
 
+class ConsultBody(BaseModel):
+    message: str
+    mission_id: Optional[str] = None
+    code: str = ""
+    include_code: bool = True
+
+
+class ConsultSaveBody(BaseModel):
+    index: Optional[int] = None  # a message index (saves that exchange); None = all
+    since: int = 0
+
+
 class NoteBody(BaseModel):
     title: Optional[str] = None
     body: Optional[str] = None
@@ -357,6 +388,7 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
             },
             "active": state.game.campaign.id if state.game else None,
             "history": profile.history[-20:],
+            "consult": settings.consult.public(),
         }
 
     # ------------------------------------------------------------ game
@@ -479,7 +511,7 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
             raise HTTPException(500, "Mission setup failed. This is a bug in the pack, not your code.")
         outcome = await state.grader.submit(m, body.code)
         if outcome.graded and game.state.status == "playing":
-            game.record_submission(mission_id, outcome.passed, cause=f"mission {m.title}")
+            game.record_submission(mission_id, outcome.passed, cause=f"mission {m.title}", code=body.code)
             state.sync_notes(game)
             state.finish_if_over()
         state.save()
@@ -529,7 +561,8 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
 
     def _note_view(note: Note) -> dict[str, Any]:
         words = word_count(note.body)
-        return {**note.model_dump(), "words": words, "qualifies": words >= balance.research_points.note_min_words}
+        qualifies = note.kind == "note" and words >= balance.research_points.note_min_words
+        return {**note.model_dump(), "words": words, "qualifies": qualifies}
 
     @app.get("/api/notebook")
     async def notebook(campaign: Optional[str] = None) -> dict[str, Any]:
@@ -634,6 +667,129 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
             media_type="text/markdown; charset=utf-8",
             headers={"Content-Disposition": f'attachment; filename="{filename}"'},
         )
+
+    @app.get("/api/notebook/script")
+    async def notebook_script(campaign: Optional[str] = None) -> PlainTextResponse:
+        """Mission descriptions as comments, each with the learner's passing code."""
+        c = _notebook_campaign(campaign)
+        game = state.game if state.game and state.game.campaign.id == c.id else None
+        return PlainTextResponse(
+            export_script(pack, c, illnesses[c.illness], game),
+            media_type="text/plain; charset=utf-8",
+            headers={"Content-Disposition": f'attachment; filename="{script_filename(pack, c)}"'},
+        )
+
+    # ------------------------------------------------------------ consult
+    def _consult_view(game: Game) -> dict[str, Any]:
+        return {**settings.consult.public(), "messages": [m.public() for m in game.state.consult]}
+
+    @app.get("/api/consult")
+    async def consult_history() -> dict[str, Any]:
+        return _consult_view(state.require_game())
+
+    @app.post("/api/consult")
+    async def consult_ask(body: ConsultBody) -> Response:
+        if not settings.consult.enabled:
+            raise HTTPException(409, "Consulting is off: add OPENAI_API_KEY or ANTHROPIC_API_KEY to your .env file.")
+        game = state.require_game()
+        question = body.message.strip()
+        if not question:
+            raise HTTPException(400, "type a question first")
+        mission_view = None
+        if body.mission_id:
+            m = _mission(game, body.mission_id)
+            src = _source_view(pack, m.source)
+            mission_view = {
+                "number": game.campaign.mission_index(m.id) + 1,
+                "title": m.title,
+                "finished": game.mission_status(m.id) == "completed",
+                "briefing": game.illness.fill(m.briefing),
+                "task": m.task,
+                "source": {"vignette": src["vignette"], "section": src["section"], "url": src["site_url"]},
+            }
+        last_error = state.grader.last_error if body.mission_id and state.grader.active_mission == body.mission_id else ""
+        finished = [
+            f"{i}. {m.title}" for i, m in enumerate(game.campaign.missions, 1) if game.mission_status(m.id) == "completed"
+        ]
+        context = build_context(
+            tool=f"{pack.tool} {pack.tool_version}",
+            campaign_title=game.campaign.title,
+            finished=finished,
+            mission=mission_view,
+            code=body.code,
+            last_error=last_error or "",
+            include_code=body.include_code,
+            language=pack.editor_mode,
+        )
+        prompt = question_prompt(context, question)
+        history = [{"role": t.role, "content": t.prompt or t.text} for t in game.state.consult[-HISTORY_LIMIT:]]
+        messages = history + [{"role": "user", "content": prompt}]
+        try:
+            consultant = state.get_consultant()
+        except ConsultError as exc:
+            raise HTTPException(409, str(exc))
+
+        def sse(event: str, data: dict[str, Any]) -> str:
+            return f"event: {event}\ndata: {json.dumps(data)}\n\n"
+
+        async def events():
+            parts: list[str] = []
+            try:
+                async for text in consultant.stream(SYSTEM_PROMPT, messages):
+                    parts.append(text)
+                    yield sse("delta", {"text": text})
+            except ConsultError as exc:
+                yield sse("error", {"detail": str(exc)})
+                return
+            except Exception as exc:  # unexpected SDK failure: report, don't crash the game
+                yield sse("error", {"detail": f"The consultation failed: {exc}"})
+                return
+            answer = "".join(parts).strip()
+            if state.game is not game:  # a new game started meanwhile
+                return
+            day = game.day
+            game.state.consult.append(
+                ConsultMessage(role="user", text=question, prompt=prompt, mission_id=body.mission_id, day=day)
+            )
+            game.state.consult.append(ConsultMessage(role="assistant", text=answer, mission_id=body.mission_id, day=day))
+            state.save()
+            yield sse("done", _consult_view(game))
+
+        return StreamingResponse(
+            events(), media_type="text/event-stream", headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"}
+        )
+
+    @app.post("/api/consult/clear")
+    async def consult_clear() -> dict[str, Any]:
+        game = state.require_game()
+        game.state.consult = []
+        state.save()
+        return _consult_view(game)
+
+    @app.post("/api/consult/notebook")
+    async def consult_to_notebook(body: ConsultSaveBody) -> dict[str, Any]:
+        """Save a question and its answer (or the whole conversation) as a
+        notebook page. Consultation pages never earn research points."""
+        game = state.require_game()
+        turns = [t.public() for t in game.state.consult]
+        if body.index is not None:
+            i = body.index - (body.index % 2)  # the question of that exchange
+            if i < 0 or i + 1 >= len(turns):
+                raise HTTPException(404, "no such consultation")
+            turns = turns[i : i + 2]
+        if not turns:
+            raise HTTPException(409, "nothing to save yet")
+        titles = {m.id: m.title for m in game.campaign.missions}
+        label = settings.consult.public()["label"] or "consulting doctor"
+        nb = profile.notebook(game.campaign.id)
+        first = turns[0]["text"].strip().splitlines()[0]
+        title = "Consult: " + (first if len(first) <= 60 else first[:57].rstrip() + "…")
+        if body.index is None:
+            title = f"Consultation, day {turns[0]['day']}–{turns[-1]['day']}"
+        note = Note(title=title, body=transcript_markdown(turns, label, titles), kind="consult")
+        nb.notes.append(note)
+        state.save()
+        return {"note": _note_view(note), **game_snapshot(state, body.since)}
 
     @app.get("/api/health")
     async def health() -> dict[str, Any]:

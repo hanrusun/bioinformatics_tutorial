@@ -74,6 +74,26 @@ export interface Meta {
   };
   active: string | null;
   history: Record<string, unknown>[];
+  consult: ConsultStatus;
+}
+
+/** The optional "consult another doctor" chat (never includes the API key). */
+export interface ConsultStatus {
+  enabled: boolean;
+  provider: string | null;
+  label: string;
+  model: string;
+}
+
+export interface ConsultMessage {
+  role: 'user' | 'assistant';
+  text: string;
+  mission_id: string | null;
+  day: number;
+}
+
+export interface ConsultData extends ConsultStatus {
+  messages: ConsultMessage[];
 }
 
 export interface GameEvent {
@@ -247,6 +267,8 @@ export interface Note {
   updated: string;
   words: number;
   qualifies: boolean;
+  /** "consult": a saved consultation; it never earns research points */
+  kind: 'note' | 'consult';
 }
 
 export interface NotebookData {

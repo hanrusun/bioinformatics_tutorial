@@ -26,6 +26,8 @@ export default defineConfig({
       `${python} -m curelab --pack ../engine/tests/fixtures/pack_py --illnesses ../illnesses ` +
       `--data ${dataDir} --web dist --port ${port}`,
     url: `http://127.0.0.1:${port}/api/health`,
+    // "consult another doctor" answers with a network-free echo in tests
+    env: { ...(process.env as Record<string, string>), CURELAB_CONSULT_PROVIDER: 'fake' },
     reuseExistingServer: false,
     timeout: 60_000,
   },

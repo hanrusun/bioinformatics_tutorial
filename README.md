@@ -135,12 +135,59 @@ same engine and UI without needing the R image.</sub>
     mission you have attempted.
 - **🩺 Explain error** is always free. It matches your error against common
   R/Seurat mistakes and explains them without giving the answer away.
+- **💬 Consult another doctor** (optional, needs an API key; see
+  [below](#consult-another-doctor-optional)): a chatbot colleague you can
+  ask anything at any point, from the **Consult** tab or a mission's button.
+  It coaches you on the mission you're on without writing its solution, and
+  answers anything beyond the game. You can add an answer, or the whole
+  conversation, to the lab notebook; those pages earn no RP.
 - **Export** your notebook at any time, or from the end screen: copy your
   notes to the clipboard, or download your notes or the whole notebook
   (reference pages with citations, your notes, the mission log and the
-  patient chart) as Markdown.
+  patient chart) as Markdown. **⬇ My mission script** downloads an R script
+  with every mission's briefing and task as comments, each followed by the
+  code you submitted that passed.
 - **Difficulty**: Casual, Normal or Brutal. This changes how fast the disease
   creeps and how hard each mistake hits.
+
+## Consult another doctor (optional)
+
+The **Consult** tab connects the game to a chatbot, either ChatGPT or
+Claude. It's off until you give the game an API key; everything else works
+without one.
+
+1. Get an API key: [platform.openai.com](https://platform.openai.com) for
+   ChatGPT, or [console.anthropic.com](https://console.anthropic.com) for
+   Claude. Both bill per use. A ChatGPT Plus subscription can't be used by
+   other apps.
+2. Next to `docker-compose.yml`, create a file called `.env` with one line:
+   `OPENAI_API_KEY=sk-...` or `ANTHROPIC_API_KEY=sk-ant-...`. It's in
+   `.gitignore`, so it won't be committed.
+3. Run `docker compose up -d seurat` (or `signac`) again.
+
+Optional settings, also in `.env`:
+
+- `CURELAB_CONSULT_PROVIDER=openai` or `anthropic` picks one when both keys
+  are set. Without it, OpenAI is used.
+- `CURELAB_CONSULT_MODEL` overrides the model. The defaults are
+  `gpt-6-astra` for ChatGPT and `claude-opus-5-5` for Claude.
+
+On Claude, the game turns on Anthropic's server-side refusal fallback: if a
+question is declined, the API retries it on another Claude model.
+
+**What is sent.** With each question the game sends your question, the
+earlier turns of the conversation, the tool versions, which missions you've
+finished, and, when a mission is selected, its briefing, task and cited
+vignette section. It also sends your current code and last error unless you
+untick "share my code and last error". It never sends a mission's reference
+solution, the hidden checks, the expected answers, your notebook, or the key.
+The key stays in the game server, and the browser only learns which provider
+and model are active. The questions go to OpenAI or Anthropic under your
+account's terms.
+
+**Cost.** Consulting is free in the game: no RP, and the clock keeps
+running. The API bills your account; a typical question on Claude costs
+about 1–5 US cents.
 
 ## Grounded in the official vignettes
 

@@ -39,6 +39,8 @@ class MissionProgress(BaseModel):
     completed: bool = False
     completed_day: Optional[int] = None
     hints_bought: int = 0
+    # the learner's code that passed the check (for the script export)
+    passed_code: Optional[str] = None
 
 
 class QuizProgress(BaseModel):
@@ -58,6 +60,21 @@ class Event(BaseModel):
     title: str
     text: str = ""
     data: dict[str, Any] = {}
+
+
+class ConsultMessage(BaseModel):
+    """One turn of a "consult another doctor" conversation."""
+
+    role: Literal["user", "assistant"]
+    text: str  # what the learner typed / the doctor's answer
+    # for a question: exactly what was sent (game context + question), so the
+    # history is resent byte for byte and stays cacheable
+    prompt: str = ""
+    mission_id: Optional[str] = None
+    day: int = 1
+
+    def public(self) -> dict[str, Any]:
+        return {"role": self.role, "text": self.text, "mission_id": self.mission_id, "day": self.day}
 
 
 class GameState(BaseModel):
@@ -82,6 +99,7 @@ class GameState(BaseModel):
     timeline: list[TimelineEntry] = []
     events: list[Event] = []
     next_event_id: int = 1
+    consult: list[ConsultMessage] = []
     stage: str = "stable"
     started_at: str = Field(default_factory=_now)
     ended_at: Optional[str] = None
@@ -257,8 +275,8 @@ class Game:
         if status == "locked":
             raise RuleError("complete the previous mission first")
 
-    def record_submission(self, mission_id: str, passed: bool, cause: str = "") -> list[Event]:
-        """Apply the outcome of a graded submission."""
+    def record_submission(self, mission_id: str, passed: bool, cause: str = "", code: Optional[str] = None) -> list[Event]:
+        """Apply the outcome of a graded submission (``code`` is kept if it passed)."""
         self.check_mission_open(mission_id)
         progress = self._mission_progress(mission_id)
         if progress.completed:
@@ -269,6 +287,7 @@ class Game:
             mission = self.campaign.mission(mission_id)
             progress.completed = True
             progress.completed_day = self.day
+            progress.passed_code = code
             self.state.research = min(100, self.state.research + mission.points)
             text = f"Lab: “{mission.title}” complete. Cure research +{mission.points}%."
             self._note("mission", text)

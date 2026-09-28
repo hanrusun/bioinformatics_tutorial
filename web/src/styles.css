@@ -312,6 +312,31 @@ blockquote cite { display: block; font-style: normal; font-size: 12px; margin-to
 
 /* disease */
 .disease-panel { overflow-y: auto; height: 100%; padding: 14px 18px 30px; }
+
+/* ------------------------------------------------------------ consult */
+.consult { display: grid; grid-template-rows: auto auto 1fr auto; height: 100%; min-height: 0; padding: 12px 18px 14px; gap: 10px; }
+.consult--off { display: block; overflow-y: auto; max-width: 720px; }
+.consult--off code { font-family: var(--mono); font-size: 12.5px; background: var(--panel-3); padding: 1px 5px; border-radius: 4px; }
+.consult h3 { margin: 0; font-size: 16px; }
+.consult__head { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; flex-wrap: wrap; }
+.consult__head p { margin: 2px 0 0; font-size: 12.5px; }
+.consult__actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.consult__context { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; font-size: 13px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+.consult__context select { background: var(--panel-3); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; max-width: 320px; }
+.consult__shared { font-size: 12px; flex-basis: 100%; }
+.consult__log { overflow-y: auto; min-height: 0; display: flex; flex-direction: column; gap: 10px; padding-right: 4px; }
+.consult__empty { display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+.consult__ask { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: end; }
+.consult__ask textarea { width: 100%; resize: vertical; min-height: 60px; background: var(--panel-2); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font: inherit; }
+.bubble { max-width: 88%; border-radius: 10px; padding: 8px 12px; border: 1px solid var(--line); }
+.bubble p { margin: 0; white-space: pre-wrap; }
+.bubble--me { align-self: flex-end; background: #16283a; border-color: #23405a; }
+.bubble--doctor { align-self: flex-start; background: var(--panel-2); }
+.bubble--doctor .md > :first-child { margin-top: 0; }
+.bubble--doctor .md > :last-child { margin-bottom: 4px; }
+.bubble--pending { border-style: dashed; }
+.bubble__meta { font-size: 11px; color: var(--muted); margin-bottom: 2px; }
+.btn--tiny { padding: 3px 8px; font-size: 12px; }
 .disease-head { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; }
 .disease-stats { display: flex; gap: 16px; margin: 0; }
 .disease-stats div { text-align: right; }

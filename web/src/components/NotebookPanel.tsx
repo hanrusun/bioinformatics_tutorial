@@ -32,6 +32,13 @@ export function ExportButtons({ onNotice, compact }: { onNotice: Props['onNotice
       onNotice(String(err), 'bad');
     }
   };
+  const downloadScript = async () => {
+    try {
+      await downloadFrom(api.scriptUrl(), 'curelab-script.R');
+    } catch (err) {
+      onNotice(String(err), 'bad');
+    }
+  };
   return (
     <div class={`export${compact ? ' export--compact' : ''}`}>
       <button class="btn" onClick={copyMine} data-testid="copy-notes">
@@ -42,6 +49,14 @@ export function ExportButtons({ onNotice, compact }: { onNotice: Props['onNotice
       </button>
       <button class="btn" onClick={download('all')} data-testid="download-all">
         ⬇ Whole notebook (.md)
+      </button>
+      <button
+        class="btn"
+        onClick={downloadScript}
+        title="Every mission's briefing and task as comments, each followed by the code you submitted that passed"
+        data-testid="download-script"
+      >
+        ⬇ My mission script
       </button>
     </div>
   );
@@ -160,7 +175,10 @@ function PageView({
 export function NotebookPanel({ game, rules, cursor, focus, onSnapshot, onNotice }: Props) {
   const [data, setData] = useState<NotebookData | null>(null);
   const [sel, setSel] = useState<Selection>(null);
-  const [draft, setDraft] = useState<{ title: string; body: string }>({ title: '', body: '' });
+  // the draft remembers which page it belongs to: the editor only shows once it
+  // holds the selected page, so text typed right after "New page" can't be
+  // overwritten when that page loads
+  const [draft, setDraft] = useState<{ id: string | null; title: string; body: string }>({ id: null, title: '', body: '' });
   const [preview, setPreview] = useState(false);
   const saveTimer = useRef<number | undefined>(undefined);
 
@@ -179,8 +197,8 @@ export function NotebookPanel({ game, rules, cursor, focus, onSnapshot, onNotice
 
   const note = sel?.kind === 'note' ? data?.notes.find((n) => n.id === sel.id) : undefined;
   useEffect(() => {
-    if (note) setDraft({ title: note.title, body: note.body });
-  }, [sel?.kind === 'note' ? sel.id : null]);
+    if (note && draft.id !== note.id) setDraft({ id: note.id, title: note.title, body: note.body });
+  }, [note?.id]);
 
   const newNote = async () => {
     try {
@@ -194,14 +212,14 @@ export function NotebookPanel({ game, rules, cursor, focus, onSnapshot, onNotice
     }
   };
 
-  const scheduleSave = (next: { title: string; body: string }) => {
+  const scheduleSave = (next: { id: string | null; title: string; body: string }) => {
     setDraft(next);
-    if (sel?.kind !== 'note') return;
+    if (sel?.kind !== 'note' || next.id !== sel.id) return;
     const id = sel.id;
     window.clearTimeout(saveTimer.current);
     saveTimer.current = window.setTimeout(async () => {
       try {
-        const res = await api.updateNote(id, next, cursor());
+        const res = await api.updateNote(id, { title: next.title, body: next.body }, cursor());
         onSnapshot(res);
         setData((d) => (d ? { ...d, notes: d.notes.map((n) => (n.id === id ? res.note : n)) } : d));
       } catch (err) {
@@ -243,7 +261,7 @@ export function NotebookPanel({ game, rules, cursor, focus, onSnapshot, onNotice
           {data.notes.map((n) => (
             <li key={n.id}>
               <button class={`nb-item${sel?.kind === 'note' && sel.id === n.id ? ' is-selected' : ''}`} onClick={() => setSel({ kind: 'note', id: n.id })}>
-                <span class={`nb-item__mark${n.qualifies ? ' is-read' : ''}`}>✎</span>
+                <span class={`nb-item__mark${n.qualifies ? ' is-read' : ''}`}>{n.kind === 'consult' ? '💬' : '✎'}</span>
                 {n.title}
               </button>
             </li>
@@ -254,7 +272,7 @@ export function NotebookPanel({ game, rules, cursor, focus, onSnapshot, onNotice
         </button>
         <p class="fine">
           Your pages earn +{rules.note_rp} RP once they reach {rules.note_min_words} words, up to one page per mission you
-          have attempted ({game.notes.awarded}/{game.notes.cap} earned so far).
+          have attempted ({game.notes.awarded}/{game.notes.cap} earned so far). Consultations you add (💬) earn none.
         </p>
         <ExportButtons onNotice={onNotice} compact />
       </nav>
@@ -271,7 +289,7 @@ export function NotebookPanel({ game, rules, cursor, focus, onSnapshot, onNotice
             onRead={() => undefined}
           />
         )}
-        {note && (
+        {note && draft.id === note.id && (
           <div class="note-editor" data-note={note.id}>
             <input
               class="note-editor__title"
@@ -287,9 +305,15 @@ export function NotebookPanel({ game, rules, cursor, focus, onSnapshot, onNotice
                 Preview
               </button>
               <span class="toolbar__spacer" />
-              <span class={`words${words >= rules.note_min_words ? ' words--ok' : ''}`} data-testid="word-count">
-                {words}/{rules.note_min_words} words
-              </span>
+              {note.kind === 'consult' ? (
+                <span class="words" data-testid="word-count" title="Saved from a consultation">
+                  Consultation · earns no RP
+                </span>
+              ) : (
+                <span class={`words${words >= rules.note_min_words ? ' words--ok' : ''}`} data-testid="word-count">
+                  {words}/{rules.note_min_words} words
+                </span>
+              )}
               <button class="btn btn--ghost" onClick={deleteNote}>
                 Delete
               </button>

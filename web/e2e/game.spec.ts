@@ -118,6 +118,18 @@ test('a full campaign: learn, fail, read, write, hint, pass, export, win', async
   await expect(page.locator('[data-testid="end-won"]')).toContainText('Walter is going home');
   await expect(page.locator('[data-testid="end-won"]')).toContainText('New campaign unlocked');
   await page.screenshot({ path: 'test-results/won.png' });
+
+  // the end screen offers the mission script: briefings as comments, then the passing code
+  const [script] = await Promise.all([
+    page.waitForEvent('download'),
+    page.click('[data-testid="end-won"] [data-testid="download-script"]'),
+  ]);
+  expect(script.suggestedFilename()).toBe('curelab-demo-one.py');
+  const py = readFileSync((await script.path())!, 'utf8');
+  expect(py).toContain('# Mission 1:');
+  expect(py).toContain('ranked = sorted(counts)');
+  expect(py).not.toContain('# (not passed yet)');
+
   await page.getByRole('button', { name: 'Campaigns' }).click();
   await expect(page.locator('[data-testid="start-demo-two"]')).toBeEnabled();
 });
@@ -137,4 +149,40 @@ test('the disease tab shows the trait tree', async ({ page }) => {
   await expect(page.locator('.tier:not(.tier--events) .trait--hidden')).toHaveCount(0);
   await page.click('[data-testid="reveal-tree"]');
   await expect(page.locator('[data-trait="cough"]')).toHaveCount(0);
+});
+
+test('consult another doctor at any point and keep the answer in the notebook', async ({ page }) => {
+  await page.request.post('/api/game/abandon'); // an earlier test may have left a game running
+  await page.goto('/', { waitUntil: 'domcontentloaded' });
+  await page.click('[data-testid="start-demo-one"]');
+  await page.click('[data-testid="begin"]');
+
+  // straight from a mission, before any mistake
+  await page.click('[data-mission="demo-m01-list"]');
+  await page.click('[data-testid="open-consult"]');
+  await expect(page.locator('[data-testid="consult-about"]')).toHaveValue('demo-m01-list');
+  await page.fill('[data-testid="consult-input"]', 'What is UMAP, mathematically?');
+  await page.click('[data-testid="consult-ask"]');
+  await expect(page.locator('[data-testid="consult-answer"]')).toContainText('What is UMAP, mathematically?');
+  await expect(page.locator('[data-testid="consult-input"]')).toHaveValue('');
+
+  // the conversation is saved with the game
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await expect(page.locator('[data-testid="consult-answer"]')).toHaveCount(1);
+
+  // adding it to the lab notebook earns no research points
+  const rp = await page.locator('[data-testid="rp"]').textContent();
+  await page.click('[data-testid="consult-save"]');
+  await expect(page.locator('.toast', { hasText: 'no RP' })).toBeVisible();
+  await expect(page.locator('[data-testid="rp"]')).toHaveText(rp!);
+  await page.click('[data-tab="notebook"]');
+  await page.locator('.nb-item', { hasText: 'Consult: What is UMAP' }).click();
+  await expect(page.locator('[data-testid="word-count"]')).toContainText('earns no RP');
+
+  // clearing takes a second click
+  await page.click('[data-tab="consult"]');
+  await page.click('[data-testid="consult-clear"]');
+  await expect(page.locator('[data-testid="consult-answer"]')).toHaveCount(1);
+  await page.click('[data-testid="consult-clear"]');
+  await expect(page.locator('[data-testid="consult-answer"]')).toHaveCount(0);
 });

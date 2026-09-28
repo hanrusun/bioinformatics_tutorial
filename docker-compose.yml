@@ -8,6 +8,10 @@
 #
 # The ports are bound to 127.0.0.1 on purpose: the game runs the code you
 # type, so it should only be reachable from your own machine.
+#
+# Optional "consult another doctor" chat: put OPENAI_API_KEY=... (ChatGPT) or
+# ANTHROPIC_API_KEY=... (Claude) in a file called .env next to this one, then
+# run `docker compose up -d seurat` (or signac) again. .env is gitignored.
 services:
   seurat:
     build:
@@ -21,6 +25,11 @@ services:
     environment:
       # Set to 1 to open later campaigns without winning Campaign 1 first.
       CURELAB_UNLOCK_ALL: "0"
+      # consult another doctor (read from .env; empty = off)
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      CURELAB_CONSULT_PROVIDER: ${CURELAB_CONSULT_PROVIDER:-}
+      CURELAB_CONSULT_MODEL: ${CURELAB_CONSULT_MODEL:-}
     restart: unless-stopped
 
   signac:
@@ -37,6 +46,10 @@ services:
       - curelab-signac-data:/data
     environment:
       CURELAB_UNLOCK_ALL: "0"
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      CURELAB_CONSULT_PROVIDER: ${CURELAB_CONSULT_PROVIDER:-}
+      CURELAB_CONSULT_MODEL: ${CURELAB_CONSULT_MODEL:-}
     restart: unless-stopped
 
 volumes:
