@@ -12,7 +12,7 @@
 
 s0: 0.0
 creep_per_hour: 7.7
-h_max_per_hour: 150.0
+h_max_per_hour: 300.0     # doubled from 150 so the patient declines twice as fast
 exponent: 2.0
 gain_scale: 0.9
 # Severity added per wrong attempt once every trait has evolved.
@@ -66,9 +66,12 @@ research_points:
   min_read_seconds: 4    # a page must be open this long before "Read" counts
 
 targets:
-  # Checked on Normal by tools/simulate_balance.py --assert
-  idle_survival_hours_min: 6.0
+  # Checked on Normal by tools/simulate_balance.py --assert. Health declines
+  # at twice the original rate (h_max_per_hour 300, was 150): the simulated
+  # careful player still wins, while the simulated "typical" player (~30
+  # mistakes over ~2.5 h of counted play) now wins only about half the time.
+  idle_survival_hours_min: 5.0
   careful_final_health_min: 80
-  typical_win_rate_min: 0.9
-  typical_median_health: [15, 60]
+  typical_win_rate_min: 0.35
+  typical_median_health: [0, 30]
   reckless_loss_rate_min: 0.9

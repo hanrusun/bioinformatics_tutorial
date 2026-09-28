@@ -225,13 +225,21 @@ For UI work, run `cd web && npm run dev`. It serves on :5173 and proxies
 ## Balance
 
 All numbers live in [`engine/curelab/balance.yaml`](engine/curelab/balance.yaml).
-`simulate_balance.py` plays hundreds of simulated learners against the real
-engine and illness trees. On Normal:
+`simulate_balance.py` plays hundreds of simulated players against the real
+engine and illness trees. They are made-up profiles, not measurements of real
+learners. Health declines at twice the original rate (`h_max_per_hour: 300`).
+On Normal:
 
-- A patient with no mistakes survives about 7 hours of active play.
-- A typical learner (about 2 wrong submissions per mission, about 3 hours)
-  wins about 98% of the time, with the patient in "serious" condition.
-- A reckless player (about 60+ mistakes) loses.
+- A patient with no mistakes survives about 5.5 hours of counted play (the
+  clock only runs while the tab is visible and no code is running).
+- The simulated "typical" player (about 30 wrong submissions and quiz
+  answers over 2.5 hours of counted play) wins about 40–60% of games.
+- The simulated reckless player (about 50 mistakes) always loses.
+
+Real sessions are usually shorter and gentler than that. Health falls with
+the square of lethality, so early mistakes barely show: an hour of counted
+play with 10 mistakes leaves the patient at about 96% health (98% before
+the decline was doubled).
 
 ## Art
 

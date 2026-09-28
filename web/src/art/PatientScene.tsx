@@ -527,9 +527,10 @@ export function PatientScene({ art, stage, overlays, rr, hr, flash }: SceneProps
           <ellipse cx={bodyEnd - 14} cy="244" rx="14" ry="10" fill={look.blanket} stroke={look.blanketShade} />
         </g>
 
-        {/* arm on top of the blanket with the IV */}
+        {/* arm on top of the blanket with the IV: the sleeve starts inside the
+            shoulder, so it reads as one limb over the blanket's edge */}
         <g>
-          <path d={`M${head.cx + 30} 238 C${head.cx + 50} 240 ${head.cx + 70} 244 262 248`} stroke={look.gown} stroke-width="13" stroke-linecap="round" fill="none" />
+          <path d={`M${head.cx + 22} 231 C${head.cx + 44} 236 ${head.cx + 68} 245 262 248`} stroke={look.gown} stroke-width="13" stroke-linecap="round" fill="none" />
           <path d="M236 246 C246 247 256 248 268 248" stroke={skin} stroke-width="10" stroke-linecap="round" />
           <ellipse cx="274" cy="248" rx="7" ry="5.5" fill={skin} />
           <rect x="250" y="243" width="9" height="9" rx="1.5" fill="#f5f2e8" opacity="0.95" />
