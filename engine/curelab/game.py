@@ -63,7 +63,7 @@ class Event(BaseModel):
 
 
 class ConsultMessage(BaseModel):
-    """One turn of a "consult another doctor" conversation."""
+    """One turn of a chat: "consult another doctor", or the bedside chat."""
 
     role: Literal["user", "assistant"]
     text: str  # what the learner typed / the doctor's answer
@@ -100,6 +100,8 @@ class GameState(BaseModel):
     events: list[Event] = []
     next_event_id: int = 1
     consult: list[ConsultMessage] = []
+    # the bedside chat with the patient (same shape; no mission)
+    bedside: list[ConsultMessage] = []
     stage: str = "stable"
     started_at: str = Field(default_factory=_now)
     ended_at: Optional[str] = None

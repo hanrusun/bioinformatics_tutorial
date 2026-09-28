@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from 'preact/hooks';
+import { useEffect, useState } from 'preact/hooks';
 import { api, consultAsk } from '../api';
 import { draftKey, load, save } from '../lib/storage';
-import type { ConsultMessage, ConsultStatus, GameView, MissionDetail, Snapshot } from '../types';
-import { Markdown } from './Markdown';
+import type { ConsultStatus, GameView, MissionDetail, Snapshot } from '../types';
+import { ChatActions, ChatThread, useChat } from './Chat';
 
 interface Props {
   game: GameView;
@@ -18,14 +18,12 @@ interface Props {
 const SHARE_KEY = 'curelab:consult-share';
 const EXAMPLES = ['What is UMAP, mathematically?', 'Why do we log-normalize counts before PCA?', 'What does this error mean?'];
 
-function Setup() {
+/** How to switch the chats on (shown by the consult and bedside tabs). */
+export function ChatSetup({ id, title, what }: { id: string; title: string; what: string }) {
   return (
-    <div class="consult consult--off" data-testid="consult-off">
-      <h3>Consult another doctor</h3>
-      <p>
-        Ask a chatbot colleague anything, at any point: about the mission you're on, your error, the maths behind a
-        method, or biology beyond the game. It's switched off because no API key is set.
-      </p>
+    <div class="consult consult--off" data-testid={`${id}-off`}>
+      <h3>{title}</h3>
+      <p>{what} It's switched off because no API key is set.</p>
       <ol>
         <li>
           Next to <code>docker-compose.yml</code>, create a file called <code>.env</code> with one line:{' '}
@@ -37,21 +35,21 @@ function Setup() {
       </ol>
       <p class="muted">
         A ChatGPT Plus subscription can't be used by other apps: you need an API key from platform.openai.com or
-        console.anthropic.com, which bills per question. The key stays on the game server; this page never sees it.
+        console.anthropic.com, which bills per message. The key stays on the game server; this page never sees it.
+        The same key runs both chats: consulting another doctor and talking to the patient.
       </p>
     </div>
   );
 }
 
 export function ConsultPanel({ game, status, missionId, cursor, onSnapshot, onNotice }: Props) {
-  const [messages, setMessages] = useState<ConsultMessage[]>([]);
-  const [question, setQuestion] = useState('');
-  const [pending, setPending] = useState<{ question: string; answer: string } | null>(null);
   const [share, setShare] = useState(load(SHARE_KEY) !== '0');
   const [about, setAbout] = useState<string | null>(missionId);
   const [detail, setDetail] = useState<MissionDetail | null>(null);
-  const [confirmClear, setConfirmClear] = useState(false);
-  const endRef = useRef<HTMLDivElement>(null);
+  const chat = useChat(
+    { cursor, onSnapshot, onNotice, history: api.consultHistory, clear: api.consultClear, save: api.consultSave },
+    [game.started_at, status.enabled],
+  );
 
   const open = game.missions.filter((m) => m.status !== 'locked');
   const titleOf = (id: string | null) => {
@@ -62,63 +60,25 @@ export function ConsultPanel({ game, status, missionId, cursor, onSnapshot, onNo
   useEffect(() => setAbout(missionId), [missionId]);
   useEffect(() => save(SHARE_KEY, share ? '1' : '0'), [share]);
   useEffect(() => {
-    if (!status.enabled) return;
-    api
-      .consultHistory()
-      .then((d) => setMessages(d.messages))
-      .catch((e) => onNotice(String(e), 'bad'));
-  }, [game.started_at, status.enabled]);
-  useEffect(() => {
     setDetail(null);
     if (about) api.mission(about).then(setDetail).catch(() => undefined);
   }, [about]);
-  useEffect(() => endRef.current?.scrollIntoView?.({ block: 'end' }), [messages.length, pending?.answer]);
 
-  if (!status.enabled) return <Setup />;
+  if (!status.enabled)
+    return (
+      <ChatSetup
+        id="consult"
+        title="Consult another doctor"
+        what="Ask a chatbot colleague anything, at any point: about the mission you're on, your error, the maths behind a method, or biology beyond the game."
+      />
+    );
 
-  const ask = async (text?: string) => {
-    const q = (text ?? question).trim();
-    if (!q || pending) return;
-    // the editor's current draft for that mission (or its starter code if untouched)
-    const code = about ? (load(draftKey(game.campaign, about)) ?? detail?.starter_code ?? '') : '';
-    setPending({ question: q, answer: '' });
-    setQuestion('');
-    try {
-      const data = await consultAsk({ message: q, mission_id: about, code, include_code: share }, (piece) =>
-        setPending((p) => (p ? { ...p, answer: p.answer + piece } : p)),
-      );
-      setMessages(data.messages);
-    } catch (err) {
-      setQuestion(q); // give the question back so it can be asked again
-      onNotice((err as Error).message, 'bad');
-    } finally {
-      setPending(null);
-    }
-  };
-
-  const addToNotebook = async (index: number | null) => {
-    try {
-      const res = await api.consultSave(index, cursor());
-      onSnapshot(res);
-      onNotice(`Added “${res.note.title}” to the lab notebook (consultations earn no RP).`, 'info');
-    } catch (err) {
-      onNotice((err as Error).message, 'bad');
-    }
-  };
-
-  const clear = async () => {
-    if (!confirmClear) {
-      setConfirmClear(true);
-      setTimeout(() => setConfirmClear(false), 4000);
-      return;
-    }
-    setConfirmClear(false);
-    try {
-      setMessages((await api.consultClear()).messages);
-    } catch (err) {
-      onNotice((err as Error).message, 'bad');
-    }
-  };
+  const send = () =>
+    chat.ask((q, onDelta) => {
+      // the editor's current draft for that mission (or its starter code if untouched)
+      const code = about ? (load(draftKey(game.campaign, about)) ?? detail?.starter_code ?? '') : '';
+      return consultAsk({ message: q, mission_id: about, code, include_code: share }, onDelta);
+    });
 
   return (
     <div class="consult" data-testid="consult">
@@ -130,14 +90,7 @@ export function ConsultPanel({ game, status, missionId, cursor, onSnapshot, onNo
             against the vignettes
           </p>
         </div>
-        <div class="consult__actions">
-          <button class="btn btn--ghost" onClick={() => addToNotebook(null)} disabled={!messages.length || !!pending} data-testid="consult-save-all">
-            📓 Add whole consultation to notebook
-          </button>
-          <button class="btn btn--ghost" onClick={clear} disabled={!messages.length || !!pending} data-testid="consult-clear">
-            {confirmClear ? 'Really clear?' : 'Clear'}
-          </button>
-        </div>
+        <ChatActions chat={chat} id="consult" whole="whole consultation" />
       </header>
 
       <div class="consult__context">
@@ -166,67 +119,18 @@ export function ConsultPanel({ game, status, missionId, cursor, onSnapshot, onNo
         </span>
       </div>
 
-      <div class="consult__log" data-testid="consult-log">
-        {!messages.length && !pending && (
-          <div class="consult__empty">
-            <p class="muted">Ask anything, at any point. For example:</p>
-            {EXAMPLES.map((ex) => (
-              <button class="btn btn--ghost" onClick={() => setQuestion(ex)}>
-                {ex}
-              </button>
-            ))}
-          </div>
-        )}
-        {messages.map((m, i) =>
-          m.role === 'user' ? (
-            <div class="bubble bubble--me" key={i}>
-              <div class="bubble__meta">
-                You · day {m.day}
-                {m.mission_id ? ` · ${titleOf(m.mission_id)}` : ''}
-              </div>
-              <p>{m.text}</p>
-            </div>
-          ) : (
-            <div class="bubble bubble--doctor" key={i} data-testid="consult-answer">
-              <Markdown src={m.text} />
-              <button class="btn btn--ghost btn--tiny" onClick={() => addToNotebook(i)} disabled={!!pending} data-testid="consult-save">
-                📓 Add to notebook
-              </button>
-            </div>
-          ),
-        )}
-        {pending && (
-          <>
-            <div class="bubble bubble--me">
-              <div class="bubble__meta">You</div>
-              <p>{pending.question}</p>
-            </div>
-            <div class="bubble bubble--doctor bubble--pending" data-testid="consult-pending">
-              {pending.answer ? <Markdown src={pending.answer} /> : <p class="muted">The doctor is thinking…</p>}
-            </div>
-          </>
-        )}
-        <div ref={endRef} />
-      </div>
-
-      <div class="consult__ask">
-        <textarea
-          value={question}
-          placeholder="Ask the consulting doctor… (Ctrl/⌘+Enter to send)"
-          onInput={(e) => setQuestion((e.target as HTMLTextAreaElement).value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
-              e.preventDefault();
-              ask();
-            }
-          }}
-          rows={3}
-          data-testid="consult-input"
-        />
-        <button class="btn btn--primary" onClick={() => ask()} disabled={!question.trim() || !!pending} data-testid="consult-ask">
-          {pending ? 'Waiting…' : 'Ask'}
-        </button>
-      </div>
+      <ChatThread
+        chat={chat}
+        id="consult"
+        tone="doctor"
+        meta={(m) => `You · day ${m.day}${m.mission_id ? ` · ${titleOf(m.mission_id)}` : ''}`}
+        empty="Ask anything, at any point. For example:"
+        examples={EXAMPLES}
+        thinking="The doctor is thinking…"
+        placeholder="Ask the consulting doctor…"
+        sendLabel="Ask"
+        onSend={send}
+      />
     </div>
   );
 }

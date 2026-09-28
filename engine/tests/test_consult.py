@@ -43,9 +43,9 @@ def start(client):
     assert r.status_code == 200, r.text
 
 
-def ask(client, **body):
+def ask(client, path="/api/consult", **body):
     """POST a question and parse the server-sent events."""
-    with client.stream("POST", "/api/consult", json=body) as r:
+    with client.stream("POST", path, json=body) as r:
         assert r.status_code == 200, r.read()
         raw = "".join(r.iter_text())
     events = []

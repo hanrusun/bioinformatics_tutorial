@@ -96,6 +96,17 @@ export interface ConsultData extends ConsultStatus {
   messages: ConsultMessage[];
 }
 
+/** The bedside chat with the patient (same key and model as consulting). */
+export interface BedsideData extends ConsultData {
+  /** the patient's first name */
+  patient: string;
+  /** too young to talk: babbles, with the family member sometimes there */
+  toddler: boolean;
+  companion: string;
+  /** false once the patient has died */
+  open: boolean;
+}
+
 export interface GameEvent {
   id: number;
   kind: 'trait' | 'mission' | 'quiz' | 'rp' | 'stage' | 'won' | 'lost' | string;
@@ -267,8 +278,8 @@ export interface Note {
   updated: string;
   words: number;
   qualifies: boolean;
-  /** "consult": a saved consultation; it never earns research points */
-  kind: 'note' | 'consult';
+  /** "consult" / "bedside": a saved chat; it never earns research points */
+  kind: 'note' | 'consult' | 'bedside';
 }
 
 export interface NotebookData {

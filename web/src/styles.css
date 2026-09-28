@@ -334,7 +334,13 @@ blockquote cite { display: block; font-style: normal; font-size: 12px; margin-to
 .bubble--doctor { align-self: flex-start; background: var(--panel-2); }
 .bubble--doctor .md > :first-child { margin-top: 0; }
 .bubble--doctor .md > :last-child { margin-bottom: 4px; }
+.bubble--patient { align-self: flex-start; background: #2a2218; border-color: #4a3a26; }
+.bubble--patient .md > :first-child { margin-top: 0; }
+.bubble--patient .md > :last-child { margin-bottom: 4px; }
 .bubble--pending { border-style: dashed; }
+p.consult__context { margin: 0; }
+.consult__closed { margin: 0; padding: 10px 12px; border: 1px dashed var(--line); border-radius: 8px; text-align: center; }
+.patient-talk { width: 100%; }
 .bubble__meta { font-size: 11px; color: var(--muted); margin-bottom: 2px; }
 .btn--tiny { padding: 3px 8px; font-size: 12px; }
 .disease-head { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; }

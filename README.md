@@ -141,6 +141,12 @@ same engine and UI without needing the R image.</sub>
   It coaches you on the mission you're on without writing its solution, and
   answers anything beyond the game. You can add an answer, or the whole
   conversation, to the lab notebook; those pages earn no RP.
+- **💬 Talk to the patient** (same key): a separate chat in which a chatbot
+  plays your patient, from the **Talk to …** tab or the button under the
+  vitals. Ask "how are you feeling?" and they answer in character, from their
+  chart: how ill they are right now and what has happened to them so far.
+  Mia, who is two, babbles and sends emojis; her mom is sometimes there to
+  chime in. These chats can go into the notebook too, also without RP.
 - **Export** your notebook at any time, or from the end screen: copy your
   notes to the clipboard, or download your notes or the whole notebook
   (reference pages with citations, your notes, the mission log and the
@@ -188,6 +194,20 @@ account's terms.
 **Cost.** Consulting is free in the game: no RP, and the clock keeps
 running. The API bills your account; a typical question on Claude costs
 about 1–5 US cents.
+
+### Talk to the patient
+
+The same key also runs a second, separate chat: the **Talk to …** tab, named
+after your patient. A chatbot plays the patient, using their background from
+the illness file and, with each message, a short chart built from the game:
+the day, how ill they are now, the symptoms and ward events so far, and
+roughly how the research is going. They answer as a patient would. They don't
+know about the lab work, and they never see numbers or game mechanics.
+Patients under five babble, sending a word or two and emojis, and the
+family member who is sometimes at the bedside may add a line. After a loss
+the chat closes but stays readable. On Claude it runs at low effort, since
+answers are short. It's free in the game and the clock keeps running; with
+each message, only your words, the earlier turns and that chart are sent.
 
 ## Grounded in the official vignettes
 

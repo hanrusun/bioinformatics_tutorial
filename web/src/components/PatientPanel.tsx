@@ -7,9 +7,10 @@ interface Props {
   game: GameView;
   patient: PatientInfo;
   flash: boolean;
+  onTalk: () => void;
 }
 
-export function PatientPanel({ game, patient, flash }: Props) {
+export function PatientPanel({ game, patient, flash, onTalk }: Props) {
   const child = Number(patient.age) < 12;
   const notes = [...game.timeline].reverse().slice(0, 40);
   return (
@@ -27,6 +28,11 @@ export function PatientPanel({ game, patient, flash }: Props) {
       </div>
       <Scene art={patient.art} stage={game.stage} overlays={game.overlays} rr={game.vitals.rr} hr={game.vitals.hr} flash={flash} />
       <VitalsMonitor vitals={game.vitals} child={child} alarm={game.stage === 'critical'} />
+      {game.status !== 'lost' && (
+        <button class="btn btn--ghost patient-talk" onClick={onTalk} data-testid="open-bedside">
+          💬 Talk to {patient.first_name}
+        </button>
+      )}
       <details class="patient-card">
         <summary>About {patient.first_name}</summary>
         <p>{patient.background}</p>

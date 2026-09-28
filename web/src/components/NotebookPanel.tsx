@@ -261,7 +261,7 @@ export function NotebookPanel({ game, rules, cursor, focus, onSnapshot, onNotice
           {data.notes.map((n) => (
             <li key={n.id}>
               <button class={`nb-item${sel?.kind === 'note' && sel.id === n.id ? ' is-selected' : ''}`} onClick={() => setSel({ kind: 'note', id: n.id })}>
-                <span class={`nb-item__mark${n.qualifies ? ' is-read' : ''}`}>{n.kind === 'consult' ? '💬' : '✎'}</span>
+                <span class={`nb-item__mark${n.qualifies ? ' is-read' : ''}`}>{n.kind === 'note' ? '✎' : '💬'}</span>
                 {n.title}
               </button>
             </li>
@@ -272,7 +272,7 @@ export function NotebookPanel({ game, rules, cursor, focus, onSnapshot, onNotice
         </button>
         <p class="fine">
           Your pages earn +{rules.note_rp} RP once they reach {rules.note_min_words} words, up to one page per mission you
-          have attempted ({game.notes.awarded}/{game.notes.cap} earned so far). Consultations you add (💬) earn none.
+          have attempted ({game.notes.awarded}/{game.notes.cap} earned so far). Chats you add (💬) earn none.
         </p>
         <ExportButtons onNotice={onNotice} compact />
       </nav>
@@ -305,9 +305,9 @@ export function NotebookPanel({ game, rules, cursor, focus, onSnapshot, onNotice
                 Preview
               </button>
               <span class="toolbar__spacer" />
-              {note.kind === 'consult' ? (
-                <span class="words" data-testid="word-count" title="Saved from a consultation">
-                  Consultation · earns no RP
+              {note.kind !== 'note' ? (
+                <span class="words" data-testid="word-count" title="Saved from a chat">
+                  {note.kind === 'bedside' ? 'Bedside chat' : 'Consultation'} · earns no RP
                 </span>
               ) : (
                 <span class={`words${words >= rules.note_min_words ? ' words--ok' : ''}`} data-testid="word-count">

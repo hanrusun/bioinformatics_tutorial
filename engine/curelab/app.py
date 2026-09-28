@@ -10,13 +10,14 @@ import time
 from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import JSONResponse, PlainTextResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
+from . import bedside
 from .balance import Balance, load_balance
 from .consult import (
     HISTORY_LIMIT,
@@ -81,8 +82,13 @@ class AppState:
     last_save: float = 0.0
     read_tokens: dict[str, tuple[str, float]] = field(default_factory=dict)
     consultant: Any = None  # created on first use (see consult.make_consultant)
+    bedside_consultant: Any = None  # the patient's voice: same key, lighter effort
 
-    def get_consultant(self) -> Any:
+    def get_consultant(self, chat: str = "consult") -> Any:
+        if chat == "bedside":
+            if self.bedside_consultant is None:
+                self.bedside_consultant = make_consultant(self.settings.consult, effort="low")
+            return self.bedside_consultant
         if self.consultant is None:
             self.consultant = make_consultant(self.settings.consult)
         return self.consultant
@@ -300,6 +306,10 @@ class ConsultBody(BaseModel):
     mission_id: Optional[str] = None
     code: str = ""
     include_code: bool = True
+
+
+class BedsideBody(BaseModel):
+    message: str
 
 
 class ConsultSaveBody(BaseModel):
@@ -679,6 +689,82 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
             headers={"Content-Disposition": f'attachment; filename="{script_filename(pack, c)}"'},
         )
 
+    # ------------------------------------------------------------ chats
+    # "Consult another doctor" and the bedside chat with the patient share the
+    # API key, the streaming and the notebook saving; each has its own persona
+    # and history (GameState.consult / GameState.bedside).
+    def _require_chat() -> Game:
+        if not settings.consult.enabled:
+            raise HTTPException(409, "Consulting is off: add OPENAI_API_KEY or ANTHROPIC_API_KEY to your .env file.")
+        return state.require_game()
+
+    def _sse(event: str, data: dict[str, Any]) -> str:
+        return f"event: {event}\ndata: {json.dumps(data)}\n\n"
+
+    def _chat_stream(
+        game: Game,
+        log: str,
+        consultant: Any,
+        system: str,
+        text: str,
+        prompt: str,
+        view: Callable[[Game], dict[str, Any]],
+        mission_id: Optional[str] = None,
+    ) -> Response:
+        """Stream an answer as server-sent events (delta / error / done) and
+        keep the exchange in the game's ``log`` once it has fully arrived."""
+        history = [{"role": t.role, "content": t.prompt or t.text} for t in getattr(game.state, log)[-HISTORY_LIMIT:]]
+        messages = history + [{"role": "user", "content": prompt}]
+
+        async def events():
+            parts: list[str] = []
+            try:
+                async for piece in consultant.stream(system, messages):
+                    parts.append(piece)
+                    yield _sse("delta", {"text": piece})
+            except ConsultError as exc:
+                yield _sse("error", {"detail": str(exc)})
+                return
+            except Exception as exc:  # unexpected SDK failure: report, don't crash the game
+                yield _sse("error", {"detail": f"The chat failed: {exc}"})
+                return
+            answer = "".join(parts).strip()
+            if state.game is not game:  # a new game started meanwhile
+                return
+            day = game.day
+            turns = getattr(game.state, log)
+            turns.append(ConsultMessage(role="user", text=text, prompt=prompt, mission_id=mission_id, day=day))
+            turns.append(ConsultMessage(role="assistant", text=answer, mission_id=mission_id, day=day))
+            state.save()
+            yield _sse("done", view(game))
+
+        return StreamingResponse(
+            events(), media_type="text/event-stream", headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"}
+        )
+
+    def _chat_to_notebook(
+        game: Game, log: str, body: ConsultSaveBody, *, kind: str, speaker: str, label: str, prefix: str, whole: str
+    ) -> dict[str, Any]:
+        """Save one exchange (``body.index``) or the whole chat as a notebook
+        page. Chat pages never earn research points."""
+        turns = [t.public() for t in getattr(game.state, log)]
+        if body.index is not None:
+            i = body.index - (body.index % 2)  # the question of that exchange
+            if i < 0 or i + 1 >= len(turns):
+                raise HTTPException(404, "no such message")
+            turns = turns[i : i + 2]
+        if not turns:
+            raise HTTPException(409, "nothing to save yet")
+        titles = {m.id: m.title for m in game.campaign.missions}
+        first = turns[0]["text"].strip().splitlines()[0]
+        title = f"{prefix}: " + (first if len(first) <= 60 else first[:57].rstrip() + "…")
+        if body.index is None:
+            title = f"{whole}, day {turns[0]['day']}–{turns[-1]['day']}"
+        note = Note(title=title, body=transcript_markdown(turns, speaker, label, titles), kind=kind)  # type: ignore[arg-type]
+        profile.notebook(game.campaign.id).notes.append(note)
+        state.save()
+        return {"note": _note_view(note), **game_snapshot(state, body.since)}
+
     # ------------------------------------------------------------ consult
     def _consult_view(game: Game) -> dict[str, Any]:
         return {**settings.consult.public(), "messages": [m.public() for m in game.state.consult]}
@@ -689,9 +775,7 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
 
     @app.post("/api/consult")
     async def consult_ask(body: ConsultBody) -> Response:
-        if not settings.consult.enabled:
-            raise HTTPException(409, "Consulting is off: add OPENAI_API_KEY or ANTHROPIC_API_KEY to your .env file.")
-        game = state.require_game()
+        game = _require_chat()
         question = body.message.strip()
         if not question:
             raise HTTPException(400, "type a question first")
@@ -721,43 +805,12 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
             include_code=body.include_code,
             language=pack.editor_mode,
         )
-        prompt = question_prompt(context, question)
-        history = [{"role": t.role, "content": t.prompt or t.text} for t in game.state.consult[-HISTORY_LIMIT:]]
-        messages = history + [{"role": "user", "content": prompt}]
         try:
             consultant = state.get_consultant()
         except ConsultError as exc:
             raise HTTPException(409, str(exc))
-
-        def sse(event: str, data: dict[str, Any]) -> str:
-            return f"event: {event}\ndata: {json.dumps(data)}\n\n"
-
-        async def events():
-            parts: list[str] = []
-            try:
-                async for text in consultant.stream(SYSTEM_PROMPT, messages):
-                    parts.append(text)
-                    yield sse("delta", {"text": text})
-            except ConsultError as exc:
-                yield sse("error", {"detail": str(exc)})
-                return
-            except Exception as exc:  # unexpected SDK failure: report, don't crash the game
-                yield sse("error", {"detail": f"The consultation failed: {exc}"})
-                return
-            answer = "".join(parts).strip()
-            if state.game is not game:  # a new game started meanwhile
-                return
-            day = game.day
-            game.state.consult.append(
-                ConsultMessage(role="user", text=question, prompt=prompt, mission_id=body.mission_id, day=day)
-            )
-            game.state.consult.append(ConsultMessage(role="assistant", text=answer, mission_id=body.mission_id, day=day))
-            state.save()
-            yield sse("done", _consult_view(game))
-
-        return StreamingResponse(
-            events(), media_type="text/event-stream", headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"}
-        )
+        prompt = question_prompt(context, question)
+        return _chat_stream(game, "consult", consultant, SYSTEM_PROMPT, question, prompt, _consult_view, body.mission_id)
 
     @app.post("/api/consult/clear")
     async def consult_clear() -> dict[str, Any]:
@@ -768,28 +821,59 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
 
     @app.post("/api/consult/notebook")
     async def consult_to_notebook(body: ConsultSaveBody) -> dict[str, Any]:
-        """Save a question and its answer (or the whole conversation) as a
-        notebook page. Consultation pages never earn research points."""
+        label = settings.consult.public()["label"]
+        return _chat_to_notebook(
+            state.require_game(), "consult", body, kind="consult", speaker="Consulting doctor", label=label,
+            prefix="Consult", whole="Consultation",
+        )
+
+    # ------------------------------------------------------------ bedside
+    def _bedside_view(game: Game) -> dict[str, Any]:
+        ill = game.illness
+        return {
+            **settings.consult.public(),
+            "messages": [m.public() for m in game.state.bedside],
+            "patient": ill.patient.first_name,
+            "toddler": bedside.toddler(ill),
+            "companion": bedside.companion_name(ill),
+            # nobody to talk to once the patient has died
+            "open": game.state.status != "lost",
+        }
+
+    @app.get("/api/bedside")
+    async def bedside_history() -> dict[str, Any]:
+        return _bedside_view(state.require_game())
+
+    @app.post("/api/bedside")
+    async def bedside_say(body: BedsideBody) -> Response:
+        game = _require_chat()
+        if game.state.status == "lost":
+            raise HTTPException(409, f"{game.illness.patient.first_name} has died. The conversation is kept for you to read.")
+        said = body.message.strip()
+        if not said:
+            raise HTTPException(400, "say something first")
+        try:
+            consultant = state.get_consultant("bedside")
+        except ConsultError as exc:
+            raise HTTPException(409, str(exc))
+        prompt = bedside.message_prompt(bedside.chart(game), said)
+        return _chat_stream(game, "bedside", consultant, bedside.system_prompt(game.illness), said, prompt, _bedside_view)
+
+    @app.post("/api/bedside/clear")
+    async def bedside_clear() -> dict[str, Any]:
         game = state.require_game()
-        turns = [t.public() for t in game.state.consult]
-        if body.index is not None:
-            i = body.index - (body.index % 2)  # the question of that exchange
-            if i < 0 or i + 1 >= len(turns):
-                raise HTTPException(404, "no such consultation")
-            turns = turns[i : i + 2]
-        if not turns:
-            raise HTTPException(409, "nothing to save yet")
-        titles = {m.id: m.title for m in game.campaign.missions}
-        label = settings.consult.public()["label"] or "consulting doctor"
-        nb = profile.notebook(game.campaign.id)
-        first = turns[0]["text"].strip().splitlines()[0]
-        title = "Consult: " + (first if len(first) <= 60 else first[:57].rstrip() + "…")
-        if body.index is None:
-            title = f"Consultation, day {turns[0]['day']}–{turns[-1]['day']}"
-        note = Note(title=title, body=transcript_markdown(turns, label, titles), kind="consult")
-        nb.notes.append(note)
+        game.state.bedside = []
         state.save()
-        return {"note": _note_view(note), **game_snapshot(state, body.since)}
+        return _bedside_view(game)
+
+    @app.post("/api/bedside/notebook")
+    async def bedside_to_notebook(body: ConsultSaveBody) -> dict[str, Any]:
+        game = state.require_game()
+        name = game.illness.patient.first_name
+        return _chat_to_notebook(
+            game, "bedside", body, kind="bedside", speaker=name, label="", prefix="Bedside",
+            whole=f"Bedside chats with {name}",
+        )
 
     @app.get("/api/health")
     async def health() -> dict[str, Any]:

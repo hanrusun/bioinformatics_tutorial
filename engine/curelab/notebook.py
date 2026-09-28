@@ -24,9 +24,10 @@ class Note(BaseModel):
     body: str = ""
     created: str = Field(default_factory=_now)
     updated: str = Field(default_factory=_now)
-    # "consult": a saved conversation with the consulting doctor. It lives in
-    # the notebook like any page but never earns research points.
-    kind: Literal["note", "consult"] = "note"
+    # "consult": a saved conversation with the consulting doctor; "bedside": a
+    # saved chat with the patient. They live in the notebook like any page but
+    # never earn research points.
+    kind: Literal["note", "consult", "bedside"] = "note"
 
 
 class Notebook(BaseModel):
@@ -85,7 +86,7 @@ def render_page_markdown(pack: Pack, page: NotebookPage, read: Optional[bool] = 
 
 def render_note_markdown(note: Note) -> str:
     body = note.body.rstrip() or "*(empty page)*"
-    what = "Consultation saved" if note.kind == "consult" else "Written"
+    what = {"consult": "Consultation saved", "bedside": "Bedside chat saved"}.get(note.kind, "Written")
     return f"## {note.title}\n\n*{what} {note.created[:10]} · updated {note.updated[:10]}*\n\n{body}\n"
 
 

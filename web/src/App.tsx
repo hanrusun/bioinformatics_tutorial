@@ -10,12 +10,13 @@ import { MissionList } from './components/MissionList';
 import { MissionView } from './components/MissionView';
 import { QuizPanel } from './components/QuizPanel';
 import { NotebookPanel } from './components/NotebookPanel';
+import { BedsidePanel } from './components/BedsidePanel';
 import { ConsultPanel } from './components/ConsultPanel';
 import { DiseasePanel } from './components/DiseasePanel';
 import { EndScreen } from './components/EndScreen';
 import { TraitPopup, Toasts, type Notice } from './components/Events';
 
-type Tab = 'missions' | 'journal' | 'notebook' | 'disease' | 'consult';
+type Tab = 'missions' | 'journal' | 'notebook' | 'disease' | 'consult' | 'bedside';
 let noticeId = 1;
 
 export function App() {
@@ -171,7 +172,7 @@ export function App() {
         <div class="game">
           <TopBar game={game} difficultyLabel={difficultyLabel} onMenu={toMenu} />
           <div class="game__main">
-            <PatientPanel game={game} patient={patient} flash={flash} />
+            <PatientPanel game={game} patient={patient} flash={flash} onTalk={() => setTab('bedside')} />
             <section class="lab" aria-label="Lab">
               <nav class="tabs" role="tablist">
                 {(
@@ -181,6 +182,7 @@ export function App() {
                     ['notebook', 'Lab notebook'],
                     ['disease', 'Disease'],
                     ['consult', 'Consult'],
+                    ['bedside', `Talk to ${patient.first_name}`],
                   ] as [Tab, string][]
                 ).map(([id, label]) => (
                   <button role="tab" aria-selected={tab === id} class={`tab${tab === id ? ' is-active' : ''}`} onClick={() => setTab(id)} data-tab={id}>
@@ -227,6 +229,16 @@ export function App() {
                     game={game}
                     status={meta.consult}
                     missionId={mission}
+                    cursor={() => cursor.current}
+                    onSnapshot={(s) => apply(s)}
+                    onNotice={notify}
+                  />
+                )}
+                {tab === 'bedside' && (
+                  <BedsidePanel
+                    game={game}
+                    patient={patient}
+                    status={meta.consult}
                     cursor={() => cursor.current}
                     onSnapshot={(s) => apply(s)}
                     onNotice={notify}

@@ -1,4 +1,5 @@
 import type {
+  BedsideData,
   ConsultData,
   Execution,
   Meta,
@@ -76,6 +77,11 @@ export const api = {
   /** Save one exchange (the index of either of its messages) or, with no index, the whole conversation. */
   consultSave: (index: number | null, since: number) =>
     post<Snapshot & { note: Note }>('/api/consult/notebook', { index, since }),
+
+  bedsideHistory: () => call<BedsideData>('/api/bedside'),
+  bedsideClear: () => post<BedsideData>('/api/bedside/clear'),
+  bedsideSave: (index: number | null, since: number) =>
+    post<Snapshot & { note: Note }>('/api/bedside/notebook', { index, since }),
 };
 
 export interface ConsultQuestion {
@@ -85,16 +91,24 @@ export interface ConsultQuestion {
   include_code: boolean;
 }
 
+/** Ask the consulting doctor (see streamChat). */
+export const consultAsk = (q: ConsultQuestion, onDelta: (text: string) => void) =>
+  streamChat<ConsultData>('/api/consult', q, onDelta);
+
+/** Say something to the patient (see streamChat). */
+export const bedsideSay = (message: string, onDelta: (text: string) => void) =>
+  streamChat<BedsideData>('/api/bedside', { message }, onDelta);
+
 /**
- * Ask the consulting doctor. The answer streams back as server-sent events;
+ * POST a chat message. The answer streams back as server-sent events;
  * onDelta gets each piece, and the promise resolves with the saved
  * conversation (or rejects with the server's message).
  */
-export async function consultAsk(q: ConsultQuestion, onDelta: (text: string) => void): Promise<ConsultData> {
-  const res = await fetch('/api/consult', {
+async function streamChat<T>(path: string, body: unknown, onDelta: (text: string) => void): Promise<T> {
+  const res = await fetch(path, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(q),
+    body: JSON.stringify(body),
   });
   if (!res.ok || !res.body) {
     let message = res.statusText;
@@ -109,7 +123,7 @@ export async function consultAsk(q: ConsultQuestion, onDelta: (text: string) => 
   const reader = res.body.getReader();
   const decoder = new TextDecoder();
   let buffer = '';
-  let done: ConsultData | null = null;
+  let done: T | null = null;
   for (;;) {
     const { value, done: finished } = await reader.read();
     if (value) buffer += decoder.decode(value, { stream: true });
@@ -125,11 +139,11 @@ export async function consultAsk(q: ConsultQuestion, onDelta: (text: string) => 
       }
       const payload = data ? JSON.parse(data) : {};
       if (event === 'delta') onDelta(payload.text ?? '');
-      else if (event === 'error') throw new ApiError(502, payload.detail ?? 'The consultation failed.');
-      else if (event === 'done') done = payload as ConsultData;
+      else if (event === 'error') throw new ApiError(502, payload.detail ?? 'The chat failed.');
+      else if (event === 'done') done = payload as T;
     }
     if (finished) break;
   }
-  if (!done) throw new ApiError(502, 'The consultation was interrupted.');
+  if (!done) throw new ApiError(502, 'The chat was interrupted.');
   return done;
 }

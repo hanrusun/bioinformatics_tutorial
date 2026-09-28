@@ -172,12 +172,14 @@ class Consultant(Protocol):
 class EchoConsultant:
     """Network-free stand-in for tests: repeats the question in a few pieces."""
 
-    def __init__(self, model: str):
+    def __init__(self, model: str, effort: str = "medium"):
         self.model = model
 
     async def stream(self, system: str, messages: list[dict[str, str]]) -> AsyncIterator[str]:
-        question = messages[-1]["content"].rsplit("Question:\n", 1)[-1].strip()
-        text = f"Echo from the consulting doctor: you asked “{question}”. ({len(messages) // 2} earlier turns)"
+        question = messages[-1]["content"]
+        for marker in ("Question:\n", "The doctor says:\n"):  # consult / bedside prompts
+            question = question.rsplit(marker, 1)[-1]
+        text = f"Echo: you said “{question.strip()}”. ({len(messages) // 2} earlier turns)"
         for i in range(0, len(text), 16):
             yield text[i : i + 16]
 
@@ -185,12 +187,13 @@ class EchoConsultant:
 class AnthropicConsultant:
     """Claude via the official ``anthropic`` SDK (reads ``ANTHROPIC_API_KEY``)."""
 
-    def __init__(self, model: str):
+    def __init__(self, model: str, effort: str = "medium"):
         import anthropic
 
         self._sdk = anthropic
         self.client = anthropic.AsyncAnthropic()
         self.model = model
+        self.effort = effort
 
     async def stream(self, system: str, messages: list[dict[str, str]]) -> AsyncIterator[str]:
         sdk = self._sdk
@@ -200,7 +203,7 @@ class AnthropicConsultant:
                 max_tokens=64000,
                 system=system,
                 messages=messages,  # type: ignore[arg-type]
-                output_config={"effort": "medium"},
+                output_config={"effort": self.effort},
                 cache_control={"type": "ephemeral"},  # caches the growing conversation
                 # on a policy decline, the API re-runs the request on a fallback model
                 betas=["server-side-fallback-2026-07-01"],
@@ -232,12 +235,12 @@ class AnthropicConsultant:
 class OpenAIConsultant:
     """ChatGPT via the official ``openai`` SDK (reads ``OPENAI_API_KEY``)."""
 
-    def __init__(self, model: str):
+    def __init__(self, model: str, effort: str = "medium"):
         import openai
 
         self._sdk = openai
         self.client = openai.AsyncOpenAI()
-        self.model = model
+        self.model = model  # effort is not passed on: ChatGPT uses the model's default
 
     async def stream(self, system: str, messages: list[dict[str, str]]) -> AsyncIterator[str]:
         sdk = self._sdk
@@ -275,18 +278,24 @@ class OpenAIConsultant:
             raise ConsultError("The consulting doctor declined to answer that. Try rephrasing the question.")
 
 
-def make_consultant(config: ConsultConfig) -> Consultant:
+def make_consultant(config: ConsultConfig, effort: str = "medium") -> Consultant:
+    """``effort`` sets Claude's thinking effort; short chats (the bedside) use low."""
     if config.provider == "anthropic":
-        return AnthropicConsultant(config.model)
+        return AnthropicConsultant(config.model, effort)
     if config.provider == "openai":
-        return OpenAIConsultant(config.model)
+        return OpenAIConsultant(config.model, effort)
     if config.provider == "fake":
-        return EchoConsultant(config.model)
+        return EchoConsultant(config.model, effort)
     raise ConsultError("Consulting is off: add OPENAI_API_KEY or ANTHROPIC_API_KEY to your .env file.")
 
 
-def transcript_markdown(turns: list[dict[str, Any]], label: str, mission_titles: Mapping[str, str]) -> str:
-    """A saved consultation as notebook Markdown (question/answer pairs)."""
+def transcript_markdown(
+    turns: list[dict[str, Any]], speaker: str, label: str, mission_titles: Mapping[str, str]
+) -> str:
+    """A saved conversation as notebook Markdown (question/answer pairs).
+
+    ``speaker`` answers (the consulting doctor, or the patient); ``label``
+    names the chatbot behind them, if shown."""
     out: list[str] = []
     for turn in turns:
         if turn["role"] == "user":
@@ -294,5 +303,5 @@ def transcript_markdown(turns: list[dict[str, Any]], label: str, mission_titles:
             head = f"**You** (day {turn['day']}{', ' + where if where else ''}):"
             out += [head, "", turn["text"].strip(), ""]
         else:
-            out += [f"**Consulting doctor** ({label}):", "", turn["text"].strip(), ""]
+            out += [f"**{speaker}**{f' ({label})' if label else ''}:", "", turn["text"].strip(), ""]
     return "\n".join(out).rstrip() + "\n"

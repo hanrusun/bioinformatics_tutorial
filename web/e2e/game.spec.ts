@@ -186,3 +186,30 @@ test('consult another doctor at any point and keep the answer in the notebook', 
   await page.click('[data-testid="consult-clear"]');
   await expect(page.locator('[data-testid="consult-answer"]')).toHaveCount(0);
 });
+
+test('talk to the patient in a chat of their own', async ({ page }) => {
+  await page.request.post('/api/game/abandon');
+  await page.goto('/', { waitUntil: 'domcontentloaded' });
+  await page.click('[data-testid="start-demo-one"]');
+  await page.click('[data-testid="begin"]');
+
+  // from the patient panel, with its own conversation next to the doctor's
+  await page.click('[data-testid="open-bedside"]');
+  await expect(page.locator('[data-tab="bedside"]')).toHaveText('Talk to Walter');
+  await page.fill('[data-testid="bedside-input"]', 'How are you feeling?');
+  await page.click('[data-testid="bedside-ask"]');
+  const answer = page.locator('[data-testid="bedside-answer"]');
+  await expect(answer).toContainText('How are you feeling?');
+  await expect(answer).toContainText('Walter');
+  await page.click('[data-tab="consult"]');
+  await expect(page.locator('[data-testid="consult-answer"]')).toHaveCount(0);
+
+  // kept with the game, and it can go into the notebook (no RP)
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.click('[data-tab="bedside"]');
+  await expect(answer).toHaveCount(1);
+  await page.click('[data-testid="bedside-save-all"]');
+  await page.click('[data-tab="notebook"]');
+  await page.locator('.nb-item', { hasText: 'Bedside chats with Walter' }).click();
+  await expect(page.locator('[data-testid="word-count"]')).toContainText('Bedside chat · earns no RP');
+});
