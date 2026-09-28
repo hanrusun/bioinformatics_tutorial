@@ -24,7 +24,11 @@ export function MissionList({ missions, quizzes, selected, onSelect }: Props) {
               <span class="mission-item__title">{m.title}</span>
               <span class="mission-item__pts">+{m.points}%</span>
               {m.wrong > 0 && <span class="mission-item__wrong" title="Wrong attempts">✗{m.wrong}</span>}
-              {openQuizzes > 0 && <span class="mission-item__quiz" title="Journal club questions unlocked">?{openQuizzes}</span>}
+              {openQuizzes > 0 && (
+                <span class="mission-item__quiz" title="Journal club questions unlocked by this mission: answer them in the Journal club tab">
+                  {openQuizzes} {openQuizzes === 1 ? 'quiz' : 'quizzes'}
+                </span>
+              )}
             </button>
           </li>
         );

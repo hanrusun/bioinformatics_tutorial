@@ -128,6 +128,13 @@ test('the disease tab shows the trait tree', async ({ page }) => {
   await page.click('[data-testid="begin"]');
   await page.click('[data-tab="disease"]');
   await expect(page.locator('.disease-panel h2')).toHaveText('Non-small cell lung cancer');
-  await expect(page.locator('[data-trait="cough"]')).toBeVisible();
+  // traits that haven't evolved stay hidden until the player asks
   await expect(page.locator('.trait--on')).toHaveCount(0);
+  await expect(page.locator('[data-trait="cough"]')).toHaveCount(0);
+  await expect(page.locator('.tier:not(.tier--events) .trait--hidden').first()).toBeVisible();
+  await page.click('[data-testid="reveal-tree"]');
+  await expect(page.locator('[data-trait="cough"]')).toBeVisible();
+  await expect(page.locator('.tier:not(.tier--events) .trait--hidden')).toHaveCount(0);
+  await page.click('[data-testid="reveal-tree"]');
+  await expect(page.locator('[data-trait="cough"]')).toHaveCount(0);
 });

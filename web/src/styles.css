@@ -328,6 +328,8 @@ blockquote cite { display: block; font-style: normal; font-size: 12px; margin-to
 .trait--on { opacity: 1; border-style: solid; border-color: #6b2429; background: #1f1214; }
 .trait__cat { font-size: 10.5px; text-transform: uppercase; letter-spacing: 0.08em; color: #ff9d9d; }
 .trait__day { font-size: 11px; color: var(--muted); font-family: var(--mono); }
+.trait--hidden .trait__cat { color: var(--muted); }
+.tree-reveal { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 0 0 12px; font-size: 12.5px; }
 .trait--event.trait--on { border-color: #5b3a7a; background: #1a1326; }
 .trait--event .trait__cat { color: #d3a8ff; }
 .trait--hidden h4 { letter-spacing: 0.2em; color: var(--muted); }
