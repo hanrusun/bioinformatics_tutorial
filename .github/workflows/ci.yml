@@ -80,7 +80,7 @@ jobs:
     timeout-minutes: 350
     steps:
       - uses: actions/checkout@v4
-      - name: Free disk space for the images (~9 GB Seurat, Signac on top)
+      - name: Free disk space for the images (~9 GB Seurat, ~6 GB more for Signac)
         run: |
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL \
             /usr/local/share/powershell /usr/share/swift /usr/local/.ghcup
@@ -96,6 +96,8 @@ jobs:
           free -h
       - name: Build (fails if any mission check misbehaves)
         run: docker build -f packs/seurat/Dockerfile -t curelab-seurat:ci .
+      - name: Tag the R base stage for the Signac image (cached from the build above)
+        run: docker build -f packs/seurat/Dockerfile --target r-base -t curelab-r-base:ci .
       - name: Image size
         run: |
           docker image ls curelab-seurat:ci
@@ -137,12 +139,13 @@ jobs:
         if: always()
         run: docker rm -f curelab || true
 
-      # The Signac image is built FROM the Seurat image above.
+      # The Signac image is built on the R base stage of the Seurat image
+      # (curelab-r-base:ci, tagged above), not on the finished Seurat image.
       - name: Build the Signac image (fails if any mission check misbehaves)
         run: |
           docker builder prune -af
           df -h /
-          docker build -f packs/signac/Dockerfile --build-arg SEURAT_IMAGE=curelab-seurat:ci -t curelab-signac:ci .
+          docker build -f packs/signac/Dockerfile --build-arg R_BASE=curelab-r-base:ci -t curelab-signac:ci .
       - name: Signac image size
         run: |
           docker image ls 'curelab-*'
@@ -154,6 +157,8 @@ jobs:
         run: |
           docker run -d --name curelab-signac -p 127.0.0.1:8001:8000 curelab-signac:ci
           for i in $(seq 1 60); do curl -fsS http://127.0.0.1:8001/api/health && break; sleep 2; done
+          # its own copy of the web UI (no longer inherited from the Seurat image)
+          curl -fsS http://127.0.0.1:8001/ | grep -q '<title>Cure Lab</title>'
           curl -fsS http://127.0.0.1:8001/api/meta | python3 -c "import sys, json; m = json.load(sys.stdin); assert [c['id'] for c in m['campaigns']] == ['s1-multiome'], m['campaigns']"
           curl -fsS -X POST http://127.0.0.1:8001/api/game/start -H 'content-type: application/json' -d '{"campaign": "s1-multiome", "difficulty": "normal", "seed": 1}' > /dev/null
           curl -fsS -X POST http://127.0.0.1:8001/api/missions/s1-m01-build/start | python3 -c "import sys, json; assert json.load(sys.stdin)['ok']"

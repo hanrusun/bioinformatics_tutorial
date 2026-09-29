@@ -88,10 +88,16 @@ fixture pack.
 `packs/signac` shows how a pack can reuse another one instead of starting
 from scratch:
 
-- **Image**: its Dockerfile starts `FROM seurat`, a named build context that
-  `docker-compose.yml` points at the Seurat service
-  (`additional_contexts: {seurat: "service:seurat"}`). The new image shares
-  every Seurat layer and only adds its own packages, data and checkpoints.
+- **Image**: its Dockerfile starts `FROM curelab-r-base`: the `r-base` stage
+  of the Seurat Dockerfile (R, Seurat, the game's Python and Jupyter kernel),
+  which `docker-compose.yml` builds as a never-started `r-base` service
+  (`scale: 0`) and passes in as a named build context
+  (`additional_contexts: {curelab-r-base: "service:r-base"}`). Build on that
+  stage, not the finished Seurat image: engine and web changes sit at the end
+  of the Seurat image, and building on top of them would rerun all of the new
+  image's R steps after every game update. The new image adds its own
+  packages, data and checkpoints, then its own copy of the engine, web UI
+  (the same `web` stage, so the build is reused), `curelab` user and `CMD`.
   Give it its own `CURELAB_PACK_DIR`, `CURELAB_REFERENCE_DIR`, compose port
   and volume, and a compose `profiles:` entry so it only builds when named.
 - **Helpers**: its `init_code` sources `{pack_dir}/../seurat/r/helpers.R`

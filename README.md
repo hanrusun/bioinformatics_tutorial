@@ -14,8 +14,8 @@ pack has three campaigns, each with its own patient:
 | **Seurat for the Multiome Lab** (unlocks after Basics) | Mia Okoye, 2: neuroblastoma | Seurat v5 object anatomy and layers, subsetting, cell-cycle scoring and regression, split layers + Harmony integration, conserved markers, pseudobulk DESeq2, label transfer, merging for co-embedding | `essential_commands`, `cell_cycle_vignette`, `integration_introduction`, `seurat5_integration`, `de_vignette`, `integration_mapping`, `seurat5_atacseq_integration_vignette` |
 | **CRISPR Screens with Mixscape** (unlocks after Basics) | Anjali Rao, 38: acute myeloid leukemia | Pooled CRISPR screens read out in single cells (ECCITE-seq): CLR-normalized protein, confounders in RNA clustering, local perturbation signatures (`CalcPerturbSig`), knockout vs non-perturbed calls (`RunMixscape`), guide efficiency, PD-L1 validation, LDA of perturbation responses | `mixscape_vignette` |
 
-The optional **Signac 1.17.1** pack is built on top of the Seurat image, so
-you only download and build it if you want it:
+The optional **Signac 1.17.1** pack is a separate image that shares the
+Seurat image's R base, so you only download and build it if you want it:
 
 | Campaign | Patient | What you learn | Source vignettes |
 |---|---|---|---|
@@ -50,15 +50,42 @@ For the Signac pack:
 docker compose up --build signac
 ```
 
-Then open <http://localhost:8001>. Compose builds the Seurat image first if
-you don't have it yet; the Signac image reuses all of its layers and only adds
-Signac, the hg38 genome and annotations, the 10x multiome data and its own
-reference checkpoints. It keeps its progress in its own volume
+Then open <http://localhost:8001>. Compose first builds the R base that the
+Signac image shares with the Seurat one (R, Seurat, and the game's Python and
+Jupyter kernel), or reuses it if you have already built Seurat. On top of that
+the Signac image adds Signac, the hg38 genome and annotations, the 10x
+multiome data and its own reference checkpoints; it doesn't include the Seurat
+pack's datasets. It keeps its progress in its own volume
 (`curelab-signac-data`), so both games can run side by side.
 
 The port is bound to `127.0.0.1` on purpose: the game executes the code you
 type, so only your own machine can reach it. To skip the Campaign 1
 requirement, set `CURELAB_UNLOCK_ALL: "1"` in `docker-compose.yml`.
+
+### Updating
+
+```bash
+git pull
+docker compose up -d --build seurat      # and/or signac
+```
+
+Docker reuses every build step whose inputs haven't changed. An update to the
+game itself (`engine/` or `web/`) only redoes the last steps of either image,
+a few minutes. The long steps (downloading data, running every reference
+solution) rerun only when a pack's missions or data scripts change: files in
+`illnesses/`, `packs/seurat/` or `packs/signac/`. To see whether an update
+touches them, run this before `git pull`:
+
+```bash
+git fetch && git diff --stat HEAD @{u} -- illnesses packs
+```
+
+Your saved games and notebooks live in Docker volumes, not in the images, so
+they carry over. Avoid `docker compose build --no-cache`, `docker builder
+prune` and `docker system prune -a`, which throw away the saved build steps
+(the next build takes the full time again), and `docker compose down -v`,
+which **deletes your saves**. `docker image prune` is safe: it only removes
+old, unused images.
 
 ### System requirements
 
@@ -83,13 +110,12 @@ The Signac image needs more; see
 
 ### Signac pack requirements
 
-Measured in the same CI run, building the Signac image on top of the Seurat
-one:
+Measured in CI:
 
 | | Needs |
 |---|---|
-| Disk | a 14.8 GB image, but 8.9 GB of it are the Seurat image's layers, so about 6 GB more: Signac and the hg38 genome and annotations (1.3 GB), the 10x multiome data (2.2 GB) and the reference checkpoints (2.3 GB) |
-| Build time | about 50 minutes after the Seurat image; the chromVAR mission alone takes 20 |
+| Disk | about 6 GB on top of the R base it shares with the Seurat image: Signac and the hg38 genome and annotations (1.3 GB), the 10x multiome data (2.2 GB) and the reference checkpoints (2.3 GB) |
+| Build time | about 50 minutes once the R base is built (it comes with the Seurat image); the chromVAR mission alone takes 20 |
 | RAM to build and play | about 12.7 GB for R at the heaviest mission (SCTransform on 10,412 cells), plus about 1 GB for the game. ATAC quality control peaks at 9.6 GB; the other missions at 5 to 8 GB |
 
 The chromVAR mission runs on every CPU core, and its worker processes (not

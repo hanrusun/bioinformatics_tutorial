@@ -16,10 +16,13 @@ RUN npm ci --no-audit --no-fund
 COPY web/ ./
 RUN npm run build
 
-# ---------------------------------------------------------------- game
+# ---------------------------------------------------------------- R base
 # Official Seurat image: Seurat 5.5.1 + SeuratObject 5.4.0 on R 4.5.2
-# (rocker/tidyverse), with harmony, presto, DESeq2, metap and SeuratData.
-FROM satijalab/seurat:5.5.1
+# (rocker/tidyverse), with harmony, presto, DESeq2, metap and SeuratData,
+# plus the game's Python and Jupyter R kernel. The Signac image builds on this
+# stage (docker-compose.yml tags it curelab-r-base), not on the finished Seurat
+# image, so engine and web changes don't rebuild Signac's R layers.
+FROM satijalab/seurat:5.5.1 AS r-base
 
 ENV CURELAB_HOME=/opt/curelab \
     CURELAB_DATASETS=/opt/curelab/datasets \
@@ -39,6 +42,9 @@ RUN apt-get update \
  && Rscript -e "pak::pkg_install(c('IRkernel', 'yaml', 'mixtools', 'reshape2'))" \
  && Rscript -e "IRkernel::installspec(name = 'ir', displayname = 'R', user = FALSE, prefix = '/opt/curelab/venv')" \
  && rm -rf /root/.cache/R /tmp/*
+
+# ---------------------------------------------------------------- game
+FROM r-base AS seurat
 
 # Datasets (cached as their own layer: only re-downloaded if this script changes)
 COPY packs/seurat/data/fetch_data.R /opt/curelab/app/packs/seurat/data/fetch_data.R
