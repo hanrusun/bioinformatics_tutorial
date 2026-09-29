@@ -78,7 +78,7 @@ def test_provider_follows_the_keys():
 def test_the_browser_never_sees_the_key():
     public = ConsultConfig.from_env({"OPENAI_API_KEY": "sk-secret"}).public()
     assert public == {"enabled": True, "provider": "openai", "label": "ChatGPT", "model": "gpt-6-astra",
-                      "bedside_model": "gpt-6-astra"}
+                      "bedside_model": "gpt-6-astra", "effort": "", "bedside_effort": ""}
     assert "sk-secret" not in json.dumps(public)
 
 
@@ -117,7 +117,8 @@ def test_disabled_consult_is_reported_and_refused(tmp_path):
 def test_ask_streams_and_keeps_the_conversation(app, tmp_path):
     with TestClient(app) as client:
         assert client.get("/api/meta").json()["consult"] == {
-            "enabled": True, "provider": "fake", "label": "Echo (test)", "model": "echo", "bedside_model": "echo"}
+            "enabled": True, "provider": "fake", "label": "Echo (test)", "model": "echo", "bedside_model": "echo",
+            "effort": "medium", "bedside_effort": "low"}
         start(client)
         # no mission needed, no mistake needed: consult at any point
         events = ask(client, message="What is UMAP, mathematically?")

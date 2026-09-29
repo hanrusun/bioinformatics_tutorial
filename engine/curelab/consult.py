@@ -49,6 +49,11 @@ DEFAULT_MODELS = {
 # The patient's small talk can use a lighter model. On Gemini's free tier,
 # Flash-Lite also has a much larger daily quota than Flash.
 BEDSIDE_MODELS = {"gemini": "gemini-flash-lite-latest"}
+# How hard Claude thinks before answering, per chat, unless set. Other services
+# get an effort only when it is set (as reasoning_effort): not every model
+# accepts one.
+CLAUDE_PROVIDERS = {"anthropic", "claude-plan", "fake"}
+DEFAULT_EFFORT = {"consult": "medium", "bedside": "low"}
 PROVIDER_LABELS = {
     "openai": "ChatGPT",
     "anthropic": "Claude",
@@ -116,6 +121,8 @@ class ConsultConfig:
     model: str = ""  # consult another doctor
     bedside_model: str = ""  # talk to the patient
     base_url: str = ""  # custom provider only
+    effort: str = ""  # "" = the default (see chat_effort)
+    bedside_effort: str = ""
 
     @property
     def enabled(self) -> bool:
@@ -128,8 +135,9 @@ class ConsultConfig:
         ``CURELAB_CONSULT_PROVIDER`` (openai / anthropic / claude-plan / gemini
         / custom) decides when several are set; without it, the first one in
         :data:`PROVIDER_KEYS` wins. ``fake`` is a network-free echo used by the
-        tests. ``CURELAB_CONSULT_MODEL`` and ``CURELAB_BEDSIDE_MODEL`` override
-        the doctor's and the patient's model.
+        tests. ``CURELAB_CONSULT_MODEL`` / ``CURELAB_BEDSIDE_MODEL`` and
+        ``CURELAB_CONSULT_EFFORT`` / ``CURELAB_BEDSIDE_EFFORT`` set the
+        doctor's and the patient's model and effort.
         """
         have = {p: bool(env.get(k, "").strip()) for p, k in PROVIDER_KEYS.items()}
         wanted = env.get("CURELAB_CONSULT_PROVIDER", "").strip().lower()
@@ -144,12 +152,30 @@ class ConsultConfig:
         model = env.get("CURELAB_CONSULT_MODEL", "").strip() or DEFAULT_MODELS.get(provider, "")
         bedside = env.get("CURELAB_BEDSIDE_MODEL", "").strip() or BEDSIDE_MODELS.get(provider, "") or model
         base_url = env.get("CURELAB_CONSULT_BASE_URL", "").strip() if provider == "custom" else ""
-        return cls(provider=provider, model=model, bedside_model=bedside, base_url=base_url)
+        return cls(
+            provider=provider,
+            model=model,
+            bedside_model=bedside,
+            base_url=base_url,
+            effort=env.get("CURELAB_CONSULT_EFFORT", "").strip().lower(),
+            bedside_effort=env.get("CURELAB_BEDSIDE_EFFORT", "").strip().lower(),
+        )
 
     @property
     def patient_model(self) -> str:
         """The bedside chat's model (the doctor's unless set apart)."""
         return self.bedside_model or self.model
+
+    def chat_model(self, chat: str) -> str:
+        """``chat``: "consult" (the doctor) or "bedside" (the patient)."""
+        return self.patient_model if chat == "bedside" else self.model
+
+    def chat_effort(self, chat: str) -> str:
+        """The effort sent for ``chat``; "" sends none (the model's default)."""
+        chosen = self.bedside_effort if chat == "bedside" else self.effort
+        if chosen or self.provider not in CLAUDE_PROVIDERS:
+            return chosen
+        return DEFAULT_EFFORT.get(chat, "medium")
 
     @property
     def label(self) -> str:
@@ -167,6 +193,8 @@ class ConsultConfig:
             "label": self.label,
             "model": self.model or default,
             "bedside_model": self.patient_model or default,
+            "effort": self.chat_effort("consult"),
+            "bedside_effort": self.chat_effort("bedside"),
         }
 
 
@@ -304,14 +332,14 @@ class OpenAIConsultant:
     its ``base_url``.
 
     ``label`` and ``key_env`` name the service and its credential in error
-    messages. ``effort`` is not passed on: these services differ in how (and
-    whether) they accept it, so each model runs at its own default.
+    messages. ``effort``, when set, is sent as ``reasoning_effort``; when
+    empty, each model runs at its own default (not every model accepts one).
     """
 
     def __init__(
         self,
         model: str,
-        effort: str = "medium",
+        effort: str = "",
         *,
         base_url: Optional[str] = None,
         api_key: Optional[str] = None,
@@ -328,16 +356,19 @@ class OpenAIConsultant:
         except openai.OpenAIError:
             raise ConsultError(f"{vendor} needs a key: set {key_env} in your .env file.")
         self.model = model
+        self.effort = effort
         self.label, self.vendor, self.key_env, self.rate_hint = label, vendor, key_env, rate_hint
 
     async def stream(self, system: str, messages: list[dict[str, str]]) -> AsyncIterator[str]:
         sdk = self._sdk
         refused = False
         try:
+            extra: dict[str, Any] = {"reasoning_effort": self.effort} if self.effort else {}
             stream = await self.client.chat.completions.create(
                 model=self.model,
                 messages=[{"role": "system", "content": system}, *messages],  # type: ignore[list-item]
                 stream=True,
+                **extra,
             )
             async for chunk in stream:
                 for choice in chunk.choices:
@@ -479,10 +510,10 @@ class ClaudePlanConsultant:
             raise ConsultError(f"Claude couldn't answer: {exc}")
 
 
-def make_consultant(config: ConsultConfig, effort: str = "medium", model: Optional[str] = None) -> Consultant:
-    """``effort`` sets Claude's thinking effort (short chats like the bedside
-    use low); ``model`` overrides the doctor's model (the patient's)."""
-    model = config.model if model is None else model
+def make_consultant(config: ConsultConfig, chat: str = "consult") -> Consultant:
+    """The consultant for ``chat``: "consult" (the doctor) or "bedside" (the
+    patient), each with its own model and effort."""
+    model, effort = config.chat_model(chat), config.chat_effort(chat)
     if config.provider == "anthropic":
         return AnthropicConsultant(model, effort)
     if config.provider == "openai":

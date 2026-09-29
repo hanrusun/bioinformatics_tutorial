@@ -95,9 +95,8 @@ def test_make_consultant_wires_each_service(monkeypatch):
     gemini = make_consultant(ConsultConfig.from_env({"GEMINI_API_KEY": "k"}))
     assert isinstance(gemini, OpenAIConsultant) and str(gemini.client.base_url) == GEMINI_BASE_URL
     assert gemini.client.api_key == "gemini-secret" and gemini.key_env == "GEMINI_API_KEY"
-    patient = make_consultant(ConsultConfig.from_env({"GEMINI_API_KEY": "k"}), effort="low",
-                              model=ConsultConfig.from_env({"GEMINI_API_KEY": "k"}).patient_model)
-    assert patient.model == "gemini-flash-lite-latest"
+    patient = make_consultant(ConsultConfig.from_env({"GEMINI_API_KEY": "k"}), "bedside")
+    assert patient.model == "gemini-flash-lite-latest" and patient.effort == ""  # none sent unless set
 
     groq = make_consultant(ConsultConfig.from_env({**SECRETS, "CURELAB_CONSULT_PROVIDER": "custom",
                                                    "CURELAB_CONSULT_MODEL": "llama-x"}))
@@ -110,8 +109,52 @@ def test_make_consultant_wires_each_service(monkeypatch):
                                                      "CURELAB_CONSULT_MODEL": "llama3"}))
     assert ollama.client.api_key == "none"  # local servers need no key
 
-    plan = make_consultant(ConsultConfig.from_env({"CLAUDE_CODE_OAUTH_TOKEN": "t"}), effort="low")
+    plan = make_consultant(ConsultConfig.from_env({"CLAUDE_CODE_OAUTH_TOKEN": "t"}), "bedside")
     assert isinstance(plan, ClaudePlanConsultant) and plan.model is None and plan.effort == "low"
+
+
+def test_each_chat_has_its_own_model_and_effort(monkeypatch):
+    env = {"ANTHROPIC_API_KEY": "k", "CURELAB_BEDSIDE_MODEL": "claude-haiku-4-5-20251001",
+           "CURELAB_BEDSIDE_EFFORT": "High", "CURELAB_CONSULT_EFFORT": " max "}
+    config = ConsultConfig.from_env(env)
+    doctor, patient = make_consultant(config), make_consultant(config, "bedside")
+    assert (doctor.model, doctor.effort) == ("claude-opus-5-5", "max")
+    assert (patient.model, patient.effort) == ("claude-haiku-4-5-20251001", "high")
+    public = config.public()
+    assert (public["effort"], public["bedside_effort"]) == ("max", "high")
+    # Claude's defaults: the doctor thinks harder than the patient
+    defaults = ConsultConfig.from_env({"CLAUDE_CODE_OAUTH_TOKEN": "t"}).public()
+    assert (defaults["effort"], defaults["bedside_effort"]) == ("medium", "low")
+    # other services: nothing unless set
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-x")
+    assert ConsultConfig.from_env({"OPENAI_API_KEY": "sk-x"}).public()["effort"] == ""
+    chosen = ConsultConfig.from_env({"OPENAI_API_KEY": "sk-x", "CURELAB_BEDSIDE_EFFORT": "minimal"})
+    assert make_consultant(chosen, "bedside").effort == "minimal" and make_consultant(chosen).effort == ""
+
+
+def replying(record, *pieces):
+    """A stand-in for chat.completions.create that streams ``pieces``."""
+    from types import SimpleNamespace
+
+    async def chunks():
+        for piece in pieces:
+            yield SimpleNamespace(choices=[SimpleNamespace(delta=SimpleNamespace(content=piece, refusal=None))])
+
+    async def create(**kwargs):
+        record.append(kwargs)
+        return chunks()
+
+    return create
+
+
+def test_reasoning_effort_is_sent_only_when_set(monkeypatch):
+    monkeypatch.setenv("OPENAI_API_KEY", "sk-x")
+    for env, expected in (({}, None), ({"CURELAB_CONSULT_EFFORT": "high"}, "high")):
+        consultant = make_consultant(ConsultConfig.from_env({"OPENAI_API_KEY": "sk-x", **env}))
+        calls: list[dict] = []
+        consultant.client.chat.completions.create = replying(calls, "Hel", "lo")
+        assert collect(consultant) == ["Hel", "lo"]
+        assert calls[0].get("reasoning_effort") == expected and calls[0]["stream"] is True
 
 
 # --------------------------------------------------------------------------- #

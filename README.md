@@ -253,6 +253,28 @@ Optional settings, also in `.env`:
   default for your Claude plan, and `gemini-flash-latest` for Gemini.
 - `CURELAB_BEDSIDE_MODEL` sets the patient's model, for example a cheaper one.
   It defaults to the doctor's, and to `gemini-flash-lite-latest` on Gemini.
+- `CURELAB_CONSULT_EFFORT` and `CURELAB_BEDSIDE_EFFORT` set how hard each
+  chat's model thinks before answering. More effort gives more careful answers
+  but is slower and, on the APIs, costs more. On Claude (API or plan) they
+  default to `medium` for the doctor and `low` for the patient, and accept
+  `low`, `medium`, `high`, `xhigh` or `max`. On ChatGPT, Gemini and other
+  services nothing is sent unless you set one; it is then passed on as
+  `reasoning_effort`, and the values each model accepts differ (for example
+  `minimal`, `low`, `medium`, `high`). If a model rejects the value, the chat
+  shows the service's message.
+
+For example, a `.env` for your Claude plan with a careful doctor and a quick,
+cheaper patient:
+
+```
+CLAUDE_CODE_OAUTH_TOKEN=sk-ant-oat01-...
+CURELAB_CONSULT_MODEL=opus
+CURELAB_CONSULT_EFFORT=high
+CURELAB_BEDSIDE_MODEL=haiku
+CURELAB_BEDSIDE_EFFORT=low
+```
+
+Each chat's header shows the model and effort it's using.
 
 On the Claude API, the game turns on Anthropic's server-side refusal fallback:
 if a question is declined, the API retries it on another Claude model.

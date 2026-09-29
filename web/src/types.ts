@@ -86,6 +86,9 @@ export interface ConsultStatus {
   model: string;
   /** the patient's model (often the same) */
   bedside_model: string;
+  /** how hard each chat's model thinks; "" = the model's own default */
+  effort: string;
+  bedside_effort: string;
 }
 
 export interface ConsultMessage {

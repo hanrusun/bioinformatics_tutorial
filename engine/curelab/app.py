@@ -87,8 +87,7 @@ class AppState:
     def get_consultant(self, chat: str = "consult") -> Any:
         if chat == "bedside":
             if self.bedside_consultant is None:
-                config = self.settings.consult
-                self.bedside_consultant = make_consultant(config, effort="low", model=config.patient_model)
+                self.bedside_consultant = make_consultant(self.settings.consult, "bedside")
             return self.bedside_consultant
         if self.consultant is None:
             self.consultant = make_consultant(self.settings.consult)

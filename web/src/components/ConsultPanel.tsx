@@ -102,8 +102,9 @@ export function ConsultPanel({ game, status, missionId, cursor, onSnapshot, onNo
         <div>
           <h3>Consult another doctor</h3>
           <p class="muted">
-            {status.label} ({status.model}) · free, but the clock keeps running · answers can be wrong, so check them
-            against the vignettes
+            {status.label} ({status.model}
+            {status.effort ? `, ${status.effort} effort` : ''}) · free, but the clock keeps running · answers can be
+            wrong, so check them against the vignettes
           </p>
         </div>
         <ChatActions chat={chat} id="consult" whole="whole consultation" />
