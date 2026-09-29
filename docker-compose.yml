@@ -11,9 +11,28 @@
 # The ports are bound to 127.0.0.1 on purpose: the game runs the code you
 # type, so it should only be reachable from your own machine.
 #
-# Optional "consult another doctor" chat: put OPENAI_API_KEY=... (ChatGPT) or
-# ANTHROPIC_API_KEY=... (Claude) in a file called .env next to this one, then
-# run `docker compose up -d seurat` (or signac) again. .env is gitignored.
+# Optional chats ("consult another doctor", "talk to the patient"): put one of
+# these in a file called .env next to this one, then run
+# `docker compose up -d seurat` (or signac) again. .env is gitignored. See the
+# README's "Consult another doctor" section for what each costs.
+#   CLAUDE_CODE_OAUTH_TOKEN=...   your Claude Pro/Max/Team plan (claude setup-token)
+#   GEMINI_API_KEY=...            Gemini, free tier available
+#   OPENAI_API_KEY=...            ChatGPT, pay per use
+#   ANTHROPIC_API_KEY=...         Claude, pay per use
+#   CURELAB_CONSULT_BASE_URL=...  any OpenAI-compatible service (+ CURELAB_CONSULT_MODEL)
+
+# Passed to both games (empty = not set).
+x-chat-env: &chat-env
+  CLAUDE_CODE_OAUTH_TOKEN: ${CLAUDE_CODE_OAUTH_TOKEN:-}
+  GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+  OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+  ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+  CURELAB_CONSULT_BASE_URL: ${CURELAB_CONSULT_BASE_URL:-}
+  CURELAB_CONSULT_API_KEY: ${CURELAB_CONSULT_API_KEY:-}
+  CURELAB_CONSULT_PROVIDER: ${CURELAB_CONSULT_PROVIDER:-}
+  CURELAB_CONSULT_MODEL: ${CURELAB_CONSULT_MODEL:-}
+  CURELAB_BEDSIDE_MODEL: ${CURELAB_BEDSIDE_MODEL:-}
+
 services:
   seurat:
     build:
@@ -27,11 +46,9 @@ services:
     environment:
       # Set to 1 to open later campaigns without winning Campaign 1 first.
       CURELAB_UNLOCK_ALL: "0"
-      # consult another doctor (read from .env; empty = off)
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-      CURELAB_CONSULT_PROVIDER: ${CURELAB_CONSULT_PROVIDER:-}
-      CURELAB_CONSULT_MODEL: ${CURELAB_CONSULT_MODEL:-}
+      <<: *chat-env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"   # reach an Ollama on this computer
     restart: unless-stopped
 
   # R, Seurat, Python and the Jupyter R kernel: the first stage of the Seurat
@@ -58,10 +75,9 @@ services:
       - curelab-signac-data:/data
     environment:
       CURELAB_UNLOCK_ALL: "0"
-      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
-      CURELAB_CONSULT_PROVIDER: ${CURELAB_CONSULT_PROVIDER:-}
-      CURELAB_CONSULT_MODEL: ${CURELAB_CONSULT_MODEL:-}
+      <<: *chat-env
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     restart: unless-stopped
 
 volumes:

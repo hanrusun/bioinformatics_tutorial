@@ -82,7 +82,10 @@ export interface ConsultStatus {
   enabled: boolean;
   provider: string | null;
   label: string;
+  /** the consulting doctor's model */
   model: string;
+  /** the patient's model (often the same) */
+  bedside_model: string;
 }
 
 export interface ConsultMessage {

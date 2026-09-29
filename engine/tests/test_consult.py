@@ -66,8 +66,8 @@ def test_consult_is_off_without_a_key():
 
 
 def test_provider_follows_the_keys():
-    assert ConsultConfig.from_env({"OPENAI_API_KEY": "sk-x"}) == ConsultConfig("openai", "gpt-6-astra")
-    assert ConsultConfig.from_env({"ANTHROPIC_API_KEY": "sk-ant-x"}) == ConsultConfig("anthropic", "claude-opus-5-5")
+    assert ConsultConfig.from_env({"OPENAI_API_KEY": "sk-x"}) == ConsultConfig("openai", "gpt-6-astra", "gpt-6-astra")
+    assert ConsultConfig.from_env({"ANTHROPIC_API_KEY": "sk-ant-x"}).model == "claude-opus-5-5"
     both = {"OPENAI_API_KEY": "sk-x", "ANTHROPIC_API_KEY": "sk-ant-x"}
     assert ConsultConfig.from_env(both).provider == "openai"
     assert ConsultConfig.from_env({**both, "CURELAB_CONSULT_PROVIDER": "anthropic"}).provider == "anthropic"
@@ -77,7 +77,8 @@ def test_provider_follows_the_keys():
 
 def test_the_browser_never_sees_the_key():
     public = ConsultConfig.from_env({"OPENAI_API_KEY": "sk-secret"}).public()
-    assert public == {"enabled": True, "provider": "openai", "label": "ChatGPT", "model": "gpt-6-astra"}
+    assert public == {"enabled": True, "provider": "openai", "label": "ChatGPT", "model": "gpt-6-astra",
+                      "bedside_model": "gpt-6-astra"}
     assert "sk-secret" not in json.dumps(public)
 
 
@@ -116,7 +117,7 @@ def test_disabled_consult_is_reported_and_refused(tmp_path):
 def test_ask_streams_and_keeps_the_conversation(app, tmp_path):
     with TestClient(app) as client:
         assert client.get("/api/meta").json()["consult"] == {
-            "enabled": True, "provider": "fake", "label": "Echo (test)", "model": "echo"}
+            "enabled": True, "provider": "fake", "label": "Echo (test)", "model": "echo", "bedside_model": "echo"}
         start(client)
         # no mission needed, no mistake needed: consult at any point
         events = ask(client, message="What is UMAP, mathematically?")

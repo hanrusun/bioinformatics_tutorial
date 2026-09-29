@@ -82,12 +82,13 @@ class AppState:
     last_save: float = 0.0
     read_tokens: dict[str, tuple[str, float]] = field(default_factory=dict)
     consultant: Any = None  # created on first use (see consult.make_consultant)
-    bedside_consultant: Any = None  # the patient's voice: same key, lighter effort
+    bedside_consultant: Any = None  # the patient's voice: same key, its own model, lighter effort
 
     def get_consultant(self, chat: str = "consult") -> Any:
         if chat == "bedside":
             if self.bedside_consultant is None:
-                self.bedside_consultant = make_consultant(self.settings.consult, effort="low")
+                config = self.settings.consult
+                self.bedside_consultant = make_consultant(config, effort="low", model=config.patient_model)
             return self.bedside_consultant
         if self.consultant is None:
             self.consultant = make_consultant(self.settings.consult)
@@ -695,7 +696,7 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
     # and history (GameState.consult / GameState.bedside).
     def _require_chat() -> Game:
         if not settings.consult.enabled:
-            raise HTTPException(409, "Consulting is off: add OPENAI_API_KEY or ANTHROPIC_API_KEY to your .env file.")
+            raise HTTPException(409, "The chats are off: add a key or a Claude plan token to your .env file (see the README).")
         return state.require_game()
 
     def _sse(event: str, data: dict[str, Any]) -> str:

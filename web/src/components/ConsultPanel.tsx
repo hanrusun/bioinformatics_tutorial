@@ -23,20 +23,36 @@ export function ChatSetup({ id, title, what }: { id: string; title: string; what
   return (
     <div class="consult consult--off" data-testid={`${id}-off`}>
       <h3>{title}</h3>
-      <p>{what} It's switched off because no API key is set.</p>
+      <p>{what} It's switched off because no chatbot is set up yet.</p>
       <ol>
         <li>
-          Next to <code>docker-compose.yml</code>, create a file called <code>.env</code> with one line:{' '}
-          <code>OPENAI_API_KEY=sk-…</code> (ChatGPT) or <code>ANTHROPIC_API_KEY=sk-ant-…</code> (Claude).
+          Next to <code>docker-compose.yml</code>, create a file called <code>.env</code> with one of these lines:
+          <ul>
+            <li>
+              <code>CLAUDE_CODE_OAUTH_TOKEN=…</code>: your Claude Pro, Max or Team plan, no extra bill. Make the token
+              with <code>claude setup-token</code> in a terminal.
+            </li>
+            <li>
+              <code>GEMINI_API_KEY=…</code>: Gemini, free tier with daily limits (key from aistudio.google.com).
+            </li>
+            <li>
+              <code>OPENAI_API_KEY=sk-…</code> (ChatGPT) or <code>ANTHROPIC_API_KEY=sk-ant-…</code> (Claude): billed
+              per message, a few cents each.
+            </li>
+            <li>
+              <code>CURELAB_CONSULT_BASE_URL=…</code> with <code>CURELAB_CONSULT_MODEL=…</code>: any other
+              OpenAI-compatible service, such as Groq, OpenRouter or a local Ollama.
+            </li>
+          </ul>
         </li>
         <li>
           Restart the game: <code>docker compose up -d seurat</code> (or <code>signac</code>).
         </li>
       </ol>
       <p class="muted">
-        A ChatGPT Plus subscription can't be used by other apps: you need an API key from platform.openai.com or
-        console.anthropic.com, which bills per message. The key stays on the game server; this page never sees it.
-        The same key runs both chats: consulting another doctor and talking to the patient.
+        A ChatGPT Plus subscription can't be used by other apps. The key or token stays on the game server; this page
+        never sees it. One setup runs both chats: consulting another doctor and talking to the patient. The README
+        compares the options.
       </p>
     </div>
   );

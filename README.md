@@ -161,8 +161,9 @@ same engine and UI without needing the R image.</sub>
     mission you have attempted.
 - **🩺 Explain error** is always free. It matches your error against common
   R/Seurat mistakes and explains them without giving the answer away.
-- **💬 Consult another doctor** (optional, needs an API key; see
-  [below](#consult-another-doctor-optional)): a chatbot colleague you can
+- **💬 Consult another doctor** (optional; free with your Claude plan or
+  Gemini's free tier, see [below](#consult-another-doctor-optional)): a
+  chatbot colleague you can
   ask anything at any point, from the **Consult** tab or a mission's button.
   It coaches you on the mission you're on without writing its solution, and
   answers anything beyond the game. You can add an answer, or the whole
@@ -184,47 +185,108 @@ same engine and UI without needing the R image.</sub>
 
 ## Consult another doctor (optional)
 
-The **Consult** tab connects the game to a chatbot, either ChatGPT or
-Claude. It's off until you give the game an API key; everything else works
-without one.
+The **Consult** tab and the **Talk to …** tab (see
+[Talk to the patient](#talk-to-the-patient)) connect the game to a chatbot.
+They're off until you set one up; everything else works without one.
 
-1. Get an API key: [platform.openai.com](https://platform.openai.com) for
-   ChatGPT, or [console.anthropic.com](https://console.anthropic.com) for
-   Claude. Both bill per use. A ChatGPT Plus subscription can't be used by
-   other apps.
-2. Next to `docker-compose.yml`, create a file called `.env` with one line:
-   `OPENAI_API_KEY=sk-...` or `ANTHROPIC_API_KEY=sk-ant-...`. It's in
-   `.gitignore`, so it won't be committed.
-3. Run `docker compose up -d seurat` (or `signac`) again.
+Pick one option, put its line in a file called `.env` next to
+`docker-compose.yml`, then run `docker compose up -d seurat` (or `signac`)
+again. `.env` is in `.gitignore`, so it won't be committed.
+
+| Option | Line in `.env` | What it costs |
+|---|---|---|
+| **Your Claude plan** (Pro, Max or Team) | `CLAUDE_CODE_OAUTH_TOKEN=...` | Nothing extra: it counts against your plan's usage limits |
+| **Gemini**, free tier | `GEMINI_API_KEY=...` | Free, within daily limits |
+| **ChatGPT** API | `OPENAI_API_KEY=sk-...` | Per message (see [Cost](#cost)) |
+| **Claude** API | `ANTHROPIC_API_KEY=sk-ant-...` | Per message |
+| **Another OpenAI-compatible service** | `CURELAB_CONSULT_BASE_URL=...` and `CURELAB_CONSULT_MODEL=...` | Depends on the service |
+
+A ChatGPT Plus subscription can't be used by other apps; OpenAI bills its API
+separately.
+
+**Your Claude plan.** On any computer with
+[Claude Code](https://code.claude.com) installed, run `claude setup-token`,
+approve the request in the browser, and copy the token it prints (it's valid
+for a year) into `.env`. The game then runs the Claude Code CLI that comes
+with Anthropic's Claude Agent SDK inside the container, with no tools and no
+files, one answer per message. According to Anthropic,
+[Agent SDK use in your own projects](https://support.claude.com/en/articles/15036540-use-the-claude-agent-sdk-with-your-claude-plan)
+currently draws from your plan's usage limits; when you reach them, the chat
+says so until they reset. It uses your plan's default model; set
+`CURELAB_CONSULT_MODEL` to `opus`, `sonnet`, `haiku` or a full model ID to
+choose. The token is yours: don't share your `.env` file.
+
+**Gemini's free tier.** Create a key at
+[aistudio.google.com](https://aistudio.google.com); no credit card is needed.
+The doctor uses `gemini-flash-latest` and the patient
+`gemini-flash-lite-latest`, which has a much larger daily quota. The free tier
+allows a few requests a minute and a daily number per model (AI Studio shows
+your current limits); when you reach one, the chat says so. On the free tier
+Google may have people review prompts and responses and use them to improve
+its products, and it isn't offered in the EU, Switzerland or the UK (see
+[Gemini API terms](https://ai.google.dev/gemini-api/terms_preview)).
+
+**Other services.** Anything that offers OpenAI's chat API works. Set
+`CURELAB_CONSULT_BASE_URL`, the model name the service uses in
+`CURELAB_CONSULT_MODEL`, and its key, if it needs one, in
+`CURELAB_CONSULT_API_KEY`. Some that have free tiers:
+
+- Groq: `https://api.groq.com/openai/v1`
+- OpenRouter: `https://openrouter.ai/api/v1` (free models end in `:free`)
+- GitHub Models: `https://models.github.ai/inference`, with a GitHub token
+  that has the Models permission
+- Ollama on your own computer: `http://host.docker.internal:11434/v1`, no
+  key. On Linux, start Ollama with `OLLAMA_HOST=172.17.0.1` (Docker's bridge
+  address) so the container can reach it.
+
+These run open models, which are fine for the patient's small talk but weaker
+at coaching you through Seurat than Claude or ChatGPT.
 
 Optional settings, also in `.env`:
 
-- `CURELAB_CONSULT_PROVIDER=openai` or `anthropic` picks one when both keys
-  are set. Without it, OpenAI is used.
-- `CURELAB_CONSULT_MODEL` overrides the model. The defaults are
-  `gpt-6-astra` for ChatGPT and `claude-opus-5-5` for Claude.
+- `CURELAB_CONSULT_PROVIDER` picks one option when several are set:
+  `claude-plan`, `gemini`, `openai`, `anthropic` or `custom`. Without it, the
+  first one set in this order is used: `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`,
+  `CLAUDE_CODE_OAUTH_TOKEN`, `GEMINI_API_KEY`, `CURELAB_CONSULT_BASE_URL`.
+- `CURELAB_CONSULT_MODEL` sets the doctor's model. The defaults are
+  `gpt-6-astra` for ChatGPT, `claude-opus-5-5` for the Claude API, your plan's
+  default for your Claude plan, and `gemini-flash-latest` for Gemini.
+- `CURELAB_BEDSIDE_MODEL` sets the patient's model, for example a cheaper one.
+  It defaults to the doctor's, and to `gemini-flash-lite-latest` on Gemini.
 
-On Claude, the game turns on Anthropic's server-side refusal fallback: if a
-question is declined, the API retries it on another Claude model.
+On the Claude API, the game turns on Anthropic's server-side refusal fallback:
+if a question is declined, the API retries it on another Claude model.
 
 **What is sent.** With each question the game sends your question, the
 earlier turns of the conversation, the tool versions, which missions you've
 finished, and, when a mission is selected, its briefing, task and cited
 vignette section. It also sends your current code and last error unless you
 untick "share my code and last error". It never sends a mission's reference
-solution, the hidden checks, the expected answers, your notebook, or the key.
-The key stays in the game server, and the browser only learns which provider
-and model are active. The questions go to OpenAI or Anthropic under your
-account's terms.
+solution, the hidden checks, the expected answers, your notebook, or your key
+or token. Those stay in the game server, and the browser only learns which
+service and models are active. Your messages go to the service you chose,
+under its terms.
 
-**Cost.** Consulting is free in the game: no RP, and the clock keeps
-running. The API bills your account; a typical question on Claude costs
-about 1–5 US cents.
+### Cost
+
+The chats are free in the game (no RP), and the clock keeps running while you
+use them. What the service charges, estimated from what the game sends:
+
+| Option | A question to the doctor | A message to the patient |
+|---|---|---|
+| Your Claude plan | nothing extra | nothing extra |
+| Gemini, free tier | free | free |
+| Claude API (`claude-opus-5-5`) | about 2–7 US cents | about 1 cent |
+| ChatGPT API (`gpt-6-astra`) | about 5–17 cents | about 1–3 cents |
+
+Most of the cost is the answer (including the model's hidden reasoning, which
+is billed as output). The provider's console shows the exact cost of each
+request, and you can set a monthly spending limit there.
 
 ### Talk to the patient
 
-The same key also runs a second, separate chat: the **Talk to …** tab, named
-after your patient. A chatbot plays the patient, using their background from
+The same setup also runs a second, separate chat: the **Talk to …** tab,
+named after your patient. A chatbot plays the patient, using their background from
 the illness file and, with each message, a short chart built from the game:
 the day, how ill they are now, the symptoms and ward events so far, and
 roughly how the research is going. They answer as a patient would. They don't

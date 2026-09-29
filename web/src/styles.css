@@ -317,6 +317,8 @@ blockquote cite { display: block; font-style: normal; font-size: 12px; margin-to
 .consult { display: grid; grid-template-rows: auto auto 1fr auto; height: 100%; min-height: 0; padding: 12px 18px 14px; gap: 10px; }
 .consult--off { display: block; overflow-y: auto; max-width: 720px; }
 .consult--off code { font-family: var(--mono); font-size: 12.5px; background: var(--panel-3); padding: 1px 5px; border-radius: 4px; }
+.consult--off li { margin: 4px 0; }
+.consult--off ul { padding-left: 18px; margin: 6px 0; }
 .consult h3 { margin: 0; font-size: 16px; }
 .consult__head { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; flex-wrap: wrap; }
 .consult__head p { margin: 2px 0 0; font-size: 12.5px; }

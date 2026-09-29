@@ -17,6 +17,8 @@ dependencies = [
   # optional "consult another doctor" chat (used only when an API key is set)
   "anthropic>=1,<2",
   "openai>=3,<4",
+  # Claude through your own Claude plan (bundles the Claude Code CLI)
+  "claude-agent-sdk>=0.2.161,<0.3",
 ]
 
 [project.optional-dependencies]

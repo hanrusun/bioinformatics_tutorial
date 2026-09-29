@@ -49,7 +49,7 @@ export function BedsidePanel({ game, patient, status, cursor, onSnapshot, onNoti
         <div>
           <h3>Talk to {name}</h3>
           <p class="muted">
-            {status.label} ({status.model}) plays {name} · free, but the clock keeps running
+            {status.label} ({status.bedside_model}) plays {name} · free, but the clock keeps running
           </p>
         </div>
         <ChatActions chat={chat} id="bedside" whole="whole chat" />
