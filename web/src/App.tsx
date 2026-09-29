@@ -228,6 +228,7 @@ export function App() {
                   <ConsultPanel
                     game={game}
                     status={meta.consult}
+                    onStatus={(consult) => setMeta((m) => (m ? { ...m, consult } : m))}
                     missionId={mission}
                     cursor={() => cursor.current}
                     onSnapshot={(s) => apply(s)}
@@ -239,6 +240,7 @@ export function App() {
                     game={game}
                     patient={patient}
                     status={meta.consult}
+                    onStatus={(consult) => setMeta((m) => (m ? { ...m, consult } : m))}
                     cursor={() => cursor.current}
                     onSnapshot={(s) => apply(s)}
                     onNotice={notify}

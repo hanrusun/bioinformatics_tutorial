@@ -323,6 +323,12 @@ blockquote cite { display: block; font-style: normal; font-size: 12px; margin-to
 .consult__head { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; flex-wrap: wrap; }
 .consult__head p { margin: 2px 0 0; font-size: 12.5px; }
 .consult__actions { display: flex; gap: 6px; flex-wrap: wrap; }
+/* the ⚙ button sits with the actions; its form takes a row of its own */
+.chat-settings { display: contents; }
+.chat-settings__form { flex-basis: 100%; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; font-size: 13px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+.chat-settings__form input, .chat-settings__form select { background: var(--panel-3); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; }
+.chat-settings__form input { width: 260px; max-width: 100%; font-family: var(--mono); font-size: 12.5px; }
+.chat-settings__note { flex-basis: 100%; margin: 0; font-size: 12px; }
 .consult__context { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; font-size: 13px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
 .consult__context select { background: var(--panel-3); color: var(--text); border: 1px solid var(--line); border-radius: 6px; padding: 4px 6px; max-width: 320px; }
 .consult__shared { font-size: 12px; flex-basis: 100%; }

@@ -204,10 +204,23 @@ test('talk to the patient in a chat of their own', async ({ page }) => {
   await page.click('[data-tab="consult"]');
   await expect(page.locator('[data-testid="consult-answer"]')).toHaveCount(0);
 
+  // the patient's model and effort can be changed in the game, without a restart
+  await page.click('[data-tab="bedside"]');
+  const header = page.locator('[data-testid="bedside-model-line"]');
+  await expect(header).toContainText('(echo, low effort)');
+  await page.click('[data-testid="bedside-settings"]');
+  await page.fill('[data-testid="bedside-model"]', 'echo-2');
+  await page.selectOption('[data-testid="bedside-effort"]', 'high');
+  await page.click('[data-testid="bedside-settings-save"]');
+  await expect(header).toContainText('(echo-2, high effort)');
+  await page.click('[data-tab="consult"]');
+  await expect(page.locator('[data-testid="consult-model-line"]')).toContainText('(echo, medium effort)');
+
   // kept with the game, and it can go into the notebook (no RP)
   await page.reload({ waitUntil: 'domcontentloaded' });
   await page.click('[data-tab="bedside"]');
   await expect(answer).toHaveCount(1);
+  await expect(header).toContainText('(echo-2, high effort)');
   await page.click('[data-testid="bedside-save-all"]');
   await page.click('[data-tab="notebook"]');
   await page.locator('.nb-item', { hasText: 'Bedside chats with Walter' }).click();

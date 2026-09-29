@@ -3,6 +3,7 @@ import { api, consultAsk } from '../api';
 import { draftKey, load, save } from '../lib/storage';
 import type { ConsultStatus, GameView, MissionDetail, Snapshot } from '../types';
 import { ChatActions, ChatThread, useChat } from './Chat';
+import { ChatSettings } from './ChatSettings';
 
 interface Props {
   game: GameView;
@@ -12,6 +13,8 @@ interface Props {
   cursor: () => number;
   onSnapshot: (s: Snapshot) => void;
   onNotice: (text: string, tone?: 'info' | 'bad') => void;
+  /** the chats' model and effort changed in the game */
+  onStatus: (s: ConsultStatus) => void;
 }
 
 // whether to send the editor code and last error along (remembered per browser)
@@ -58,7 +61,7 @@ export function ChatSetup({ id, title, what }: { id: string; title: string; what
   );
 }
 
-export function ConsultPanel({ game, status, missionId, cursor, onSnapshot, onNotice }: Props) {
+export function ConsultPanel({ game, status, missionId, cursor, onSnapshot, onNotice, onStatus }: Props) {
   const [share, setShare] = useState(load(SHARE_KEY) !== '0');
   const [about, setAbout] = useState<string | null>(missionId);
   const [detail, setDetail] = useState<MissionDetail | null>(null);
@@ -101,13 +104,14 @@ export function ConsultPanel({ game, status, missionId, cursor, onSnapshot, onNo
       <header class="consult__head">
         <div>
           <h3>Consult another doctor</h3>
-          <p class="muted">
+          <p class="muted" data-testid="consult-model-line">
             {status.label} ({status.model}
             {status.effort ? `, ${status.effort} effort` : ''}) · free, but the clock keeps running · answers can be
             wrong, so check them against the vignettes
           </p>
         </div>
         <ChatActions chat={chat} id="consult" whole="whole consultation" />
+        <ChatSettings chat="consult" onStatus={onStatus} onNotice={onNotice} />
       </header>
 
       <div class="consult__context">

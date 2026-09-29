@@ -22,7 +22,9 @@ hidden check, expected values or notes.
 from __future__ import annotations
 
 import contextlib
+import dataclasses
 import os
+import re
 import tempfile
 from dataclasses import dataclass
 from typing import Any, AsyncIterator, Mapping, Optional, Protocol
@@ -54,6 +56,21 @@ BEDSIDE_MODELS = {"gemini": "gemini-flash-lite-latest"}
 # accepts one.
 CLAUDE_PROVIDERS = {"anthropic", "claude-plan", "fake"}
 DEFAULT_EFFORT = {"consult": "medium", "bedside": "low"}
+CHATS = ("consult", "bedside")
+# What the in-game settings offer (any other model name can be typed in).
+MODEL_SUGGESTIONS = {
+    "anthropic": ["claude-opus-5-5", "claude-sonnet-5-5", "claude-haiku-4-5-20251001", "claude-fable-5-1"],
+    "claude-plan": ["opus", "sonnet", "haiku"],
+    "openai": ["gpt-6-astra", "gpt-6-sol", "gpt-6-luna"],
+    "gemini": ["gemini-flash-latest", "gemini-flash-lite-latest"],
+    "custom": [],
+    "fake": ["echo"],
+}
+CLAUDE_EFFORTS = ["low", "medium", "high", "xhigh", "max"]
+# sent as reasoning_effort; which of these a model accepts varies
+OTHER_EFFORTS = ["none", "minimal", "low", "medium", "high", "xhigh"]
+# model names as providers spell them: "claude-opus-5-5", "openai/gpt-x:free", "llama3.1:8b"
+MODEL_NAME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:/@+-]{0,119}$")
 PROVIDER_LABELS = {
     "openai": "ChatGPT",
     "anthropic": "Claude",
@@ -183,6 +200,35 @@ class ConsultConfig:
             host = urlparse(self.base_url).hostname or self.base_url
             return KNOWN_HOSTS.get(host, host)
         return PROVIDER_LABELS.get(self.provider or "", "")
+
+    def efforts(self) -> list[str]:
+        """The effort levels this provider takes."""
+        return CLAUDE_EFFORTS if self.provider in CLAUDE_PROVIDERS else OTHER_EFFORTS
+
+    def with_choices(self, choices: Mapping[str, Mapping[str, str]]) -> "ConsultConfig":
+        """This configuration with the learner's in-game choices on top:
+        ``{"consult": {"model": ..., "effort": ...}, "bedside": {...}}``, where
+        an empty value keeps the default from .env (or the built-in one)."""
+
+        def pick(chat: str, key: str) -> str:
+            return str((choices.get(chat) or {}).get(key) or "").strip()
+
+        consult_model, bedside_model = pick("consult", "model"), pick("bedside", "model")
+        consult_effort, bedside_effort = pick("consult", "effort"), pick("bedside", "effort")
+        return dataclasses.replace(
+            self,
+            model=consult_model or self.model,
+            bedside_model=bedside_model or self.patient_model,
+            effort=consult_effort or self.effort,
+            bedside_effort=bedside_effort or self.bedside_effort,
+        )
+
+    def check_choice(self, model: str, effort: str) -> None:
+        """Raise ValueError for a model name or effort level the chats can't use."""
+        if model and not MODEL_NAME.match(model):
+            raise ValueError(f"{model!r} doesn't look like a model name")
+        if effort and effort not in self.efforts():
+            raise ValueError(f"effort must be one of: {', '.join(self.efforts())}")
 
     def public(self) -> dict[str, Any]:
         """What the browser may know: never a key or token."""

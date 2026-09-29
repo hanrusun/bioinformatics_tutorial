@@ -55,6 +55,10 @@ def ask(client, path="/api/consult", **body):
     return events
 
 
+def say_to_patient(client, message):
+    return ask(client, path="/api/bedside", message=message)
+
+
 # --------------------------------------------------------------------------- #
 # Configuration
 # --------------------------------------------------------------------------- #

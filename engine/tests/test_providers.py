@@ -283,3 +283,54 @@ def test_plan_prompt_carries_the_earlier_turns():
     prompt = plan_prompt(messages)
     assert prompt.index("How are you?") < prompt.index("Tired, doctor.") < prompt.index("Did you sleep?")
     assert "<assistant>\nTired, doctor.\n</assistant>" in prompt and prompt.endswith("Did you sleep?")
+
+
+# --------------------------------------------------------------------------- #
+# In-game chat settings
+# --------------------------------------------------------------------------- #
+
+
+def test_choose_each_chats_model_and_effort_in_the_game(tmp_path):
+    from fastapi.testclient import TestClient
+
+    from .test_consult import make_client, say_to_patient, start
+
+    app = make_client(tmp_path, ConsultConfig(provider="fake", model="echo"))
+    with TestClient(app) as client:
+        start(client)
+        view = client.get("/api/chat/settings").json()
+        assert view["choices"] == {"consult": {"model": "", "effort": ""}, "bedside": {"model": "", "effort": ""}}
+        assert view["defaults"]["consult"] == {"model": "echo", "effort": "medium"}
+        assert view["defaults"]["bedside"] == {"model": "echo", "effort": "low"}
+        assert view["suggestions"]["efforts"] == ["low", "medium", "high", "xhigh", "max"]
+
+        say_to_patient(client, "Hello")  # builds the patient's consultant
+        r = client.put("/api/chat/settings", json={"bedside": {"model": "echo-2", "effort": "HIGH"}})
+        assert r.status_code == 200, r.text
+        assert (r.json()["bedside_model"], r.json()["bedside_effort"]) == ("echo-2", "high")
+        assert (r.json()["model"], r.json()["effort"]) == ("echo", "medium")  # the doctor is unchanged
+        meta = client.get("/api/meta").json()["consult"]
+        assert (meta["bedside_model"], meta["bedside_effort"]) == ("echo-2", "high")
+        assert app.state.curelab.get_consultant("bedside").model == "echo-2"  # rebuilt, no restart
+
+        for bad in ({"consult": {"model": "bad name!"}}, {"consult": {"effort": "turbo"}}):
+            assert client.put("/api/chat/settings", json=bad).status_code == 422
+        assert client.get("/api/chat/settings").json()["choices"]["bedside"]["model"] == "echo-2"
+
+    # kept with the profile
+    with TestClient(make_client(tmp_path, ConsultConfig(provider="fake", model="echo"))) as client:
+        assert client.get("/api/chat/settings").json()["bedside_model"] == "echo-2"
+        # an empty value goes back to the default
+        reset = client.put("/api/chat/settings", json={"bedside": {"model": "", "effort": ""}}).json()
+        assert (reset["bedside_model"], reset["bedside_effort"]) == ("echo", "low")
+
+    with TestClient(make_client(tmp_path / "off", ConsultConfig())) as client:
+        assert client.put("/api/chat/settings", json={"consult": {"effort": "high"}}).status_code == 409
+
+
+def test_other_services_offer_their_own_efforts():
+    gemini = ConsultConfig.from_env({"GEMINI_API_KEY": "k"})
+    assert "minimal" in gemini.efforts() and "max" not in gemini.efforts()
+    with pytest.raises(ValueError):
+        gemini.check_choice("gemini-flash-latest", "max")
+    gemini.check_choice("openrouter/some-model:free", "low")  # fine

@@ -102,6 +102,19 @@ export interface ConsultData extends ConsultStatus {
   messages: ConsultMessage[];
 }
 
+/** Each chat's model and effort as chosen in the game ("" = the default). */
+export interface ChatChoice {
+  model: string;
+  effort: string;
+}
+
+export interface ChatSettingsData extends ConsultStatus {
+  choices: { consult: ChatChoice; bedside: ChatChoice };
+  /** from .env, or built in */
+  defaults: { consult: ChatChoice; bedside: ChatChoice };
+  suggestions: { models: string[]; efforts: string[] };
+}
+
 /** The bedside chat with the patient (same key and model as consulting). */
 export interface BedsideData extends ConsultData {
   /** the patient's first name */

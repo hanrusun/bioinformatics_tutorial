@@ -276,6 +276,13 @@ CURELAB_BEDSIDE_EFFORT=low
 
 Each chat's header shows the model and effort it's using.
 
+You can also change them in the game, without touching `.env` or restarting:
+**⚙ Model & effort** in each chat's header offers the models your service
+has (or type any model name) and its effort levels. Those choices override
+`.env`, are saved with your profile, and apply from the next message; **Reset
+to defaults** goes back to `.env`. The key or token itself can only be set in
+`.env`, because the browser never sees it.
+
 On the Claude API, the game turns on Anthropic's server-side refusal fallback:
 if a question is declined, the API retries it on another Claude model.
 

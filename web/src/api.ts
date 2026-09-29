@@ -1,5 +1,7 @@
 import type {
   BedsideData,
+  ChatChoice,
+  ChatSettingsData,
   ConsultData,
   Execution,
   Meta,
@@ -77,6 +79,10 @@ export const api = {
   /** Save one exchange (the index of either of its messages) or, with no index, the whole conversation. */
   consultSave: (index: number | null, since: number) =>
     post<Snapshot & { note: Note }>('/api/consult/notebook', { index, since }),
+
+  chatSettings: () => call<ChatSettingsData>('/api/chat/settings'),
+  saveChatSettings: (patch: Partial<Record<'consult' | 'bedside', ChatChoice>>) =>
+    call<ChatSettingsData>('/api/chat/settings', { method: 'PUT', body: JSON.stringify(patch) }),
 
   bedsideHistory: () => call<BedsideData>('/api/bedside'),
   bedsideClear: () => post<BedsideData>('/api/bedside/clear'),

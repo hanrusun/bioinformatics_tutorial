@@ -22,6 +22,9 @@ class Profile(BaseModel):
     active: Optional[GameState] = None
     notebooks: dict[str, Notebook] = {}
     history: list[dict[str, Any]] = []
+    # chat model and effort chosen in the game, per chat ("consult" / "bedside");
+    # empty values keep the defaults from .env
+    chat: dict[str, dict[str, str]] = {}
 
     def notebook(self, campaign_id: str) -> Notebook:
         return self.notebooks.setdefault(campaign_id, Notebook())

@@ -20,7 +20,9 @@ from pydantic import BaseModel
 from . import bedside
 from .balance import Balance, load_balance
 from .consult import (
+    CHATS,
     HISTORY_LIMIT,
+    MODEL_SUGGESTIONS,
     SYSTEM_PROMPT,
     ConsultConfig,
     ConsultError,
@@ -82,15 +84,19 @@ class AppState:
     last_save: float = 0.0
     read_tokens: dict[str, tuple[str, float]] = field(default_factory=dict)
     consultant: Any = None  # created on first use (see consult.make_consultant)
-    bedside_consultant: Any = None  # the patient's voice: same key, its own model, lighter effort
+    bedside_consultant: Any = None  # the patient's voice: same key, its own model and effort
+
+    def chat_config(self) -> ConsultConfig:
+        """The chats' setup: .env, with the model and effort chosen in the game on top."""
+        return self.settings.consult.with_choices(self.profile.chat)
 
     def get_consultant(self, chat: str = "consult") -> Any:
         if chat == "bedside":
             if self.bedside_consultant is None:
-                self.bedside_consultant = make_consultant(self.settings.consult, "bedside")
+                self.bedside_consultant = make_consultant(self.chat_config(), "bedside")
             return self.bedside_consultant
         if self.consultant is None:
-            self.consultant = make_consultant(self.settings.consult)
+            self.consultant = make_consultant(self.chat_config())
         return self.consultant
 
     # ------------------------------------------------------------------ #
@@ -312,6 +318,16 @@ class BedsideBody(BaseModel):
     message: str
 
 
+class ChatChoice(BaseModel):
+    model: str = ""  # "" = the default
+    effort: str = ""
+
+
+class ChatSettingsBody(BaseModel):
+    consult: Optional[ChatChoice] = None  # None: leave as it is
+    bedside: Optional[ChatChoice] = None
+
+
 class ConsultSaveBody(BaseModel):
     index: Optional[int] = None  # a message index (saves that exchange); None = all
     since: int = 0
@@ -398,7 +414,7 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
             },
             "active": state.game.campaign.id if state.game else None,
             "history": profile.history[-20:],
-            "consult": settings.consult.public(),
+            "consult": state.chat_config().public(),
         }
 
     # ------------------------------------------------------------ game
@@ -765,9 +781,45 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
         state.save()
         return {"note": _note_view(note), **game_snapshot(state, body.since)}
 
+    # ------------------------------------------------------------ chat settings
+    def _chat_settings_view() -> dict[str, Any]:
+        """The model and effort of each chat: what the learner chose in the
+        game ("" = default), the defaults from .env, and what to suggest."""
+        base = settings.consult
+        return {
+            **state.chat_config().public(),
+            "choices": {chat: {"model": (state.profile.chat.get(chat) or {}).get("model", ""),
+                               "effort": (state.profile.chat.get(chat) or {}).get("effort", "")} for chat in CHATS},
+            "defaults": {chat: {"model": base.chat_model(chat), "effort": base.chat_effort(chat)} for chat in CHATS},
+            "suggestions": {"models": MODEL_SUGGESTIONS.get(base.provider or "", []), "efforts": base.efforts()},
+        }
+
+    @app.get("/api/chat/settings")
+    async def chat_settings() -> dict[str, Any]:
+        return _chat_settings_view()
+
+    @app.put("/api/chat/settings")
+    async def chat_settings_update(body: ChatSettingsBody) -> dict[str, Any]:
+        """Choose each chat's model and effort in the game; keys stay in .env."""
+        if not settings.consult.enabled:
+            raise HTTPException(409, "The chats are off: add a key or a Claude plan token to your .env file first.")
+        for chat in CHATS:
+            choice: Optional[ChatChoice] = getattr(body, chat)
+            if choice is None:
+                continue
+            model, effort = choice.model.strip(), choice.effort.strip().lower()
+            try:
+                settings.consult.check_choice(model, effort)
+            except ValueError as exc:
+                raise HTTPException(422, f"{'Doctor' if chat == 'consult' else 'Patient'}: {exc}")
+            state.profile.chat[chat] = {"model": model, "effort": effort}
+        state.consultant = state.bedside_consultant = None  # rebuilt with the new choices
+        state.save()
+        return _chat_settings_view()
+
     # ------------------------------------------------------------ consult
     def _consult_view(game: Game) -> dict[str, Any]:
-        return {**settings.consult.public(), "messages": [m.public() for m in game.state.consult]}
+        return {**state.chat_config().public(), "messages": [m.public() for m in game.state.consult]}
 
     @app.get("/api/consult")
     async def consult_history() -> dict[str, Any]:
@@ -821,7 +873,7 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
 
     @app.post("/api/consult/notebook")
     async def consult_to_notebook(body: ConsultSaveBody) -> dict[str, Any]:
-        label = settings.consult.public()["label"]
+        label = state.chat_config().label
         return _chat_to_notebook(
             state.require_game(), "consult", body, kind="consult", speaker="Consulting doctor", label=label,
             prefix="Consult", whole="Consultation",
@@ -831,7 +883,7 @@ def create_app(settings: Optional[Settings] = None) -> FastAPI:
     def _bedside_view(game: Game) -> dict[str, Any]:
         ill = game.illness
         return {
-            **settings.consult.public(),
+            **state.chat_config().public(),
             "messages": [m.public() for m in game.state.bedside],
             "patient": ill.patient.first_name,
             "toddler": bedside.toddler(ill),

@@ -2,6 +2,7 @@ import { useState } from 'preact/hooks';
 import { api, bedsideSay } from '../api';
 import type { BedsideData, ConsultStatus, GameView, PatientInfo, Snapshot } from '../types';
 import { ChatActions, ChatThread, useChat } from './Chat';
+import { ChatSettings } from './ChatSettings';
 import { ChatSetup } from './ConsultPanel';
 
 interface Props {
@@ -11,10 +12,12 @@ interface Props {
   cursor: () => number;
   onSnapshot: (s: Snapshot) => void;
   onNotice: (text: string, tone?: 'info' | 'bad') => void;
+  /** the chats' model and effort changed in the game */
+  onStatus: (s: ConsultStatus) => void;
 }
 
 /** Talk to the patient, who answers in character from their chart. */
-export function BedsidePanel({ game, patient, status, cursor, onSnapshot, onNotice }: Props) {
+export function BedsidePanel({ game, patient, status, cursor, onSnapshot, onNotice, onStatus }: Props) {
   const [info, setInfo] = useState<BedsideData | null>(null);
   const chat = useChat(
     {
@@ -48,13 +51,14 @@ export function BedsidePanel({ game, patient, status, cursor, onSnapshot, onNoti
       <header class="consult__head">
         <div>
           <h3>Talk to {name}</h3>
-          <p class="muted">
+          <p class="muted" data-testid="bedside-model-line">
             {status.label} ({status.bedside_model}
             {status.bedside_effort ? `, ${status.bedside_effort} effort` : ''}) plays {name} · free, but the clock
             keeps running
           </p>
         </div>
         <ChatActions chat={chat} id="bedside" whole="whole chat" />
+        <ChatSettings chat="bedside" onStatus={onStatus} onNotice={onNotice} />
       </header>
 
       <p class="consult__context muted">
